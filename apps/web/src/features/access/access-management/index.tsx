@@ -1,17 +1,75 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import { AccessFilters } from "./components/AccessFilters";
+import { UserAccessRow } from "./components/UserAccessRow";
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 type User = { id: string; githubLogin: string; displayName?: string; avatarUrl?: string };
 type Project = { id: string; name: string };
+
 export function AccessManagement({ initialUsers }: { initialUsers: User[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  useEffect(() => { const timer = window.setTimeout(() => { void trpc.access.users.query({ search: search || undefined }).then((page) => setUsers(page.items)).catch(() => setStatus("Não foi possível atualizar o diretório.")); }, 250); return () => window.clearTimeout(timer); }, [search]);
-  useEffect(() => { void trpc.projects.list.query({}).then((page) => setProjects(page.items)).catch(() => setStatus("Não foi possível carregar os projetos.")); }, []);
-  async function changeAccess(userId: string, action: "assign" | "remove") { if (!selectedProject) return setStatus("Escolha um projeto antes de continuar."); try { await trpc.access[action].mutate({ userId, projectId: selectedProject }); setStatus(action === "assign" ? "Projeto atribuído." : "Atribuição removida."); } catch { setStatus("Não foi possível alterar a atribuição."); } }
-  return <section className="mx-auto w-full max-w-4xl px-6 py-12"><p className="font-mono text-xs text-ink-3">ADMINISTRAÇÃO</p><h1 className="mt-3 text-3xl font-semibold tracking-tight">Acesso aos projetos</h1><p className="mt-3 text-sm leading-6 text-ink-2">Atribua apenas projetos existentes a pessoas que já entraram com GitHub.</p><label className="mt-8 block text-sm font-medium" htmlFor="user-search">Buscar usuário</label><input id="user-search" value={search} onChange={(event) => setSearch(event.target.value)} maxLength={200} placeholder="login do GitHub" className="mt-2 h-11 w-full rounded-md border border-line bg-surface px-3 text-sm outline-none focus:border-lane-project" /><label className="mt-4 block text-sm font-medium" htmlFor="project-target">Projeto</label><select id="project-target" value={selectedProject} onChange={(event) => setSelectedProject(event.target.value)} className="mt-2 h-11 w-full rounded-md border border-line bg-surface px-3 text-sm outline-none focus:border-lane-project"><option value="">Selecione um projeto</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>{status && <p role="alert" className="mt-3 text-sm text-lane-github-ink">{status}</p>}<ul className="mt-6 divide-y divide-line rounded-xl border border-line bg-raised">{users.map((user) => <li key={user.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4"><span><span className="block font-medium">{user.displayName || user.githubLogin}</span><span className="font-mono text-xs text-ink-3">@{user.githubLogin}</span></span><span className="flex gap-2"><button type="button" disabled={!selectedProject} onClick={() => void changeAccess(user.id, "assign")} className="h-9 rounded-md bg-ink px-3 text-sm text-ground disabled:opacity-40">Atribuir</button><button type="button" disabled={!selectedProject} onClick={() => void changeAccess(user.id, "remove")} className="h-9 rounded-md border border-line px-3 text-sm disabled:opacity-40">Remover</button></span></li>)}</ul>{users.length === 0 && <p className="mt-6 text-sm text-ink-2">Nenhuma conta encontrada.</p>}</section>;
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void trpc.access.users
+        .query({ search: search || undefined })
+        .then((page) => setUsers(page.items))
+        .catch(() => setStatus("Não foi possível atualizar o diretório."));
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+  useEffect(() => {
+    void trpc.projects.list
+      .query({})
+      .then((page) => setProjects(page.items))
+      .catch(() => setStatus("Não foi possível carregar os projetos."));
+  }, []);
+  async function changeAccess(userId: string, action: "assign" | "remove") {
+    if (!selectedProject) return setStatus("Escolha um projeto antes de continuar.");
+    try {
+      await trpc.access[action].mutate({ userId, projectId: selectedProject });
+      setStatus(action === "assign" ? "Projeto atribuído." : "Atribuição removida.");
+    } catch {
+      setStatus("Não foi possível alterar a atribuição.");
+    }
+  }
+  return (
+    <section className="mx-auto w-full max-w-4xl px-6 py-12">
+      <p className="font-mono text-xs text-ink-3">ADMINISTRAÇÃO</p>
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Acesso aos projetos</h1>
+      <p className="mt-3 text-sm leading-6 text-ink-2">
+        Atribua apenas projetos existentes a pessoas que já entraram com GitHub.
+      </p>
+      <AccessFilters
+        search={search}
+        onSearch={setSearch}
+        projects={projects}
+        selectedProject={selectedProject}
+        onSelectProject={setSelectedProject}
+      />
+      {status && (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          {status}
+        </p>
+      )}
+      <ul className="mt-6 divide-y divide-line rounded-xl border border-line bg-raised">
+        {users.map((user) => (
+          <UserAccessRow
+            key={user.id}
+            user={user}
+            disabled={!selectedProject}
+            onChangeAccess={(userId, action) => void changeAccess(userId, action)}
+          />
+        ))}
+      </ul>
+      {users.length === 0 && <p className="mt-6 text-sm text-ink-2">Nenhuma conta encontrada.</p>}
+    </section>
+  );
 }

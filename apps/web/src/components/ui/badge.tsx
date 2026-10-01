@@ -13,6 +13,7 @@ const badgeVariants = cva(
         outline: "border-line font-normal text-ink-3",
         label: "border-line px-2.5 py-0.5 font-mono font-normal text-ink-2",
         project: "border-project/30 bg-project-wash text-project-ink",
+        clarify: "bg-clarify-wash text-clarify-ink",
         "ref-project": "rounded-md bg-project-wash px-2 py-1 font-mono font-normal text-project-ink",
         "ref-github": "rounded-md bg-github-wash px-2 py-1 font-mono font-normal text-github-ink",
         destructive: "bg-destructive text-destructive-foreground",

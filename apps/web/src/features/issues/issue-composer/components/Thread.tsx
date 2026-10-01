@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { REPO, type IssueDraft, type Session, type Source } from "../model";
 import { GUTTER_COMPACT, GraphRow, LANE_X, LANE_X_COMPACT, RichText, TRUNK_X, forkOffset, laneColor } from "./Graph";
 import { IssueDraftBlock } from "./IssueDraftBlock";
@@ -115,7 +116,7 @@ export function Thread({ session, onDraftChange, onPublish }: Props) {
                 <GraphRow node="clarify" first={first} trunk={trunk} className="pb-7">
                   <p className="flex h-[22px] items-center gap-2 text-sm">
                     <span className="font-medium">Issue Author</span>
-                    <span className="rounded-full bg-clarify-wash px-2 py-px text-xs font-medium text-clarify-ink">pergunta</span>
+                    <Badge variant="clarify" className="py-px">pergunta</Badge>
                     <span className="font-mono text-xs text-ink-3 tabular-nums">{item.at}</span>
                   </p>
                   <p className="mt-1 max-w-[65ch] text-[15px] leading-relaxed">

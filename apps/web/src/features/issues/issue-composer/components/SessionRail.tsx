@@ -1,6 +1,7 @@
 "use client";
 
 import { PlusIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import type { Session } from "../model";
 
 type Props = {
@@ -46,14 +47,10 @@ export function SessionRail({ sessions, activeId, onSelect, onCreate }: Props) {
   return (
     <nav aria-label="Intenções" className="flex h-full flex-col">
       <div className="p-3">
-        <button
-          type="button"
-          onClick={onCreate}
-          className="flex h-10 w-full items-center gap-2 rounded-lg border border-line bg-raised px-3 text-sm font-medium transition-colors hover:border-ink-3"
-        >
+        <Button type="button" variant="secondary" onClick={onCreate} className="w-full justify-start px-3">
           <PlusIcon />
           Nova intenção
-        </button>
+        </Button>
       </div>
       <h2 className="px-4 pt-2 pb-2 text-xs font-medium text-ink-3">Intenções</h2>
       <ul className="relative flex-1 overflow-y-auto px-2 pb-4">

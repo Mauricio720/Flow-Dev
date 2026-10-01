@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { XIcon } from "@/components/icons";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { Composer } from "./Composer";
 import { EmptyIntent } from "./EmptyIntent";
@@ -119,32 +119,22 @@ export function Workspace({ projectId, projectName }: { projectId?: string; proj
         </div>
       </div>
 
-      {railOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Intenções">
-          <button type="button" aria-label="Fechar" className="absolute inset-0 bg-ink/30" onClick={() => setRailOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-[min(20rem,86vw)] border-r border-line bg-surface shadow-raised">
-            <button
-              type="button"
-              onClick={() => setRailOpen(false)}
-              aria-label="Fechar intenções"
-              className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-lg text-ink-2 hover:bg-ink/5"
-            >
-              <XIcon />
-            </button>
-            <div className="h-full pt-10">
-              <SessionRail
-                sessions={sessions}
-                activeId={active.id}
-                onSelect={pick}
-                onCreate={() => {
-                  create();
-                  setRailOpen(false);
-                }}
-              />
-            </div>
+      <Sheet open={railOpen} onOpenChange={setRailOpen}>
+        <SheetContent side="left" className="w-[min(20rem,86vw)] gap-0 p-0 lg:hidden" overlayClassName="lg:hidden">
+          <SheetTitle className="sr-only">Intenções</SheetTitle>
+          <div className="h-full pt-10">
+            <SessionRail
+              sessions={sessions}
+              activeId={active.id}
+              onSelect={pick}
+              onCreate={() => {
+                create();
+                setRailOpen(false);
+              }}
+            />
           </div>
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

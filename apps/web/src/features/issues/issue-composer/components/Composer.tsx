@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { SendIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import type { SessionPhase } from "../model";
 import { GraphRow } from "./Graph";
 
@@ -45,14 +46,15 @@ export function Composer({ phase, suggestions, hasItems, draftText, onDraftText,
         {suggestions.length > 0 && !busy && (
           <div className="mb-2.5 flex flex-wrap gap-2" aria-label="Respostas sugeridas">
             {suggestions.map((suggestion) => (
-              <button
+              <Button
                 key={suggestion}
                 type="button"
+                variant="suggestion"
+                size="chip"
                 onClick={() => onSend(suggestion)}
-                className="rounded-full border border-clarify/40 bg-clarify-wash px-3 py-1 text-sm text-clarify-ink transition-colors hover:border-clarify"
               >
                 {suggestion}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -71,8 +73,7 @@ export function Composer({ phase, suggestions, hasItems, draftText, onDraftText,
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder={placeholders[phase]}
-            className="block max-h-48 min-h-[3.25rem] w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none"
-            style={{ fieldSizing: "content" } as React.CSSProperties}
+            className="field-sizing-content block max-h-48 min-h-[3.25rem] w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none"
           />
           <div className="flex items-center justify-between gap-3 px-3 pb-3 pl-4">
             <p className="text-xs text-ink-3" aria-live="polite">
@@ -87,14 +88,15 @@ export function Composer({ phase, suggestions, hasItems, draftText, onDraftText,
                 </>
               )}
             </p>
-            <button
+            <Button
               type="submit"
+              size="icon"
               disabled={!canSend}
               aria-label="Enviar"
-              className="grid size-9 shrink-0 place-items-center rounded-lg bg-ink text-ground transition-[opacity,transform] duration-200 hover:bg-ink/85 active:translate-y-px disabled:opacity-25"
+              className="shrink-0 hover:bg-primary/85 disabled:opacity-25"
             >
               <SendIcon size={18} />
-            </button>
+            </Button>
           </div>
         </div>
       </form>

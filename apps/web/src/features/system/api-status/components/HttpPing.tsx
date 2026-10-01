@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@flow-dev/api";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 
 type Result = { health: RouterOutputs["health"]["check"]; latencyMs: number } | { error: string };
@@ -24,18 +25,14 @@ export function HttpPing() {
   }
 
   return (
-    <div className="rounded-xl border border-foreground/10 p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-foreground/50">Client Component → HTTP /api/trpc</p>
-      <button
-        onClick={ping}
-        disabled={pending}
-        className="mt-2 rounded-lg bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
-      >
+    <div className="rounded-xl border border-line p-5">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-3">Client Component → HTTP /api/trpc</p>
+      <Button size="sm" onClick={ping} disabled={pending} className="mt-2">
         {pending ? "Chamando…" : "Chamar health.check"}
-      </button>
-      <div className="mt-3 font-mono text-xs text-foreground/60">
+      </Button>
+      <div className="mt-3 font-mono text-xs text-ink-2">
         {!result && <span>Clique para chamar a API pelo browser.</span>}
-        {result && "error" in result && <span className="text-red-500">{result.error}</span>}
+        {result && "error" in result && <span className="text-destructive">{result.error}</span>}
         {result && "health" in result && (
           <dl className="space-y-1">
             <div>status: {result.health.status} · {result.latencyMs} ms</div>
