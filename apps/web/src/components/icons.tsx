@@ -131,3 +131,15 @@ export const ShieldIcon = (p: IconProps) => (
     <path d="m9 12 2 2 4-4" />
   </Stroke>
 );
+
+export const ChevronDownIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <path d="m6 9.5 6 6 6-6" />
+  </Stroke>
+);
+
+export const ChevronUpIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <path d="m6 14.5 6-6 6 6" />
+  </Stroke>
+);

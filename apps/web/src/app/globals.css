@@ -1,4 +1,12 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* O app escolhe o tema pelo sistema, nao por classe; o variant `dark:` do shadcn segue a mesma media query. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    @slot;
+  }
+}
 
 :root {
   --ground: #eceef1;
@@ -25,6 +33,8 @@
   --lane-clarify-wash: #f6ebd1;
   --lane-merge-wash: #dcefe6;
   --on-merge: #ffffff;
+
+  --ink-wash: color-mix(in oklab, #14161b 5%, transparent);
 
   --shadow-raised: 0 1px 2px rgb(20 22 27 / 0.06), 0 8px 24px -12px rgb(20 22 27 / 0.18);
 }
@@ -55,6 +65,8 @@
     --lane-clarify-wash: #332811;
     --lane-merge-wash: #11322a;
     --on-merge: #101216;
+
+    --ink-wash: color-mix(in oklab, #e9eaee 8%, transparent);
 
     --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6);
   }
@@ -89,6 +101,30 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Contrato de tokens do shadcn resolvido sobre as custom properties do Flow Dev.
+   Cada nome aponta para o token do DESIGN.md, entao claro e escuro trocam junto com :root. */
+@theme inline {
+  --color-background: var(--ground);
+  --color-foreground: var(--ink);
+  --color-card: var(--raised);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--raised);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--ground);
+  --color-secondary: var(--raised);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface);
+  --color-muted-foreground: var(--ink-3);
+  --color-accent: var(--ink-wash);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--lane-github-ink);
+  --color-destructive-foreground: var(--ground);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--lane-project);
 }
 
 @layer base {
