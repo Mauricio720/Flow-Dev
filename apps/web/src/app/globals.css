@@ -1,0 +1,204 @@
+@import "tailwindcss";
+
+:root {
+  --ground: #eceef1;
+  --surface: #f5f6f8;
+  --raised: #ffffff;
+  --ink: #14161b;
+  --ink-2: #454a55;
+  --ink-3: #5f6571;
+  --line: #d1d5db;
+  --grid: #dfe2e7;
+
+  --lane-project: #2446d8;
+  --lane-github: #d24e17;
+  --lane-clarify: #b77a06;
+  --lane-merge: #12805a;
+
+  --lane-project-ink: #1f3cbf;
+  --lane-github-ink: #a83c0e;
+  --lane-clarify-ink: #7f5400;
+  --lane-merge-ink: #0c6546;
+
+  --lane-project-wash: #e2e7fb;
+  --lane-github-wash: #f9e5da;
+  --lane-clarify-wash: #f6ebd1;
+  --lane-merge-wash: #dcefe6;
+  --on-merge: #ffffff;
+
+  --shadow-raised: 0 1px 2px rgb(20 22 27 / 0.06), 0 8px 24px -12px rgb(20 22 27 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #101216;
+    --surface: #15181d;
+    --raised: #1b1f25;
+    --ink: #e9eaee;
+    --ink-2: #b4b8c1;
+    --ink-3: #8f95a0;
+    --line: #2b3038;
+    --grid: #1a1e24;
+
+    --lane-project: #6f8cff;
+    --lane-github: #ff8a4c;
+    --lane-clarify: #f0b429;
+    --lane-merge: #3ccf8e;
+
+    --lane-project-ink: #9db0ff;
+    --lane-github-ink: #ffab7d;
+    --lane-clarify-ink: #f5c75c;
+    --lane-merge-ink: #6fe0ad;
+
+    --lane-project-wash: #1a2346;
+    --lane-github-wash: #3a1f12;
+    --lane-clarify-wash: #332811;
+    --lane-merge-wash: #11322a;
+    --on-merge: #101216;
+
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-grid: var(--grid);
+
+  --color-project: var(--lane-project);
+  --color-github: var(--lane-github);
+  --color-clarify: var(--lane-clarify);
+  --color-merge: var(--lane-merge);
+  --color-project-ink: var(--lane-project-ink);
+  --color-github-ink: var(--lane-github-ink);
+  --color-clarify-ink: var(--lane-clarify-ink);
+  --color-merge-ink: var(--lane-merge-ink);
+  --color-project-wash: var(--lane-project-wash);
+  --color-github-wash: var(--lane-github-wash);
+  --color-clarify-wash: var(--lane-clarify-wash);
+  --color-merge-wash: var(--lane-merge-wash);
+  --color-on-merge: var(--on-merge);
+
+  --shadow-raised: var(--shadow-raised);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    caret-color: var(--lane-project);
+  }
+
+  ::selection {
+    background: var(--lane-project-wash);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--lane-project);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+
+  a {
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+}
+
+/* The 24px cell grid the lanes snap to; visible only when the viewer switches it on. */
+.cell-grid {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+
+@keyframes lane-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.lane-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: lane-draw 700ms var(--ease-out-expo) both;
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.node-running {
+  animation: node-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes row-strike {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+.row-strike {
+  animation: row-strike 420ms var(--ease-out-expo) both;
+}
+
+@keyframes trunk-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.trunk-grow {
+  transform-origin: top;
+  animation: trunk-grow 600ms var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trunk-grow,
+  .lane-draw,
+  .row-strike,
+  .node-running {
+    animation: none;
+  }
+}

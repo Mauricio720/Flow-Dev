@@ -1,0 +1,599 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-30T23:43:38+00:00",
+  "title": "Design System: Flow Dev",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Chão Cinza-Papel",
+        "canonical": "#eceef1",
+        "oklch": "oklch(94.8% 0.005 258.3)",
+        "dark": "#101216",
+        "tonalRamp": [
+          "oklch(15.0% 0.003 258.3)",
+          "oklch(26.4% 0.005 258.3)",
+          "oklch(37.9% 0.005 258.3)",
+          "oklch(49.3% 0.005 258.3)",
+          "oklch(60.7% 0.005 258.3)",
+          "oklch(72.1% 0.005 258.3)",
+          "oklch(83.6% 0.005 258.3)",
+          "oklch(95.0% 0.003 258.3)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Superfície",
+        "canonical": "#f5f6f8",
+        "oklch": "oklch(97.3% 0.003 264.5)",
+        "dark": "#15181d",
+        "tonalRamp": [
+          "oklch(15.0% 0.002 264.5)",
+          "oklch(26.4% 0.003 264.5)",
+          "oklch(37.9% 0.003 264.5)",
+          "oklch(49.3% 0.003 264.5)",
+          "oklch(60.7% 0.003 264.5)",
+          "oklch(72.1% 0.003 264.5)",
+          "oklch(83.6% 0.003 264.5)",
+          "oklch(95.0% 0.002 264.5)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Elevado",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "dark": "#1b1f25",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(26.4% 0.000 89.9)",
+          "oklch(37.9% 0.000 89.9)",
+          "oklch(49.3% 0.000 89.9)",
+          "oklch(60.7% 0.000 89.9)",
+          "oklch(72.1% 0.000 89.9)",
+          "oklch(83.6% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#14161b",
+        "oklch": "oklch(20.0% 0.010 268.2)",
+        "dark": "#e9eaee",
+        "tonalRamp": [
+          "oklch(15.0% 0.006 268.2)",
+          "oklch(26.4% 0.010 268.2)",
+          "oklch(37.9% 0.010 268.2)",
+          "oklch(49.3% 0.010 268.2)",
+          "oklch(60.7% 0.010 268.2)",
+          "oklch(72.1% 0.010 268.2)",
+          "oklch(83.6% 0.010 268.2)",
+          "oklch(95.0% 0.006 268.2)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Tinta 2",
+        "canonical": "#454a55",
+        "oklch": "oklch(40.9% 0.020 266.1)",
+        "dark": "#b4b8c1",
+        "tonalRamp": [
+          "oklch(15.0% 0.012 266.1)",
+          "oklch(26.4% 0.020 266.1)",
+          "oklch(37.9% 0.020 266.1)",
+          "oklch(49.3% 0.020 266.1)",
+          "oklch(60.7% 0.020 266.1)",
+          "oklch(72.1% 0.020 266.1)",
+          "oklch(83.6% 0.020 266.1)",
+          "oklch(95.0% 0.012 266.1)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Tinta 3",
+        "canonical": "#5f6571",
+        "oklch": "oklch(50.6% 0.020 264.4)",
+        "dark": "#8f95a0",
+        "tonalRamp": [
+          "oklch(15.0% 0.012 264.4)",
+          "oklch(26.4% 0.020 264.4)",
+          "oklch(37.9% 0.020 264.4)",
+          "oklch(49.3% 0.020 264.4)",
+          "oklch(60.7% 0.020 264.4)",
+          "oklch(72.1% 0.020 264.4)",
+          "oklch(83.6% 0.020 264.4)",
+          "oklch(95.0% 0.012 264.4)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Linha",
+        "canonical": "#d1d5db",
+        "oklch": "oklch(87.2% 0.009 258.3)",
+        "dark": "#2b3038",
+        "tonalRamp": [
+          "oklch(15.0% 0.006 258.3)",
+          "oklch(26.4% 0.009 258.3)",
+          "oklch(37.9% 0.009 258.3)",
+          "oklch(49.3% 0.009 258.3)",
+          "oklch(60.7% 0.009 258.3)",
+          "oklch(72.1% 0.009 258.3)",
+          "oklch(83.6% 0.009 258.3)",
+          "oklch(95.0% 0.006 258.3)"
+        ]
+      },
+      "grid": {
+        "role": "neutral",
+        "displayName": "Grade",
+        "canonical": "#dfe2e7",
+        "oklch": "oklch(91.2% 0.008 260.7)",
+        "dark": "#1a1e24",
+        "tonalRamp": [
+          "oklch(15.0% 0.005 260.7)",
+          "oklch(26.4% 0.008 260.7)",
+          "oklch(37.9% 0.008 260.7)",
+          "oklch(49.3% 0.008 260.7)",
+          "oklch(60.7% 0.008 260.7)",
+          "oklch(72.1% 0.008 260.7)",
+          "oklch(83.6% 0.008 260.7)",
+          "oklch(95.0% 0.005 260.7)"
+        ]
+      },
+      "lane-project": {
+        "role": "primary",
+        "displayName": "Azul Projeto",
+        "canonical": "#2446d8",
+        "oklch": "oklch(47.6% 0.225 266.5)",
+        "dark": "#6f8cff",
+        "tonalRamp": [
+          "oklch(15.0% 0.120 266.5)",
+          "oklch(26.4% 0.200 266.5)",
+          "oklch(37.9% 0.200 266.5)",
+          "oklch(49.3% 0.200 266.5)",
+          "oklch(60.7% 0.200 266.5)",
+          "oklch(72.1% 0.200 266.5)",
+          "oklch(83.6% 0.200 266.5)",
+          "oklch(95.0% 0.120 266.5)"
+        ]
+      },
+      "lane-project-ink": {
+        "role": "primary",
+        "displayName": "Azul Projeto (texto)",
+        "canonical": "#1f3cbf",
+        "oklch": "oklch(43.3% 0.206 266.7)",
+        "dark": "#9db0ff",
+        "tonalRamp": [
+          "oklch(15.0% 0.120 266.7)",
+          "oklch(26.4% 0.200 266.7)",
+          "oklch(37.9% 0.200 266.7)",
+          "oklch(49.3% 0.200 266.7)",
+          "oklch(60.7% 0.200 266.7)",
+          "oklch(72.1% 0.200 266.7)",
+          "oklch(83.6% 0.200 266.7)",
+          "oklch(95.0% 0.120 266.7)"
+        ]
+      },
+      "lane-project-wash": {
+        "role": "primary",
+        "displayName": "Azul Projeto (wash)",
+        "canonical": "#e2e7fb",
+        "oklch": "oklch(93.0% 0.028 274.7)",
+        "dark": "#1a2346",
+        "tonalRamp": [
+          "oklch(15.0% 0.017 274.7)",
+          "oklch(26.4% 0.028 274.7)",
+          "oklch(37.9% 0.028 274.7)",
+          "oklch(49.3% 0.028 274.7)",
+          "oklch(60.7% 0.028 274.7)",
+          "oklch(72.1% 0.028 274.7)",
+          "oklch(83.6% 0.028 274.7)",
+          "oklch(95.0% 0.017 274.7)"
+        ]
+      },
+      "lane-github": {
+        "role": "secondary",
+        "displayName": "Laranja GitHub",
+        "canonical": "#d24e17",
+        "oklch": "oklch(59.6% 0.178 39.6)",
+        "dark": "#ff8a4c",
+        "tonalRamp": [
+          "oklch(15.0% 0.107 39.6)",
+          "oklch(26.4% 0.178 39.6)",
+          "oklch(37.9% 0.178 39.6)",
+          "oklch(49.3% 0.178 39.6)",
+          "oklch(60.7% 0.178 39.6)",
+          "oklch(72.1% 0.178 39.6)",
+          "oklch(83.6% 0.178 39.6)",
+          "oklch(95.0% 0.107 39.6)"
+        ]
+      },
+      "lane-github-ink": {
+        "role": "secondary",
+        "displayName": "Laranja GitHub (texto)",
+        "canonical": "#a83c0e",
+        "oklch": "oklch(50.4% 0.151 39.6)",
+        "dark": "#ffab7d",
+        "tonalRamp": [
+          "oklch(15.0% 0.091 39.6)",
+          "oklch(26.4% 0.151 39.6)",
+          "oklch(37.9% 0.151 39.6)",
+          "oklch(49.3% 0.151 39.6)",
+          "oklch(60.7% 0.151 39.6)",
+          "oklch(72.1% 0.151 39.6)",
+          "oklch(83.6% 0.151 39.6)",
+          "oklch(95.0% 0.091 39.6)"
+        ]
+      },
+      "lane-github-wash": {
+        "role": "secondary",
+        "displayName": "Laranja GitHub (wash)",
+        "canonical": "#f9e5da",
+        "oklch": "oklch(93.5% 0.027 50.9)",
+        "dark": "#3a1f12",
+        "tonalRamp": [
+          "oklch(15.0% 0.016 50.9)",
+          "oklch(26.4% 0.027 50.9)",
+          "oklch(37.9% 0.027 50.9)",
+          "oklch(49.3% 0.027 50.9)",
+          "oklch(60.7% 0.027 50.9)",
+          "oklch(72.1% 0.027 50.9)",
+          "oklch(83.6% 0.027 50.9)",
+          "oklch(95.0% 0.016 50.9)"
+        ]
+      },
+      "lane-clarify": {
+        "role": "tertiary",
+        "displayName": "Âmbar Clarificação",
+        "canonical": "#b77a06",
+        "oklch": "oklch(62.7% 0.132 73.8)",
+        "dark": "#f0b429",
+        "tonalRamp": [
+          "oklch(15.0% 0.079 73.8)",
+          "oklch(26.4% 0.132 73.8)",
+          "oklch(37.9% 0.132 73.8)",
+          "oklch(49.3% 0.132 73.8)",
+          "oklch(60.7% 0.132 73.8)",
+          "oklch(72.1% 0.132 73.8)",
+          "oklch(83.6% 0.132 73.8)",
+          "oklch(95.0% 0.079 73.8)"
+        ]
+      },
+      "lane-clarify-ink": {
+        "role": "tertiary",
+        "displayName": "Âmbar Clarificação (texto)",
+        "canonical": "#7f5400",
+        "oklch": "oklch(48.1% 0.102 74.8)",
+        "dark": "#f5c75c",
+        "tonalRamp": [
+          "oklch(15.0% 0.061 74.8)",
+          "oklch(26.4% 0.102 74.8)",
+          "oklch(37.9% 0.102 74.8)",
+          "oklch(49.3% 0.102 74.8)",
+          "oklch(60.7% 0.102 74.8)",
+          "oklch(72.1% 0.102 74.8)",
+          "oklch(83.6% 0.102 74.8)",
+          "oklch(95.0% 0.061 74.8)"
+        ]
+      },
+      "lane-clarify-wash": {
+        "role": "tertiary",
+        "displayName": "Âmbar Clarificação (wash)",
+        "canonical": "#f6ebd1",
+        "oklch": "oklch(94.2% 0.036 87.8)",
+        "dark": "#332811",
+        "tonalRamp": [
+          "oklch(15.0% 0.022 87.8)",
+          "oklch(26.4% 0.036 87.8)",
+          "oklch(37.9% 0.036 87.8)",
+          "oklch(49.3% 0.036 87.8)",
+          "oklch(60.7% 0.036 87.8)",
+          "oklch(72.1% 0.036 87.8)",
+          "oklch(83.6% 0.036 87.8)",
+          "oklch(95.0% 0.022 87.8)"
+        ]
+      },
+      "lane-merge": {
+        "role": "tertiary",
+        "displayName": "Verde Merge",
+        "canonical": "#12805a",
+        "oklch": "oklch(53.3% 0.110 163.1)",
+        "dark": "#3ccf8e",
+        "tonalRamp": [
+          "oklch(15.0% 0.066 163.1)",
+          "oklch(26.4% 0.110 163.1)",
+          "oklch(37.9% 0.110 163.1)",
+          "oklch(49.3% 0.110 163.1)",
+          "oklch(60.7% 0.110 163.1)",
+          "oklch(72.1% 0.110 163.1)",
+          "oklch(83.6% 0.110 163.1)",
+          "oklch(95.0% 0.066 163.1)"
+        ]
+      },
+      "lane-merge-ink": {
+        "role": "tertiary",
+        "displayName": "Verde Merge (texto)",
+        "canonical": "#0c6546",
+        "oklch": "oklch(45.0% 0.093 162.9)",
+        "dark": "#6fe0ad",
+        "tonalRamp": [
+          "oklch(15.0% 0.056 162.9)",
+          "oklch(26.4% 0.093 162.9)",
+          "oklch(37.9% 0.093 162.9)",
+          "oklch(49.3% 0.093 162.9)",
+          "oklch(60.7% 0.093 162.9)",
+          "oklch(72.1% 0.093 162.9)",
+          "oklch(83.6% 0.093 162.9)",
+          "oklch(95.0% 0.056 162.9)"
+        ]
+      },
+      "lane-merge-wash": {
+        "role": "tertiary",
+        "displayName": "Verde Merge (wash)",
+        "canonical": "#dcefe6",
+        "oklch": "oklch(93.6% 0.023 165.8)",
+        "dark": "#11322a",
+        "tonalRamp": [
+          "oklch(15.0% 0.014 165.8)",
+          "oklch(26.4% 0.023 165.8)",
+          "oklch(37.9% 0.023 165.8)",
+          "oklch(49.3% 0.023 165.8)",
+          "oklch(60.7% 0.023 165.8)",
+          "oklch(72.1% 0.023 165.8)",
+          "oklch(83.6% 0.023 165.8)",
+          "oklch(95.0% 0.014 165.8)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Só o título do login; 2.5rem subindo para 3rem em sm+."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título do estado vazio; 1.875rem subindo para 2.25rem em sm+."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Título da issue no draft."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Mensagens, campos do draft e composer; até 65ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Bylines, botões e cabeçalhos de grupo."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Status, dicas de teclado e metadados em ink-3."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Evidência: tools, caminhos, refs, branches, horários e ms."
+      }
+    },
+    "shadows": [
+      {
+        "name": "raised",
+        "value": "0 1px 2px rgb(20 22 27 / 0.06), 0 8px 24px -12px rgb(20 22 27 / 0.18)",
+        "dark": "0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6)",
+        "purpose": "A única sombra: composer, Criar Issue, Continuar com GitHub, item ativo do trilho de sessões, gaveta móvel."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "A curva única do sistema."
+      },
+      {
+        "name": "lane-draw",
+        "value": "700ms ease-out-expo",
+        "purpose": "Lanes se desenham ao ramificar (stroke-dashoffset sobre pathLength 1)."
+      },
+      {
+        "name": "row-strike",
+        "value": "420ms ease-out-expo",
+        "purpose": "Linha de tool entra com blur de 3px e 3px de deslocamento."
+      },
+      {
+        "name": "trunk-grow",
+        "value": "600ms ease-out-expo",
+        "purpose": "Trilho verde cresce até o nó origin ao publicar."
+      },
+      {
+        "name": "node-pulse",
+        "value": "1.1s ease-in-out infinite",
+        "purpose": "Nó ou indicador em andamento pulsa entre opacidade 1 e 0.35."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none",
+        "purpose": "Todas as animações acima desligam sob prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px",
+        "purpose": "Calha de lanes vai de 52px para 72px; linhas de tool viram colunas fixas; mapa do login vira horizontal."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "Trilho de sessões de 256px fixo; login em duas colunas."
+      },
+      {
+        "name": "xl",
+        "value": "1280px",
+        "purpose": "Coluna Contexto consultado de 288px."
+      }
+    ],
+    "grid": {
+      "cell": "24px",
+      "trunkX": "12px",
+      "laneX": {
+        "project": "36px",
+        "github": "60px"
+      },
+      "laneXCompact": {
+        "project": "26px",
+        "github": "40px"
+      },
+      "forkStagger": "14px",
+      "angles": "0°, 90°, 45°",
+      "toggle": "Botão Grade na barra superior, persistido em localStorage flow-dev:grid, ligado por padrão."
+    },
+    "openItems": [
+      "Letreiro de sinalização além da Geist",
+      "Leader lines do painel Contexto consultado até as lanes",
+      "Coordenadas na grade"
+    ]
+  },
+  "components": [
+    {
+      "name": "Criar Issue",
+      "kind": "button",
+      "refersTo": "button-publish",
+      "description": "A única ação que publica; verde merge no rodapé do draft.",
+      "html": "<button class=\"ds-btn-publish\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.02c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z\"/></svg>Criar Issue</button>",
+      "css": ".ds-btn-publish{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:0;border-radius:8px;background:var(--lane-merge,#12805a);color:var(--ground,#eceef1);font:600 14px/1 Geist,ui-sans-serif,system-ui,sans-serif;box-shadow:var(--shadow-raised,0 1px 2px rgb(20 22 27/.06),0 8px 24px -12px rgb(20 22 27/.18));transition:filter .2s,transform .2s;cursor:pointer}.ds-btn-publish:hover{filter:brightness(1.1)}.ds-btn-publish:active{transform:translateY(1px)}.ds-btn-publish:focus-visible{outline:2px solid var(--lane-project,#2446d8);outline-offset:2px}"
+    },
+    {
+      "name": "Continuar com GitHub",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Botão primário em tinta; entrada do login.",
+      "html": "<button class=\"ds-btn-primary\">Continuar com GitHub</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:12px;height:48px;padding:0 20px;border:0;border-radius:8px;background:var(--ink,#14161b);color:var(--ground,#eceef1);font:500 15px/1 Geist,ui-sans-serif,system-ui,sans-serif;box-shadow:var(--shadow-raised,0 1px 2px rgb(20 22 27/.06),0 8px 24px -12px rgb(20 22 27/.18));transition:background-color .2s cubic-bezier(.16,1,.3,1),transform .2s;cursor:pointer}.ds-btn-primary:hover{background:color-mix(in srgb,var(--ink,#14161b) 90%,transparent)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--lane-project,#2446d8);outline-offset:2px}"
+    },
+    {
+      "name": "Editar",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Botão secundário com borda de linha.",
+      "html": "<button class=\"ds-btn-secondary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Nova intenção</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:1px solid var(--line,#d1d5db);border-radius:8px;background:var(--raised,#fff);color:var(--ink,#14161b);font:500 14px/1 Geist,ui-sans-serif,system-ui,sans-serif;transition:border-color .15s;cursor:pointer}.ds-btn-secondary:hover{border-color:var(--ink-3,#5f6571)}.ds-btn-secondary:focus-visible{outline:2px solid var(--lane-project,#2446d8);outline-offset:2px}"
+    },
+    {
+      "name": "Campo do draft",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Campo de edição do draft; foco em azul projeto.",
+      "html": "<input class=\"ds-input\" value=\"Adicionar fluxo de recuperação de senha por e-mail\">",
+      "css": ".ds-input{width:100%;padding:8px 12px;border:1px solid var(--line,#d1d5db);border-radius:6px;background:var(--surface,#f5f6f8);color:var(--ink,#14161b);font:400 15px/1.625 Geist,ui-sans-serif,system-ui,sans-serif;transition:border-color .15s}.ds-input:hover{border-color:var(--ink-3,#5f6571)}.ds-input:focus{outline:none;border-color:var(--lane-project,#2446d8)}"
+    },
+    {
+      "name": "Barra superior",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "Barra de 48px com marca, repositório em mono e toggle da grade.",
+      "html": "<header class=\"ds-topbar\"><strong>Flow Dev</strong><span class=\"ds-topbar-sep\"></span><span class=\"ds-topbar-repo\">acme/loja-web</span><button class=\"ds-topbar-btn\" aria-pressed=\"true\">Grade</button><button class=\"ds-topbar-btn\">Sair</button></header>",
+      "css": ".ds-topbar{display:flex;align-items:center;gap:12px;height:48px;padding:0 16px;border-bottom:1px solid var(--line,#d1d5db);background:var(--ground,#eceef1);color:var(--ink,#14161b);font:600 15px/1 Geist,ui-sans-serif,sans-serif;letter-spacing:-.01em}.ds-topbar-sep{width:1px;height:20px;background:var(--line,#d1d5db)}.ds-topbar-repo{font:400 13px/1 'Geist Mono',ui-monospace,monospace;color:var(--ink-2,#454a55)}.ds-topbar-btn{height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--ink-3,#5f6571);font:400 14px/1 Geist,ui-sans-serif,sans-serif;cursor:pointer;transition:background-color .15s,color .15s}.ds-topbar-btn:first-of-type{margin-left:auto}.ds-topbar-btn:hover{background:rgb(20 22 27/.05);color:var(--ink,#14161b)}.ds-topbar-btn[aria-pressed=true]{background:rgb(20 22 27/.07);color:var(--ink,#14161b)}.ds-topbar-btn:focus-visible{outline:2px solid var(--lane-project,#2446d8);outline-offset:2px}"
+    },
+    {
+      "name": "Resposta sugerida",
+      "kind": "chip",
+      "refersTo": "chip-suggestion",
+      "description": "Chip âmbar de resposta à clarificação.",
+      "html": "<button class=\"ds-chip-suggest\">Só por e-mail</button>",
+      "css": ".ds-chip-suggest{padding:4px 12px;border:1px solid color-mix(in srgb,var(--lane-clarify,#b77a06) 40%,transparent);border-radius:9999px;background:var(--lane-clarify-wash,#f6ebd1);color:var(--lane-clarify-ink,#7f5400);font:400 14px/1.4 Geist,ui-sans-serif,sans-serif;cursor:pointer;transition:border-color .15s}.ds-chip-suggest:hover{border-color:var(--lane-clarify,#b77a06)}.ds-chip-suggest:focus-visible{outline:2px solid var(--lane-project,#2446d8);outline-offset:2px}"
+    },
+    {
+      "name": "Referência",
+      "kind": "chip",
+      "refersTo": "ref-tag-project",
+      "description": "Tag de referência no wash da lane de origem.",
+      "html": "<span class=\"ds-ref ds-ref-project\">src/server/auth/session.ts</span><span class=\"ds-ref ds-ref-github\">#97</span>",
+      "css": ".ds-ref{display:inline-block;margin-right:6px;padding:4px 8px;border-radius:6px;font:400 12px/1.3 'Geist Mono',ui-monospace,monospace}.ds-ref-project{background:var(--lane-project-wash,#e2e7fb);color:var(--lane-project-ink,#1f3cbf)}.ds-ref-github{background:var(--lane-github-wash,#f9e5da);color:var(--lane-github-ink,#a83c0e)}"
+    },
+    {
+      "name": "Linha de tool",
+      "kind": "custom",
+      "description": "Linha de 36px com colunas fixas tool · alvo · resultado · ms, com parada na lane.",
+      "html": "<div class=\"ds-toolrow\"><svg class=\"ds-toolrow-lane\" width=\"72\" height=\"36\" aria-hidden=\"true\"><line x1=\"12\" y1=\"0\" x2=\"12\" y2=\"36\" stroke=\"var(--ink,#14161b)\" stroke-width=\"2\"/><line x1=\"36\" y1=\"0\" x2=\"36\" y2=\"36\" stroke=\"var(--lane-project,#2446d8)\" stroke-width=\"2\"/><line x1=\"43\" y1=\"18\" x2=\"72\" y2=\"18\" stroke=\"var(--lane-project,#2446d8)\" stroke-opacity=\".45\"/><circle cx=\"36\" cy=\"18\" r=\"5\" fill=\"var(--ground,#eceef1)\" stroke=\"var(--lane-project,#2446d8)\" stroke-width=\"2.5\"/></svg><span class=\"ds-toolrow-tool\">readProjectFile</span><span class=\"ds-toolrow-target\">src/server/auth/session.ts</span><span>88 linhas</span><span class=\"ds-toolrow-ms\">212ms</span></div>",
+      "css": ".ds-toolrow{display:grid;grid-template-columns:72px 9.5rem minmax(0,1fr) 7rem 3.25rem;align-items:center;column-gap:16px;height:36px;border-bottom:1px solid color-mix(in srgb,var(--line,#d1d5db) 70%,transparent);color:var(--ink,#14161b);font:400 13px/1 Geist,ui-sans-serif,sans-serif}.ds-toolrow-tool{font-family:'Geist Mono',ui-monospace,monospace;color:var(--lane-project-ink,#1f3cbf)}.ds-toolrow-target{font-family:'Geist Mono',ui-monospace,monospace;color:var(--ink-2,#454a55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-toolrow-ms{font:400 12px/1 'Geist Mono',ui-monospace,monospace;color:var(--ink-3,#5f6571);text-align:right;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Draft da issue",
+      "kind": "card",
+      "refersTo": "draft-block",
+      "description": "O único bloco da thread: o nó de merge.",
+      "html": "<article class=\"ds-draft\"><header class=\"ds-draft-head\"><h3>Draft da issue</h3><span>acme/loja-web</span></header><div class=\"ds-draft-field\"><span class=\"ds-draft-label\">Título</span><p class=\"ds-draft-title\">Adicionar fluxo de recuperação de senha por e-mail</p></div><footer class=\"ds-draft-foot\"><span>Nada é publicado até você aprovar.</span></footer></article>",
+      "css": ".ds-draft{overflow:hidden;border:2px solid color-mix(in srgb,var(--lane-merge,#12805a) 45%,transparent);border-radius:12px;background:var(--raised,#fff);color:var(--ink,#14161b);font-family:Geist,ui-sans-serif,sans-serif}.ds-draft-head{display:flex;justify-content:space-between;align-items:center;min-height:52px;padding:12px 20px}.ds-draft-head h3{margin:0;font-size:15px;font-weight:600}.ds-draft-head span{font:400 12px 'Geist Mono',ui-monospace,monospace;color:var(--ink-3,#5f6571)}.ds-draft-field{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:24px;padding:16px 20px;border-top:1px solid var(--line,#d1d5db)}.ds-draft-label{font-size:14px;color:var(--ink-3,#5f6571)}.ds-draft-title{margin:0;font-size:17px;font-weight:600;line-height:1.375}.ds-draft-foot{padding:14px 20px;border-top:1px solid var(--line,#d1d5db);background:var(--surface,#f5f6f8);font-size:14px;color:var(--ink-3,#5f6571)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Mapa de Trilhos do Branch",
+    "overview": "**Creative North Star: \"O Mapa de Trilhos do Branch\"**\n\nA conversa com o Issue Author é desenhada como um grafo de commits lido como mapa de metrô. Um trilho principal em tinta desce pela calha esquerda; cada consulta de tool se ramifica a 45° numa lane da cor da sua fonte, marca uma parada por chamada e volta ao trilho; o draft é o nó de merge; publicar estende o trilho em verde até o nó `origin #N`. O chão é cinza-papel frio, com uma grade de 24px que o próprio usuário liga e desliga, porque a grade é o sistema de coordenadas em que as lanes encaixam.\n\nA densidade é de ferramenta, não de marketing: linhas de altura fixa, colunas fixas, texto solto ao lado de nós, sem balões. Só duas coisas ganham caixa na thread: o draft (o merge, a única coisa que vai ao GitHub) e o composer (o HEAD tracejado, o ponto onde o próximo commit nasce). A cor é informação: quatro lanes, cada uma com três degraus (traço, tinta de texto, wash), e o resto da interface é neutra.\n\nAinda em aberto, fora do sistema: letreiro de sinalização além da Geist, leader lines do painel de contexto até as lanes e coordenadas na grade. Até serem construídos, nenhuma superfície deve inventá-los.\n\nClaro e escuro são dois mundos completos derivados das mesmas custom properties; a escuridão não inverte a hierarquia, só troca o papel pelo quadro-negro.",
+    "keyCharacteristics": [
+      "Trilho principal em tinta, lanes octilineares (verticais e 45°) por fonte.",
+      "Grade de 24px visível como estado, alternável pelo botão \"Grade\" e persistida por visitante.",
+      "Nós no trilho e texto solto no lugar de balões e cards de chat.",
+      "Linhas de tool em altura e colunas fixas (tool · alvo · resultado · ms).",
+      "Mono só para evidência: código, caminhos, refs, branches, tools, tempos.",
+      "Verde é publicação: aparece no draft, na aprovação e no trilho depois do push."
+    ],
+    "rules": [
+      {
+        "name": "The Lane Is the Source Rule",
+        "body": "Cada hue de lane identifica uma fonte ou etapa do fluxo e só aparece onde essa fonte aparece. Traço usa o tom de lane, texto usa o `-ink`, preenchimento usa o `-wash`; nunca texto no tom de traço sobre wash.",
+        "section": "colors"
+      },
+      {
+        "name": "The Green Is Publication Rule",
+        "body": "O verde merge é reservado para draft, aprovação e publicação. Nenhum outro botão, badge ou estado de sucesso genérico usa verde.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Voice of Neutrals Rule",
+        "body": "Fora das lanes, a interface é tinta sobre papel. Hierarquia vem de ink / ink-2 / ink-3 e de peso, não de cor nova.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono Is Evidence Rule",
+        "body": "Geist Mono só para o que é literal no repositório ou medido: código, caminhos, nomes de tool, refs `#N`, branches, horários e milissegundos. Prosa, rótulos e botões ficam em Geist.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Rótulos de seção (\"Intenções\", \"Como ler o trilho\", \"Comece por um exemplo\") são texto pequeno em ink-3 e caixa de frase. Nada de caixa-alta espaçada.",
+        "section": "typography"
+      },
+      {
+        "name": "The Cell Rule",
+        "body": "Todo desenho de lane encaixa na célula de 24px e usa só verticais, horizontais e 45°. Curva só no laço de clarificação do mapa do login.",
+        "section": "layout"
+      },
+      {
+        "name": "The Fixed Column Rule",
+        "body": "Chamadas de tool são tabela, não prosa: altura fixa por linha e colunas que não mudam de largura entre chamadas.",
+        "section": "layout"
+      },
+      {
+        "name": "The Single Shadow Rule",
+        "body": "Existe uma sombra. Ela vai no ponto de ação corrente, não em cada container.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do encaixar lanes na célula de 24px (trilho em 12px, lanes em 36px e 60px) e usar só verticais, horizontais e 45°.",
+      "Do usar o trio de cada lane com papéis fixos: traço no tom de lane, texto no `-ink`, fundo no `-wash`.",
+      "Do mostrar chamadas de tool como linhas de 36px com colunas fixas tool · alvo · resultado · ms.",
+      "Do manter a grade de 24px como estado do visitante, alternável e persistido.",
+      "Do reservar a sombra raised para o ponto de ação corrente (composer, publicar, entrar, item ativo).",
+      "Do desligar lane-draw, row-strike, trunk-grow e o pulso sob `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "Don't colocar mensagens em balões ou cards: na thread, só o draft e o composer têm caixa.",
+      "Don't usar verde merge fora de draft, aprovação e publicação.",
+      "Don't usar Geist Mono para prosa, rótulos ou botões.",
+      "Don't usar hues de lane como decoração ou em elementos que não pertencem àquela fonte.",
+      "Don't usar rótulos em caixa-alta espaçada acima de títulos.",
+      "Don't adicionar uma segunda sombra ou sombras duras deslocadas."
+    ]
+  }
+}
