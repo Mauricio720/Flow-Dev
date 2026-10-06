@@ -4,14 +4,18 @@ import { GitHubSignIn } from "./components/GitHubSignIn";
 
 const errors: Record<string, string> = {
   acesso_negado: "O GitHub não concedeu acesso. Tente de novo e aprove as permissões na tela do GitHub.",
+  access_denied: "O GitHub não concedeu acesso. Tente de novo e aprove as permissões na tela do GitHub.",
+  invalid_code: "Não foi possível confirmar a autorização do GitHub. Tente novamente.",
+  state_mismatch: "Não foi possível confirmar a autorização do GitHub. Tente novamente.",
+  unable_to_get_user_info: "Não foi possível confirmar sua identidade do GitHub. Tente novamente.",
   sessao_expirada: "Sua sessão expirou. Entre de novo para continuar de onde parou.",
   falha_autorizacao: "Não foi possível confirmar a autorização do GitHub. Tente novamente.",
   falha_temporaria: "O serviço está temporariamente indisponível. Tente novamente em instantes.",
 };
 
-type Props = { error?: string };
+type Props = { error?: string; destination?: string };
 
-export function LoginScreen({ error }: Props) {
+export function LoginScreen({ error, destination = "/projects" }: Props) {
   const message = error ? (errors[error] ?? "Não foi possível entrar com o GitHub. Tente de novo.") : null;
 
   return (
@@ -52,7 +56,7 @@ export function LoginScreen({ error }: Props) {
             )}
 
             <div className="mt-8">
-              <GitHubSignIn />
+              <GitHubSignIn destination={destination} />
             </div>
 
             <h2 className="mt-10 text-sm font-medium">O que o Flow Dev pede ao GitHub</h2>
