@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Deliver protected project operations and connection states
 type: backend
 complexity: high
@@ -28,14 +28,14 @@ Build the protected project API from the durable data and GitHub authorization f
 </requirements>
 
 ## Subtasks
-- [ ] 3.1 Replace prototype project service behavior with validated creation, detail-edit, conflict, and selection services.
-- [ ] 3.2 Implement personal repository read/write access checks and repository-context output.
-- [ ] 3.3 Implement visible-project connection-state batching and safe identity-label refresh behavior.
-- [ ] 3.4 Expand project DTO mapping and controller error translation without exposing credentials or raw provider failures.
-- [ ] 3.5 Define reusable Zod schemas for every project procedure and reject forbidden client-owned identity or repository fields.
-- [ ] 3.6 Register protected and administrator tRPC procedures that make one controller call each.
-- [ ] 3.7 Compose production DAOs, services, and gateway implementations rather than in-memory production dependencies.
-- [ ] 3.8 Cover service, controller, router, and integration contracts with controlled PostgreSQL and GitHub fixtures.
+- [x] 3.1 Replace prototype project service behavior with validated creation, detail-edit, conflict, and selection services.
+- [x] 3.2 Implement personal repository read/write access checks and repository-context output.
+- [x] 3.3 Implement visible-project connection-state batching and safe identity-label refresh behavior.
+- [x] 3.4 Expand project DTO mapping and controller error translation without exposing credentials or raw provider failures.
+- [x] 3.5 Define reusable Zod schemas for every project procedure and reject forbidden client-owned identity or repository fields.
+- [x] 3.6 Register protected and administrator tRPC procedures that make one controller call each.
+- [x] 3.7 Compose production DAOs, services, and gateway implementations rather than in-memory production dependencies.
+- [x] 3.8 Cover service, controller, router, and integration contracts with controlled PostgreSQL and GitHub fixtures.
 
 ## Implementation Details
 
@@ -73,14 +73,14 @@ Use `layered-backend` and `trpc-nextjs`: application contracts live under `appli
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-013, UT-014, UT-015 — project creation normalization, version conflict, and duplicate repository behavior.
-- [ ] UT-016, UT-017 — safe DTO mapping and provider-error translation.
-- [ ] UT-028, UT-029, UT-030, UT-031 — dual authorization, identity mismatch, and archived repository access.
-- [ ] UT-032, UT-033, UT-034 — visible-project connection-state batching and conservative unavailable state.
-- [ ] UT-047, UT-048 — authenticated router delegation and forbidden input rejection.
-- [ ] IT-046, IT-047, IT-048, IT-049 — list, validation, detail, and selection contracts.
-- [ ] IT-050, IT-051, IT-052, IT-053 — repository candidates/preview and durable create/edit contracts.
-- [ ] IT-054, IT-055, IT-071 — connection state, repository context, and field-validation contracts.
+- [x] UT-013, UT-014, UT-015 — project creation normalization, version conflict, and duplicate repository behavior.
+- [x] UT-016, UT-017 — safe DTO mapping and provider-error translation.
+- [x] UT-028, UT-029, UT-030, UT-031 — dual authorization, identity mismatch, and archived repository access.
+- [x] UT-032, UT-033, UT-034 — visible-project connection-state batching and conservative unavailable state.
+- [x] UT-047, UT-048 — authenticated router delegation and forbidden input rejection.
+- [x] IT-046, IT-047, IT-048, IT-049 — list, validation, detail, and selection contracts.
+- [x] IT-050, IT-051, IT-052, IT-053 — repository candidates/preview and durable create/edit contracts.
+- [x] IT-054, IT-055, IT-071 — connection state, repository context, and field-validation contracts.
 
 ### Deferred Gates
 

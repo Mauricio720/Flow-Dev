@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Persist the repository-backed project foundation
 type: backend
 complexity: high
@@ -28,13 +28,13 @@ Replace the prototype project catalog with the durable PostgreSQL representation
 </requirements>
 
 ## Subtasks
-- [ ] 1.1 Reconcile the delivered authentication persistence contract with the project schema and document any required compatibility changes.
-- [ ] 1.2 Define the repository-backed project records and DAO contracts used by subsequent project services.
-- [ ] 1.3 Add durable schema fields, constraints, indexes, and immutable-identity protection for project repositories.
-- [ ] 1.4 Provide the verified legacy mapping and transactional backfill path, including deployment failure for unresolved rows.
-- [ ] 1.5 Replace prototype catalog persistence with access-filtered PostgreSQL DAO queries and versioned writes.
-- [ ] 1.6 Remove or disable import paths that could create a repository-less project after migration.
-- [ ] 1.7 Cover DAO behavior and migration invariants with focused unit and integration fixtures.
+- [x] 1.1 Reconcile the delivered authentication persistence contract with the project schema and document any required compatibility changes.
+- [x] 1.2 Define the repository-backed project records and DAO contracts used by subsequent project services.
+- [x] 1.3 Add durable schema fields, constraints, indexes, and immutable-identity protection for project repositories.
+- [x] 1.4 Provide the verified legacy mapping and transactional backfill path, including deployment failure for unresolved rows.
+- [x] 1.5 Replace prototype catalog persistence with access-filtered PostgreSQL DAO queries and versioned writes.
+- [x] 1.6 Remove or disable import paths that could create a repository-less project after migration.
+- [x] 1.7 Cover DAO behavior and migration invariants with focused unit and integration fixtures.
 
 ## Implementation Details
 
@@ -71,8 +71,8 @@ Follow the TechSpec data-model, migration, and deployment-precondition sections.
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-049 — actor-filtered `ProjectDao.listVisible` returns a stable page and cursor.
-- [ ] UT-050 — repository uniqueness errors become a safe project conflict rather than a raw SQL error.
+- [x] UT-049 — actor-filtered `ProjectDao.listVisible` returns a stable page and cursor.
+- [x] UT-050 — repository uniqueness errors become a safe project conflict rather than a raw SQL error.
 
 ### Deferred Gates
 

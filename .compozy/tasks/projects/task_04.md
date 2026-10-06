@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build the catalog and project-context shell
 type: frontend
 complexity: high
@@ -28,13 +28,13 @@ Make the project catalog the signed-in entry point and place the existing issue 
 </requirements>
 
 ## Subtasks
-- [ ] 4.1 Replace the direct workspace landing flow with authorized project catalog routing and active-selection recovery.
-- [ ] 4.2 Build the accessible paginated/searchable project catalog and its distinct empty and recoverable-error states.
-- [ ] 4.3 Display saved repository identity and per-user connection state without blocking catalog rendering on GitHub.
-- [ ] 4.4 Build the selected-project shell, context header, catalog navigation, and project switching behavior.
-- [ ] 4.5 Relocate and key the issue demonstration under the selected project route, retaining an explicit simulation label.
-- [ ] 4.6 Handle revoked, malformed, unavailable, and temporarily disconnected project routes without leaking previous project content.
-- [ ] 4.7 Add focused component tests and preserve independent, accessible end-to-end fixtures for the deferred journeys.
+- [x] 4.1 Replace the direct workspace landing flow with authorized project catalog routing and active-selection recovery.
+- [x] 4.2 Build the accessible paginated/searchable project catalog and its distinct empty and recoverable-error states.
+- [x] 4.3 Display saved repository identity and per-user connection state without blocking catalog rendering on GitHub.
+- [x] 4.4 Build the selected-project shell, context header, catalog navigation, and project switching behavior.
+- [x] 4.5 Relocate and key the issue demonstration under the selected project route, retaining an explicit simulation label.
+- [x] 4.6 Handle revoked, malformed, unavailable, and temporarily disconnected project routes without leaking previous project content.
+- [x] 4.7 Add focused component tests and preserve independent, accessible end-to-end fixtures for the deferred journeys.
 
 ## Implementation Details
 
@@ -72,10 +72,10 @@ Read `apps/web/PRODUCT.md`, `apps/web/DESIGN.md`, the current Next.js documentat
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-001, UT-002, UT-003 — catalog cards preserve identity, deduplicate pages, and safely render long/special labels.
-- [ ] UT-004, UT-005 — idempotent selection and latest-selection-wins shell state.
-- [ ] UT-035, UT-036 — catalog checking and recoverable-list-error states.
-- [ ] UT-043, UT-044 — selected shell context changes and revoked-project recovery.
+- [x] UT-001, UT-002, UT-003 — catalog cards preserve identity, deduplicate pages, and safely render long/special labels.
+- [x] UT-004, UT-005 — idempotent selection and latest-selection-wins shell state.
+- [x] UT-035, UT-036 — catalog checking and recoverable-list-error states.
+- [x] UT-043, UT-044 — selected shell context changes and revoked-project recovery.
 
 ### Deferred Gates
 

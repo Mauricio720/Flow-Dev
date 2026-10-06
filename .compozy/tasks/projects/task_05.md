@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Build administrator repository selection and project management
 type: frontend
 complexity: medium
@@ -28,13 +28,13 @@ Provide the administrator-only flows that select an accessible GitHub repository
 </requirements>
 
 ## Subtasks
-- [ ] 5.1 Create the protected administrator project-creation route and its feature-owned form flow.
-- [ ] 5.2 Build accessible repository authorization guidance, paginated candidate search, direct preview, and linked-project state.
-- [ ] 5.3 Build reviewed project creation with client validation, draft retention, conflict recovery, and catalog return.
-- [ ] 5.4 Create the protected settings route with read-only repository identity and versioned descriptive edit controls.
-- [ ] 5.5 Implement edit conflict review, invalid-field feedback, and member read-only presentation.
-- [ ] 5.6 Connect the flows to inferred tRPC contracts without moving server runtime or credentials into client code.
-- [ ] 5.7 Add focused component tests and prepare independent Playwright fixtures for deferred admin journeys.
+- [x] 5.1 Create the protected administrator project-creation route and its feature-owned form flow.
+- [x] 5.2 Build accessible repository authorization guidance, paginated candidate search, direct preview, and linked-project state.
+- [x] 5.3 Build reviewed project creation with client validation, draft retention, conflict recovery, and catalog return.
+- [x] 5.4 Create the protected settings route with read-only repository identity and versioned descriptive edit controls.
+- [x] 5.5 Implement edit conflict review, invalid-field feedback, and member read-only presentation.
+- [x] 5.6 Connect the flows to inferred tRPC contracts without moving server runtime or credentials into client code.
+- [x] 5.7 Add focused component tests and prepare independent Playwright fixtures for deferred admin journeys.
 
 ## Implementation Details
 
@@ -72,12 +72,12 @@ Follow the App Router and tRPC placement rules already established by task 04. K
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-006, UT-007 — safe direct repository input and paginated-picker empty-state distinction.
-- [ ] UT-008, UT-009 — creation form name and optional-description validation.
-- [ ] UT-010, UT-011, UT-012 — detail normalization, description clearing, and compact-card identity presentation.
-- [ ] UT-037, UT-038 — linked-candidate disablement and retryable picker failure with preserved draft.
-- [ ] UT-039, UT-040 — one create submission and repository-conflict recovery.
-- [ ] UT-041, UT-042 — immutable repository edit form and stale-version review.
+- [x] UT-006, UT-007 — safe direct repository input and paginated-picker empty-state distinction.
+- [x] UT-008, UT-009 — creation form name and optional-description validation.
+- [x] UT-010, UT-011, UT-012 — detail normalization, description clearing, and compact-card identity presentation.
+- [x] UT-037, UT-038 — linked-candidate disablement and retryable picker failure with preserved draft.
+- [x] UT-039, UT-040 — one create submission and repository-conflict recovery.
+- [x] UT-041, UT-042 — immutable repository edit form and stale-version review.
 
 ### Deferred Gates
 

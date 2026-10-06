@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Secure GitHub repository authorization and transport
 type: backend
 complexity: high
@@ -28,13 +28,13 @@ Deliver the separate repository OAuth authorization and server-only GitHub integ
 </requirements>
 
 ## Subtasks
-- [ ] 2.1 Define repository identity, credential, OAuth-state, gateway, and named-error contracts in the application layer.
-- [ ] 2.2 Add encrypted credential and expiring OAuth-state persistence using the foundation migration contract.
-- [ ] 2.3 Implement secure second-app authorization initiation, callback completion, identity comparison, and safe redirects.
-- [ ] 2.4 Implement atomic refresh and revocation handling for repository credentials.
-- [ ] 2.5 Implement GitHub REST and GraphQL repository discovery and stable identity resolution.
-- [ ] 2.6 Add the server-only HTTP callback routes and configuration validation for repository OAuth.
-- [ ] 2.7 Test crypto, state single-use, account mismatch, pagination, rate limits, and callback failure behavior.
+- [x] 2.1 Define repository identity, credential, OAuth-state, gateway, and named-error contracts in the application layer.
+- [x] 2.2 Add encrypted credential and expiring OAuth-state persistence using the foundation migration contract.
+- [x] 2.3 Implement secure second-app authorization initiation, callback completion, identity comparison, and safe redirects.
+- [x] 2.4 Implement atomic refresh and revocation handling for repository credentials.
+- [x] 2.5 Implement GitHub REST and GraphQL repository discovery and stable identity resolution.
+- [x] 2.6 Add the server-only HTTP callback routes and configuration validation for repository OAuth.
+- [x] 2.7 Test crypto, state single-use, account mismatch, pagination, rate limits, and callback failure behavior.
 
 ## Implementation Details
 
@@ -71,11 +71,11 @@ Follow the TechSpec integrations section and ADR-004. The tRPC router does not o
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-018, UT-019, UT-020 — GitHub pagination, identity mismatch, and rate-limit classification.
-- [ ] UT-021, UT-022, UT-023, UT-024, UT-025 — OAuth identity binding, single-use state, refresh, and revocation behavior.
-- [ ] UT-026, UT-027 — AES-GCM credential confidentiality and fail-closed decryption.
-- [ ] UT-045, UT-046 — PKCE/state initiation and invalid-callback behavior.
-- [ ] IT-056, IT-057, IT-058, IT-070 — connect and callback redirects, encrypted persistence, safe destinations, and origin protection.
+- [x] UT-018, UT-019, UT-020 — GitHub pagination, identity mismatch, and rate-limit classification.
+- [x] UT-021, UT-022, UT-023, UT-024, UT-025 — OAuth identity binding, single-use state, refresh, and revocation behavior.
+- [x] UT-026, UT-027 — AES-GCM credential confidentiality and fail-closed decryption.
+- [x] UT-045, UT-046 — PKCE/state initiation and invalid-callback behavior.
+- [x] IT-056, IT-057, IT-058, IT-070 — connect and callback redirects, encrypted persistence, safe destinations, and origin protection.
 
 ### Deferred Gates
 
