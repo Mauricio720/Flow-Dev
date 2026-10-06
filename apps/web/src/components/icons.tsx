@@ -143,3 +143,56 @@ export const ChevronUpIcon = (p: IconProps) => (
     <path d="m6 14.5 6-6 6 6" />
   </Stroke>
 );
+
+export const MicIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+  </Stroke>
+);
+
+export const StopIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="2" />
+  </Stroke>
+);
+
+export const SearchIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4.5 4.5" />
+  </Stroke>
+);
+
+export const HomeIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1Z" />
+  </Stroke>
+);
+
+export const SettingsIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+    <circle cx="15" cy="7" r="2" />
+    <circle cx="9" cy="17" r="2" />
+  </Stroke>
+);
+
+export const ChevronRightIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <path d="m9.5 6 6 6-6 6" />
+  </Stroke>
+);
+
+export const SelectorIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <path d="m8 9 4-4 4 4M8 15l4 4 4-4" />
+  </Stroke>
+);
+
+export const LockIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <rect x="5" y="10.5" width="14" height="9.5" rx="2" />
+    <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+  </Stroke>
+);

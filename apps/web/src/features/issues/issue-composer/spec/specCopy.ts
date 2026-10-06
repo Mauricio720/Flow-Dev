@@ -1,0 +1,24 @@
+export const SPEC_TITLE = "Especificação";
+export const SPEC_REGION_LABEL = "Especificação do trabalho";
+export const QUEUED_COPY = "Na fila para execução. Nenhuma atividade foi registrada ainda.";
+export const LOSS_OF_CONTACT = "Sem contato com o servidor. Mostrando o último estado confirmado.";
+export const UNKNOWN_SPEC_NOTICE = "Este estado da especificação não é reconhecido por esta versão da tela. Atualize para continuar; nenhuma ação está disponível.";
+export const READER_SPEC_NOTE = "Somente leitura. Apenas a pessoa autora pode iniciar, responder, ajustar ou aprovar esta especificação.";
+export const FUTURE_STAGE_NOTE = "Esta etapa ainda não pode ser aberta. Nada foi iniciado.";
+export const INTEGRATION_ERROR = "Erro de integração: o pedido de permissão não informou o alvo da ação. Nenhuma permissão pode ser concedida.";
+export const SUBMIT_LABEL = "Enviar";
+export const ALLOW_ONCE_LABEL = "Permitir uma vez";
+export const DENY_ONCE_LABEL = "Negar uma vez";
+export const PLANNED_NOT_EXECUTED = "Planejado, não executado";
+export const INCOMPLETE_PACKAGE = "Pacote incompleto: faltam documentos obrigatórios. A aprovação está indisponível.";
+export const HISTORICAL_NOTICE = "Você está vendo uma versão anterior. A versão atual é outra e só ela pode ser aprovada.";
+export const UNSENT_ADJUSTMENT_NOTICE = "Há um pedido de ajuste ainda não enviado. Envie ou limpe o texto antes de aprovar.";
+export const UNCERTAIN_COMMAND = "Não foi possível confirmar o envio. Verifique ou reenvie exatamente a mesma ação.";
+export const CONFLICT_COMMAND = "O estado mudou enquanto você agia. Revise a versão atual antes de tentar de novo.";
+export const AWAITING_APPLICATION = "Aprovação enviada. Aguardando a verificação dos arquivos.";
+export const ADJUST_PLACEHOLDER = "Descreva o que deve mudar neste documento";
+export const ADJUST_MAX_BYTES = 16_384;
+
+export const STAGE_APPROVE_LABEL = { prd: "Aprovar PRD", tech_spec: "Aprovar TechSpec", tasks: "Aprovar Tasks" } as const;
+export const STAGE_START_LABEL = { prd: "Iniciar PRD", tech_spec: "Iniciar TechSpec", tasks: "Iniciar Tasks" } as const;
+export const EVENT_KIND_LABEL: Record<string, string> = { agent_message: "Mensagem do agente", tool_call: "Ferramenta", tool_result: "Resultado de ferramenta", interaction: "Interação", lifecycle: "Ciclo de vida", warning: "Aviso", unsupported: "Evento não suportado" };

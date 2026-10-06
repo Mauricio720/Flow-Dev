@@ -1,85 +1,52 @@
 "use client";
 
+import { useId } from "react";
 import { PlusIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import type { Session } from "../model";
+import { Input } from "@/components/ui/input";
+import { MAX_SEARCH_CODE_POINTS, type TaskSummary } from "../contract";
+import type { TaskHistory } from "../hooks/useTaskHistory";
+import { HistoryEntry } from "./HistoryEntry";
+import { HistoryStates } from "./HistoryStates";
 
-type Props = {
-  sessions: Session[];
-  activeId: string;
-  onSelect: (id: string) => void;
-  onCreate: () => void;
-};
+const SEARCH_LABEL = "Buscar tarefas por título ou autor";
 
-function Status({ session }: { session: Session }) {
-  const published = session.items.findLast((item) => item.kind === "draft" && item.status === "published");
-  switch (session.phase) {
-    case "awaiting":
-      return <span className="text-clarify-ink">aguardando você</span>;
-    case "draft":
-      return <span className="text-merge-ink">draft pronto</span>;
-    case "thinking":
-      return <span className="text-project-ink">consultando…</span>;
-    case "published":
-      return <span className="text-ink-3">#{published?.kind === "draft" ? published.issueNumber : ""} publicada</span>;
-    case "new":
-      return <span className="text-ink-3">rascunho vazio</span>;
-  }
+type Props = { history: TaskHistory; items: TaskSummary[]; activeId: string | null; onSelect: (taskId: string | null) => void };
+
+function HistorySearch({ history }: { history: TaskHistory }) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} className="sr-only">{SEARCH_LABEL}</label>
+      <Input id={id} type="search" value={history.term} placeholder={SEARCH_LABEL} aria-invalid={history.searchTooLong} aria-describedby={history.searchTooLong ? `${id}-limit` : undefined} onChange={(event) => history.setTerm(event.target.value)} className="h-9 text-sm" />
+      {history.searchTooLong && <p id={`${id}-limit`} role="alert" className="mt-1.5 text-xs text-destructive">A busca aceita até {MAX_SEARCH_CODE_POINTS} caracteres. Encurte o texto para buscar.</p>}
+    </div>
+  );
 }
 
-function RailNode({ phase }: { phase: Session["phase"] }) {
-  const base = "absolute top-[15px] left-[19px] -translate-x-1/2";
-  switch (phase) {
-    case "awaiting":
-      return <span className={`${base} size-2.5 rounded-full border-2 border-clarify bg-surface`} />;
-    case "draft":
-      return <span className={`${base} size-2.5 rounded-[2px] border-2 border-merge bg-surface`} />;
-    case "thinking":
-      return <span className={`${base} node-running size-2.5 rounded-full bg-project`} />;
-    case "published":
-      return <span className={`${base} size-2.5 rounded-full bg-merge`} />;
-    case "new":
-      return <span className={`${base} size-2.5 rounded-full border-[1.5px] border-dashed border-ink-3 bg-surface`} />;
-  }
-}
-
-export function SessionRail({ sessions, activeId, onSelect, onCreate }: Props) {
+export function SessionRail({ history, items, activeId, onSelect }: Props) {
   return (
     <nav aria-label="Intenções" className="flex h-full flex-col">
-      <div className="p-3">
-        <Button type="button" variant="secondary" onClick={onCreate} className="w-full justify-start px-3">
+      <div className="space-y-2 p-3">
+        <Button type="button" variant="secondary" onClick={() => onSelect(null)} aria-current={activeId === null ? "page" : undefined} className="w-full justify-start px-3">
           <PlusIcon />
           Nova intenção
         </Button>
+        <HistorySearch history={history} />
       </div>
-      <h2 className="px-4 pt-2 pb-2 text-xs font-medium text-ink-3">Intenções</h2>
-      <ul className="relative flex-1 overflow-y-auto px-2 pb-4">
-        <span aria-hidden="true" className="absolute top-2 bottom-6 left-[26px] w-px bg-line" />
-        {sessions.map((session) => {
-          const active = session.id === activeId;
-          return (
-            <li key={session.id} className="relative">
-              <button
-                type="button"
-                onClick={() => onSelect(session.id)}
-                aria-current={active ? "page" : undefined}
-                className={`relative w-full rounded-lg py-2 pr-3 pl-9 text-left transition-colors ${
-                  active ? "bg-raised shadow-raised" : "hover:bg-ink/[0.04]"
-                }`}
-              >
-                <RailNode phase={session.phase} />
-                <span className={`block truncate text-sm ${active ? "font-medium text-ink" : "text-ink-2"}`}>{session.title}</span>
-                <span className="mt-0.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate font-mono text-ink-3">{session.branch}</span>
-                </span>
-                <span className="mt-0.5 block text-xs">
-                  <Status session={session} />
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="flex items-center justify-between px-4 pt-2 pb-2">
+        <h2 className="text-xs font-medium text-ink-3">Tarefas do projeto</h2>
+        <button type="button" onClick={() => void history.refresh()} className="text-xs text-ink-3 underline hover:text-ink">Atualizar</button>
+      </div>
+      <div aria-busy={history.status === "loading"} className="relative flex-1 overflow-y-auto px-2 pb-4">
+        {items.length > 0 && (
+          <ul aria-label="Tarefas salvas" className="relative">
+            <span aria-hidden="true" className="absolute top-2 bottom-6 left-[19px] w-px bg-line" />
+            {items.map((task) => <HistoryEntry key={task.id} task={task} active={task.id === activeId} onSelect={onSelect} />)}
+          </ul>
+        )}
+        <HistoryStates history={history} />
+      </div>
     </nav>
   );
 }

@@ -1,73 +1,66 @@
-import { ArrowUpRightIcon, CheckIcon, GitHubMark, PencilIcon } from "@/components/icons";
+import { useId } from "react";
+import { CheckIcon, GitHubMark, PencilIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { REPO, type ThreadItem } from "../model";
+import type { SaveState } from "../hooks/useDraftActions";
+import { PUBLISH_BLOCK_COPY, canReview, isFrozen, type PublishBlock } from "../reviewGate";
+import { failureMessage } from "../taskCopy";
 
-type DraftStatus = Extract<ThreadItem, { kind: "draft" }>["status"];
+const APPROVAL_NOTE = "Nada é publicado até você aprovar.";
+const REVIEWED_NOTE = "Publicação revisada. Confira a prévia acima e crie a Issue.";
+const SAVE_FAILED_NOTE = "As alterações continuam aqui e ainda não foram salvas.";
 
 type Props = {
-  status: DraftStatus;
-  error: string | null;
+  block: PublishBlock | null;
+  saveState: SaveState;
   editing: boolean;
-  locked: boolean;
+  dirty: boolean;
+  reviewing: boolean;
   onToggleEditing: () => void;
+  onSave: () => void;
+  onDiscard: () => void;
+  onReview: () => void;
   onPublish: () => void;
 };
 
-function PublishedActions() {
+function SaveIndicator({ saveState }: { saveState: SaveState }) {
+  if (saveState.status === "saving") return <p role="status" className="text-sm text-ink-3">Salvando…</p>;
+  if (saveState.status === "saved") return <p role="status" className="text-sm text-ink-3">Alterações salvas.</p>;
+  if (saveState.status === "failed") return <p role="alert" className="text-sm text-destructive">{failureMessage(saveState.failure)} {SAVE_FAILED_NOTE}</p>;
+  return <p className="text-sm text-ink-3">{APPROVAL_NOTE}</p>;
+}
+
+function EditActions({ editing, dirty, saving, onToggleEditing, onSave, onDiscard }: Pick<Props, "editing" | "dirty" | "onToggleEditing" | "onSave" | "onDiscard"> & { saving: boolean }) {
   return (
     <>
-      <p className="flex items-center gap-2 text-sm text-merge-ink">
-        <CheckIcon />
-        Publicada em {REPO}
-      </p>
-      <Button variant="ghost" size="sm" asChild className="self-start text-ink hover:text-ink sm:self-auto">
-        <a href="https://github.com" target="_blank" rel="noreferrer">
-          Abrir no GitHub <ArrowUpRightIcon size={14} />
-        </a>
-      </Button>
+      <Button type="button" variant="secondary" disabled={saving} onClick={onToggleEditing}>{editing ? <CheckIcon /> : <PencilIcon />}{editing ? "Concluir edição" : "Editar"}</Button>
+      {dirty && <Button type="button" variant="ghost" disabled={saving} onClick={onDiscard}>Descartar alterações</Button>}
+      {dirty && <Button type="button" disabled={saving} onClick={onSave}>Salvar</Button>}
     </>
   );
 }
 
-export function DraftFooter({ status, error, editing, locked, onToggleEditing, onPublish }: Props) {
+function ReviewAction({ block, reviewing, onReview }: Pick<Props, "block" | "reviewing" | "onReview">) {
+  if (reviewing) return <Button type="button" variant="secondary" disabled aria-busy="true">Preparando prévia…</Button>;
+  const reviewed = block === null;
+  return <Button type="button" variant={reviewed ? "ghost" : "secondary"} disabled={!canReview(block)} onClick={onReview}>{reviewed ? "Revisar de novo" : "Revisar publicação"}</Button>;
+}
+
+export function DraftFooter({ block, saveState, editing, dirty, reviewing, onToggleEditing, onSave, onDiscard, onReview, onPublish }: Props) {
+  const gateId = useId();
+  const locked = isFrozen(block);
+  const publishing = block === "publishing";
   return (
-    <footer className="flex flex-col gap-3 border-t border-line bg-surface px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-      {status === "published" ? (
-        <PublishedActions />
-      ) : (
-        <>
-          <p className={`text-sm ${error ? "text-destructive" : "text-ink-3"}`} role={error ? "alert" : undefined}>
-            {error ?? (status === "publishing" ? "Enviando para o GitHub…" : "Nada é publicado até você aprovar.")}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={locked}
-              onClick={onToggleEditing}
-              className="flex-1 disabled:opacity-50 sm:flex-none"
-            >
-              {editing ? <CheckIcon /> : <PencilIcon />}
-              {editing ? "Concluir edição" : "Editar"}
-            </Button>
-            <Button
-              type="button"
-              variant="publish"
-              disabled={locked}
-              aria-busy={status === "publishing"}
-              onClick={onPublish}
-              className="flex-1 font-semibold disabled:cursor-progress disabled:opacity-100 sm:flex-none"
-            >
-              {status === "publishing" ? (
-                <span className="node-running size-2 rounded-full bg-on-merge" aria-hidden="true" />
-              ) : (
-                <GitHubMark size={15} />
-              )}
-              {status === "publishing" ? "Publicando…" : "Criar Issue"}
-            </Button>
-          </div>
-        </>
-      )}
+    <footer className="space-y-3 border-t border-line bg-surface px-5 py-3.5">
+      <SaveIndicator saveState={saveState} />
+      {block ? <p id={gateId} className="text-sm text-ink-2">{PUBLISH_BLOCK_COPY[block]}</p> : <p role="status" className="flex items-center gap-2 text-sm font-medium text-merge-ink"><CheckIcon />{REVIEWED_NOTE}</p>}
+      <div className="flex flex-wrap gap-2">
+        {!locked && <EditActions editing={editing} dirty={dirty} saving={saveState.status === "saving"} onToggleEditing={onToggleEditing} onSave={onSave} onDiscard={onDiscard} />}
+        {!locked && <ReviewAction block={block} reviewing={reviewing} onReview={onReview} />}
+        <Button type="button" variant="publish" disabled={block !== null} aria-busy={publishing} aria-describedby={block ? gateId : undefined} onClick={onPublish} className="font-semibold disabled:opacity-60">
+          {publishing ? <span className="node-running size-2 rounded-full bg-on-merge" aria-hidden="true" /> : <GitHubMark size={15} />}
+          {publishing ? "Publicando…" : "Criar Issue"}
+        </Button>
+      </div>
     </footer>
   );
 }

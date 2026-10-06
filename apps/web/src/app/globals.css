@@ -34,6 +34,15 @@
   --lane-merge-wash: #dcefe6;
   --on-merge: #ffffff;
 
+  --label-frontend-ink: #5b2fc4;
+  --label-frontend-wash: #ece5fc;
+  --label-backend-ink: #0a6170;
+  --label-backend-wash: #d9eff2;
+  --label-infra-ink: #a61e55;
+  --label-infra-wash: #fbe1eb;
+  --label-docs-ink: #55610a;
+  --label-docs-wash: #eef1d0;
+
   --ink-wash: color-mix(in oklab, #14161b 5%, transparent);
 
   --shadow-raised: 0 1px 2px rgb(20 22 27 / 0.06), 0 8px 24px -12px rgb(20 22 27 / 0.18);
@@ -66,6 +75,15 @@
     --lane-merge-wash: #11322a;
     --on-merge: #101216;
 
+    --label-frontend-ink: #b9a2ff;
+    --label-frontend-wash: #281d4a;
+    --label-backend-ink: #6fd3e0;
+    --label-backend-wash: #0f2f35;
+    --label-infra-ink: #ff9bbf;
+    --label-infra-wash: #3d1526;
+    --label-docs-ink: #cbd76a;
+    --label-docs-wash: #2a2e0e;
+
     --ink-wash: color-mix(in oklab, #e9eaee 8%, transparent);
 
     --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6);
@@ -95,6 +113,14 @@
   --color-clarify-wash: var(--lane-clarify-wash);
   --color-merge-wash: var(--lane-merge-wash);
   --color-on-merge: var(--on-merge);
+  --color-label-frontend-ink: var(--label-frontend-ink);
+  --color-label-frontend-wash: var(--label-frontend-wash);
+  --color-label-backend-ink: var(--label-backend-ink);
+  --color-label-backend-wash: var(--label-backend-wash);
+  --color-label-infra-ink: var(--label-infra-ink);
+  --color-label-infra-wash: var(--label-infra-wash);
+  --color-label-docs-ink: var(--label-docs-ink);
+  --color-label-docs-wash: var(--label-docs-wash);
 
   --shadow-raised: var(--shadow-raised);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

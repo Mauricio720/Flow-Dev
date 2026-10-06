@@ -1,140 +1,90 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { useWorkspace } from "../hooks/useWorkspace";
-import { Composer } from "./Composer";
-import { EmptyIntent } from "./EmptyIntent";
+import { useRouter } from "next/navigation";
+import { useEffect, useEffectEvent, useState } from "react";
+import { REVOKED_ACCESS_PATH, projectIssuesPath, projectTaskPath, taskIdFromPath } from "@/lib/navigation/projectRoutes";
+import type { Project } from "@/lib/projects/contract";
+import type { TaskFailure, TaskReceipt, WorkspaceLoad } from "../contract";
+import { draftSources } from "../draftSources";
+import { withCurrentTask } from "../historyState";
+import { useGridPreference } from "../hooks/useGridPreference";
+import { useStatusAnnouncement } from "../hooks/useStatusAnnouncement";
+import { useTaskHistory } from "../hooks/useTaskHistory";
+import { useTaskNavigation } from "../hooks/useTaskNavigation";
+import { useTaskWorkspace } from "../hooks/useTaskWorkspace";
+import { ACCESS_LOCK_COPY, accessProblem } from "../taskFailure";
+import { RailDrawer } from "./RailDrawer";
 import { SessionRail } from "./SessionRail";
+import { SourcesDrawer } from "./SourcesDrawer";
 import { SourcesPanel } from "./SourcesPanel";
-import { Thread } from "./Thread";
+import { SpecInitialProvider } from "../spec/specInitialContext";
+import { EMPTY_SELECTION } from "../spec/specSelectionParams";
+import { TaskStage } from "./TaskStage";
 import { TopBar } from "./TopBar";
+import { AccessNotice } from "./WorkspaceNotices";
 
-const GRID_KEY = "flow-dev:grid";
-const gridListeners = new Set<() => void>();
+const NEW_INTENT_TITLE = "Nova intenção";
 
-// The grid preference is a per-viewer convenience; storage may be unavailable, so it falls back to "on".
-const gridStore = {
-  subscribe(listener: () => void) {
-    gridListeners.add(listener);
-    return () => gridListeners.delete(listener);
-  },
-  read() {
-    try {
-      return window.localStorage.getItem(GRID_KEY) !== "off";
-    } catch {
-      return true;
-    }
-  },
-  write(on: boolean) {
-    try {
-      window.localStorage.setItem(GRID_KEY, on ? "on" : "off");
-    } catch {}
-    gridListeners.forEach((listener) => listener());
-  },
-};
+type Props = { project: Project; initial: WorkspaceLoad };
 
-export function Workspace({ projectId, projectName }: { projectId?: string; projectName?: string }) {
-  const { sessions, active, send, updateDraft, publish, create, select } = useWorkspace();
-  const grid = useSyncExternalStore(gridStore.subscribe, gridStore.read, () => true);
+function useWorkspaceData({ project, initial }: Props) {
+  const navigation = useTaskNavigation(project.id, initial.taskId);
+  const history = useTaskHistory(project.id, initial.history);
+  const [reported, setReported] = useState<TaskFailure | null>(null);
+  const workspace = useTaskWorkspace({ projectId: project.id, taskId: navigation.taskId, initial, paused: reported !== null });
+  const task = workspace.snapshot?.detail.task ?? null;
+  const observe = useEffectEvent(() => task && history.observe(task));
+  useEffect(() => {
+    observe();
+  }, [task]);
+  const problem = accessProblem(reported) ?? accessProblem(workspace.failure) ?? accessProblem(history.failure);
+  async function onAccepted(receipt: TaskReceipt) {
+    const activeTaskId = taskIdFromPath(project.id, window.location.pathname) ?? navigation.taskId;
+    if (receipt.taskId === activeTaskId) await workspace.refresh();
+    else if (activeTaskId === null) navigation.select(receipt.taskId);
+    void history.refresh();
+  }
+  const onFailure = (failure: TaskFailure) => accessProblem(failure) && setReported(failure);
+  const controls = { onAccepted, onFailure, onNewIntent: () => navigation.select(null), refresh: workspace.refresh, loadMoreMessages: workspace.loadMoreMessages };
+  return { navigation, history, workspace, problem, controls };
+}
+
+function useRevokedRedirect(revoked: boolean) {
+  const router = useRouter();
+  useEffect(() => {
+    if (revoked) router.replace(REVOKED_ACCESS_PATH);
+  }, [revoked, router]);
+}
+
+export function Workspace({ project, initial }: Props) {
+  const { navigation, history, workspace, problem, controls } = useWorkspaceData({ project, initial });
+  const { grid, toggleGrid } = useGridPreference();
   const [railOpen, setRailOpen] = useState(false);
-  const [texts, setTexts] = useState<Record<string, string>>({});
-  const scroller = useRef<HTMLDivElement>(null);
-
-  const toggleGrid = () => gridStore.write(!grid);
-
-  // Opening a session lands on its draft interchange; growth inside the open session follows the newest row.
-  const growth = active.items.map((i) => (i.kind === "tools" ? i.calls.length : i.kind === "draft" ? i.status : i.kind)).join();
-  const seenGrowth = useRef<Record<string, string>>({});
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    const anchor = [...el.querySelectorAll<HTMLElement>("[data-anchor=draft]")].at(-1);
-    const top = anchor ? anchor.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 24 : el.scrollHeight;
-    el.scrollTo({ top });
-  }, [active.id]);
-  useEffect(() => {
-    const el = scroller.current;
-    const previous = seenGrowth.current[active.id];
-    seenGrowth.current[active.id] = growth;
-    if (el && previous !== undefined && previous !== growth) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [active.id, growth]);
-
-  const last = active.items.at(-1);
-  const merged = active.items.some((item) => item.kind === "draft" && item.status === "published");
-  const suggestions = active.phase === "awaiting" && last?.kind === "clarify" ? last.suggestions : [];
-
-  function pick(id: string) {
-    select(id);
+  const detail = workspace.snapshot?.detail ?? null;
+  const announcement = useStatusAnnouncement(workspace.scope, detail?.task.status ?? null, detail?.planning.status ?? null);
+  useRevokedRedirect(problem === "revoked");
+  function select(taskId: string | null) {
+    navigation.select(taskId);
     setRailOpen(false);
   }
-
+  const rail = <SessionRail history={history} items={withCurrentTask(history.items, detail?.task ?? null)} activeId={navigation.taskId} onSelect={select} />;
+  const revision = detail?.currentRevision ?? null;
+  const sources = <SourcesPanel activity={detail?.activity ?? []} sources={revision ? draftSources(revision) : []} hasDraft={revision !== null} planningBasis={detail?.publication && detail.planning.status ? detail.publication.issueNumber : null} />;
+  const returnPath = navigation.taskId ? projectTaskPath(project.id, navigation.taskId) : projectIssuesPath(project.id);
   return (
-    <div className="flex h-dvh flex-col">
-      <TopBar projectId={projectId} projectName={projectName} grid={grid} onToggleGrid={toggleGrid} onOpenRail={() => setRailOpen(true)} />
-
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_18rem]">
-        <div className="hidden min-h-0 border-r border-line bg-surface lg:block">
-          <SessionRail sessions={sessions} activeId={active.id} onSelect={pick} onCreate={create} />
-        </div>
-
+    <SpecInitialProvider value={{ load: initial.spec ?? { kind: "none" }, selection: initial.specSelection ?? EMPTY_SELECTION }}>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <TopBar title={detail?.task.title || NEW_INTENT_TITLE} grid={grid} onToggleGrid={toggleGrid} rail={<RailDrawer open={railOpen} onOpenChange={setRailOpen}>{rail}</RailDrawer>} sources={<SourcesDrawer>{sources}</SourcesDrawer>} />
+      <p role="status" aria-label="Estado da tarefa" className="sr-only">{announcement}</p>
+      <div className="grid min-h-0 flex-1 xl:grid-cols-[16rem_minmax(0,1fr)] 2xl:grid-cols-[16rem_minmax(0,1fr)_18rem]">
+        <div className="hidden min-h-0 border-r border-line bg-surface xl:block">{rail}</div>
         <main className="relative flex min-h-0 flex-col">
-          <div
-            ref={scroller}
-            className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${grid ? "cell-grid" : ""}`}
-            style={{ backgroundPosition: "50% 0" }}
-          >
-            <div className="mx-auto flex w-full max-w-[768px] flex-1 flex-col px-3 pt-10 sm:px-0">
-              {active.items.length === 0 ? (
-                <div className="flex flex-1 flex-col justify-end">
-                  <EmptyIntent onPick={(text) => setTexts((t) => ({ ...t, [active.id]: text }))} />
-                </div>
-              ) : (
-                <>
-                  <Thread session={active} onDraftChange={updateDraft} onPublish={publish} />
-                  <div className="relative flex-1" aria-hidden="true">
-                    <span className={`absolute top-0 bottom-0 left-[11px] w-[2px] ${merged ? "bg-merge" : "bg-ink"}`} />
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="sticky bottom-0 bg-[linear-gradient(to_bottom,transparent,var(--ground)_1.5rem)]">
-              <div className="mx-auto w-full max-w-[768px] px-3 sm:px-0">
-                <Composer
-                  phase={active.phase}
-                  suggestions={suggestions}
-                  hasItems={active.items.length > 0}
-                  merged={merged}
-                  draftText={texts[active.id] ?? ""}
-                  onDraftText={(text) => setTexts((t) => ({ ...t, [active.id]: text }))}
-                  onSend={send}
-                />
-              </div>
-            </div>
-          </div>
+          <AccessNotice problem={problem} returnPath={returnPath} />
+          {problem !== "revoked" && <TaskStage project={project} workspace={workspace} lock={problem ? ACCESS_LOCK_COPY[problem] : null} grid={grid} controls={controls} />}
         </main>
-
-        <div className="hidden min-h-0 border-l border-line bg-surface xl:block">
-          <SourcesPanel session={active} />
-        </div>
+        <div className="hidden min-h-0 border-l border-line bg-surface 2xl:block">{sources}</div>
       </div>
-
-      <Sheet open={railOpen} onOpenChange={setRailOpen}>
-        <SheetContent side="left" className="w-[min(20rem,86vw)] gap-0 p-0 lg:hidden" overlayClassName="lg:hidden">
-          <SheetTitle className="sr-only">Intenções</SheetTitle>
-          <div className="h-full pt-10">
-            <SessionRail
-              sessions={sessions}
-              activeId={active.id}
-              onSelect={pick}
-              onCreate={() => {
-                create();
-                setRailOpen(false);
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
+    </SpecInitialProvider>
   );
 }
