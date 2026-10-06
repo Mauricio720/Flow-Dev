@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Flow Spec package index",
+  "type": "object",
+  "required": ["schemaVersion", "stage", "documents", "upstream", "stories", "tests", "tasks", "decisions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "stage": { "enum": ["prd", "tech_spec", "tasks"] },
+    "documents": { "type": "array", "items": { "type": "object", "required": ["path", "role", "sha256", "sourceBytes"], "properties": { "path": { "type": "string" }, "role": { "type": "string" }, "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }, "sourceBytes": { "type": "integer", "minimum": 0 } } } },
+    "upstream": { "type": "array", "items": { "type": "object", "required": ["packageId", "manifestHash", "stage"] } },
+    "stories": { "type": "array" },
+    "tests": { "type": "array", "items": { "type": "object", "required": ["id", "tier", "source"], "properties": { "tier": { "enum": ["task-required", "feature-gate", "qa-release"] } } } },
+    "tasks": { "type": "array" },
+    "decisions": { "type": "array", "items": { "type": "object", "required": ["id", "severity", "status", "source"], "properties": { "severity": { "enum": ["blocking", "observation"] }, "status": { "enum": ["open", "resolved"] } } } }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "stage": "tech_spec",
+  "upstream": [
+    {
+      "packageId": "40000000-0000-4000-8000-000000000001",
+      "manifestHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "stage": "prd"
+    }
+  ],
+  "stories": [],
+  "tests": [
+    {
+      "id": "UT-001",
+      "tier": "task-required",
+      "source": {
+        "documentPath": "_tests.md",
+        "startByte": 22,
+        "endByte": 106,
+        "sourceHash": "a9d4ccb6983e1c5f89c31688aa988f976605ce06a7eb08049ab20e8b17a1d945"
+      },
+      "references": [
+        "US-001"
+      ],
+      "ownerTaskId": null
+    },
+    {
+      "id": "IT-001",
+      "tier": "feature-gate",
+      "source": {
+        "documentPath": "_tests.md",
+        "startByte": 106,
+        "endByte": 175,
+        "sourceHash": "8f46bec46f5ff8541c634f5264708405b95def3d891d0015fa73a3aecaef0f2b"
+      },
+      "references": [],
+      "gateOwner": "rota de exporta\u00e7\u00e3o"
+    }
+  ],
+  "tasks": [],
+  "decisions": [],
+  "documents": [
+    {
+      "path": "_techspec.md",
+      "role": "techspec",
+      "sha256": "cf54c2f6843277ae5f8fc73eb27632ff6848a0c8fd77d04d0770d94690e67f91",
+      "sourceBytes": 129
+    },
+    {
+      "path": "_tests.md",
+      "role": "tests",
+      "sha256": "49e7681faa6a000798effc702277684e58f155b3132242b3588cd6be88424905",
+      "sourceBytes": 175
+    }
+  ]
+}

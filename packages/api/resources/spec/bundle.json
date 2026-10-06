@@ -1,0 +1,35 @@
+{
+  "bundleVersion": "1.0.0",
+  "schemaVersion": 1,
+  "runtime": { "release": "v0.3.0-beta.29", "permissionMode": "approve-reads" },
+  "skills": {
+    "flow-spec-prd": {
+      "stage": "prd",
+      "requires": [],
+      "acceptsRetainedContext": ["issue", "planning"],
+      "outputs": ["_prd.md", "_user_stories.md", ".flow-spec-prd.json"],
+      "optionalOutputs": ["adrs/adr-NNN.md"],
+      "forbiddenOutputs": ["_spec.md"],
+      "stopsAtStage": true
+    },
+    "flow-spec-techspec": {
+      "stage": "tech_spec",
+      "requires": [],
+      "allowsWithoutPrd": true,
+      "acceptsRetainedContext": ["issue", "planning"],
+      "outputs": ["_techspec.md", "_tests.md", ".flow-spec-tech_spec.json"],
+      "optionalOutputs": ["adrs/adr-NNN.md"],
+      "forbiddenOutputs": ["_spec.md"],
+      "stopsAtStage": true
+    },
+    "flow-spec-tasks": {
+      "stage": "tasks",
+      "requires": ["tech_spec"],
+      "acceptsRetainedContext": ["issue", "planning"],
+      "outputs": ["_tasks.md", "task_NN.md", ".flow-spec-tasks.json"],
+      "optionalOutputs": [],
+      "forbiddenOutputs": ["_spec.md"],
+      "stopsAtStage": true
+    }
+  }
+}

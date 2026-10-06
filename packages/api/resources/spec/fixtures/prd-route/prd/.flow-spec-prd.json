@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "stage": "prd",
+  "upstream": [],
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Exportar",
+      "source": {
+        "documentPath": "_user_stories.md",
+        "startByte": 37,
+        "endByte": 210,
+        "sourceHash": "ef4d9e45dfc013a373df26ef1e721cd4a80d4ab2457f4941279ff16cf6f547b0"
+      },
+      "acceptance": [
+        {
+          "id": "US-001.AC-1",
+          "source": {
+            "documentPath": "_user_stories.md",
+            "startByte": 81,
+            "endByte": 143,
+            "sourceHash": "76133470e2ff32d57f6157264ba396515a92da1f61d36ec1d556735e818eb471"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "US-001.EC-1",
+          "source": {
+            "documentPath": "_user_stories.md",
+            "startByte": 157,
+            "endByte": 210,
+            "sourceHash": "1a2e03641584dc2367613f5690f38103f40c75c9c9478355905a256a1153415b"
+          }
+        }
+      ]
+    }
+  ],
+  "tests": [],
+  "tasks": [],
+  "decisions": [
+    {
+      "id": "D-001",
+      "severity": "observation",
+      "status": "open",
+      "source": {
+        "documentPath": "_prd.md",
+        "startByte": 79,
+        "endByte": 126,
+        "sourceHash": "86ab5c8a7ad12e7c6ca72ff58f4881681d53a0d77a5cb6d34a2198c152dc47a6"
+      }
+    }
+  ],
+  "documents": [
+    {
+      "path": "_prd.md",
+      "role": "prd",
+      "sha256": "e2162c0f6b8205edb13da1377be93f14b121b3c6790e94d3e4018cc82e2cb7a1",
+      "sourceBytes": 126
+    },
+    {
+      "path": "_user_stories.md",
+      "role": "user_stories",
+      "sha256": "9a1eff01cf6530b32a6dc19733edcfe7ca9e251b16bccc1e3eb07dfffb67082b",
+      "sourceBytes": 210
+    }
+  ]
+}

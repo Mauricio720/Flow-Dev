@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "stage": "tasks",
+  "upstream": [
+    {
+      "packageId": "40000000-0000-4000-8000-000000000002",
+      "manifestHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "stage": "tech_spec"
+    }
+  ],
+  "stories": [],
+  "tests": [
+    {
+      "id": "UT-001",
+      "tier": "task-required",
+      "source": {
+        "documentPath": "task_01.md",
+        "startByte": 143,
+        "endByte": 175,
+        "sourceHash": "e12c1f4e5fb0d2e089c27364df90a33feefe63798c692e15c2268ab46bcda533"
+      },
+      "references": [],
+      "ownerTaskId": "task_01"
+    },
+    {
+      "id": "IT-001",
+      "tier": "feature-gate",
+      "source": {
+        "documentPath": "_tasks.md",
+        "startByte": 219,
+        "endByte": 253,
+        "sourceHash": "1930c4392424c1a41cef7cd721e71ebf710bd1418bc95abbc4760cd3560c9906"
+      },
+      "references": [],
+      "gateOwner": "rota"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task_01",
+      "title": "Gerar CSV",
+      "path": "task_01.md",
+      "dependsOn": [],
+      "testIds": [
+        "UT-001"
+      ],
+      "scope": {
+        "documentPath": "task_01.md",
+        "startByte": 94,
+        "endByte": 133,
+        "sourceHash": "5266e3c88a45c4ca8c6d88c2d3ffcbad35755e6dd78ced7ec9535df3dde29098"
+      },
+      "acceptance": {
+        "documentPath": "task_01.md",
+        "startByte": 133,
+        "endByte": 175,
+        "sourceHash": "a386a7bf8c211f7c4e2aa92b1c827e082e43bec111f8095d38f052ca3c68de03"
+      }
+    }
+  ],
+  "decisions": [],
+  "documents": [
+    {
+      "path": "_tasks.md",
+      "role": "tasks",
+      "sha256": "4826a35db8b409c0be2b387c947f61ef2519a726ab989d59263f7daf11432d5f",
+      "sourceBytes": 253
+    },
+    {
+      "path": "task_01.md",
+      "role": "task",
+      "sha256": "4273323f23aff95ed5feef15ed83921d63233ca8bfa92bce752c4fa8d3d05c0c",
+      "sourceBytes": 175
+    }
+  ]
+}
