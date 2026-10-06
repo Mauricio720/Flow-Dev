@@ -22,6 +22,14 @@ colors:
   lane-merge: "#12805a"
   lane-merge-ink: "#0c6546"
   lane-merge-wash: "#dcefe6"
+  label-frontend-ink: "#5b2fc4"
+  label-frontend-wash: "#ece5fc"
+  label-backend-ink: "#0a6170"
+  label-backend-wash: "#d9eff2"
+  label-infra-ink: "#a61e55"
+  label-infra-wash: "#fbe1eb"
+  label-docs-ink: "#55610a"
+  label-docs-wash: "#eef1d0"
 typography:
   display:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
@@ -188,7 +196,14 @@ Neutros frios de papel e tinta, com quatro hues de lane usados como sinalizaçã
 - **Tinta 2** (ink-2): prosa do agente, alvos de tool, texto de apoio. **Tinta 3** (ink-3): metadados, horários, rótulos de campo, placeholders.
 - **Linha** (line): divisões de coluna, bordas de campos e botões secundários, separadores das linhas de tool. **Grade** (grid): apenas o padrão de 24px.
 
+### Labels de área
+Quatro pares `-ink` / `-wash` que só existem nos chips de label de uma tarefa. Os hues ficam fora das quatro lanes para não serem lidos como fonte ou etapa do fluxo.
+- **Violeta Frontend** (label-frontend), **Petróleo Backend** (label-backend), **Rosa Infra** (label-infra), **Oliva Docs** (label-docs). A label `generica` não tem hue: fica em tinta 2 sobre wash de tinta.
+- No GitHub, as mesmas áreas usam os tons cheios do catálogo (`TASK_LABEL_COLOR` em `packages/api/src/schemas/taskLabels.ts`), porque lá a pílula é pintada pelo próprio GitHub.
+
 ### Named Rules
+**The Label Hue Is the Area Rule.** Os hues de label identificam a área técnica de uma tarefa e só aparecem no chip da própria label, no draft, na prévia, no histórico e no seletor do editor. Texto usa o `-ink`, fundo usa o `-wash`; nenhum outro elemento usa esses tons.
+
 **The Lane Is the Source Rule.** Cada hue de lane identifica uma fonte ou etapa do fluxo e só aparece onde essa fonte aparece. Traço usa o tom de lane, texto usa o `-ink`, preenchimento usa o `-wash`; nunca texto no tom de traço sobre wash.
 
 **The Green Is Publication Rule.** O verde merge é reservado para draft, aprovação e publicação. Nenhum outro botão, badge ou estado de sucesso genérico usa verde.
@@ -256,12 +271,13 @@ Cantos suaves e progressivos por escala: 4px para código inline e nós quadrado
 
 ### Chips
 - **Respostas sugeridas:** pílula em wash âmbar, texto clarify-ink, borda âmbar a 40% que fica cheia no hover.
-- **Labels da issue:** pílula com borda line, mono 12px em ink-2.
+- **Labels da issue:** pílula mono 12px no wash da área com texto no `-ink` da área, sem borda. A `generica` fica em wash de tinta, borda line e ink-2. No editor, a label marcada usa o mesmo par e a desmarcada é um botão de contorno.
 - **Referências:** retângulo de 6px no wash da lane de origem, mono 12px na tinta da lane.
-- **Selo "dados de demonstração":** pílula com borda line, 12px ink-3.
 
 ### Cards / Containers
-- **Draft da issue:** o único bloco da thread. Fundo raised, borda de 2px em verde merge a 45% que fica sólida ao publicar, cantos de 12px, cabeçalho de 52px com o repositório em mono, campos divididos por linha, rodapé em surface com a frase "Nada é publicado até você aprovar." e as ações.
+- **Draft da issue:** o único bloco da thread. Fundo raised, borda de 2px em verde merge a 45% que fica sólida ao publicar, cantos de 12px, cabeçalho de 52px com o repositório em mono, os sete campos canônicos divididos por linha, a proposta de refinamento e a prévia da publicação como seções do próprio bloco, e rodapé em surface com o estado do salvamento ("Nada é publicado até você aprovar."), a explicação do que bloqueia a publicação e as ações.
+- **Planejamento:** segundo artefato tipado da tarefa publicada, depois do bloco da Issue. Bloco raised com borda line de 1px e cantos de 12px, que vira 2px em verde merge quando aprovado. Cabeçalho de 52px com o título e a cápsula de estado em pílula (tracejada em Aguardando, cheia em tinta com ponto pulsante em Analisando, contorno em tinta em Em revisão, contorno de erro em Falhou, wash verde com check em Aprovado); corpo com a decisão em campos nomeados (analisado por Dev Control, complexidade, recomendação original, rota salva, motivos, pendências) e as ações; rodapé em surface com a linha do tempo real desenhada como trilho de paradas (horizontal a partir de sm, vertical abaixo): parada verde com check quando concluída, anel de tinta com ponto pulsante na etapa corrente, anel de erro com X na falha, círculo tracejado na pendente, e trecho verde sólido até a etapa alcançada ou tracejado até a que ainda não foi. "Alterar rota" abre um grupo de rádio de três opções com salvar e cancelar explícitos; "Aprovar planejamento" usa o verde de aprovação (The Green Is Publication Rule) e fica desabilitado enquanto a escolha não foi salva. Sem barras de progresso, durações inventadas ou botão de execução; usa os mesmos tokens, foco e movimento reduzido do restante da thread. Leitores veem a mesma decisão sem controles.
+- **Especificação:** terceiro artefato tipado da tarefa publicada com planejamento aprovado, no mesmo bloco raised de 12px do Planejamento. Cabeçalho de 52px com o título e a cápsula de estado; corpo com etapas obrigatórias da rota (a etapa dispensada é nomeada, não escondida), atividade real em lista rolável com prévia de 16 KiB e acesso ao conteúdo completo, pergunta ou permissão pendente em destaque com borda de 2px em clarify, revisão por documento (PRD, TechSpec, Tasks) renderizada a partir dos blocos capturados e ações explícitas. "Aprovar PRD/TechSpec/Tasks" usa o verde de aprovação (The Green Is Publication Rule) e fica desabilitado com ajuste não enviado, versão histórica, ação pendente ou pacote incompleto. Tabelas têm cabeçalhos acessíveis e rolagem horizontal rotulada; código e HTML aparecem como texto inerte; diagramas renderizam em frame isolado ou como lacuna bloqueante visível. Anúncios usam região polida só para mudanças de estado e ação pendente. Sem barras de progresso, porcentagens ou durações inventadas.
 - **Composer:** fundo raised, borda line que vira azul projeto no foco, cantos de 12px, sombra raised, textarea que cresce com o conteúdo até 12rem.
 
 ### Inputs / Fields
@@ -271,10 +287,11 @@ Cantos suaves e progressivos por escala: 4px para código inline e nós quadrado
 
 ### Navigation
 - **Barra superior:** 48px, fundo ground, linha inferior, marca Flow Dev, repositório em mono com ícone de branch, ações fantasmas à direita.
+- **Sidebar do projeto:** 240px em surface a partir de lg (gaveta modal abaixo disso): marca Flow Dev, cartão raised do projeto ativo (inicial em tinta, nome, repositório em mono, "Trocar projeto"), menus com ícone (item ativo em raised com anel de 1px em line, sem sombra), Configurações no pé e o estado do acesso ao repositório na base. O cabeçalho de 48px ao lado traz a trilha Projetos › projeto › seção, o link do repositório e Sair. Com a sidebar, o trilho de sessões do workspace aparece a partir de xl e a coluna de contexto a partir de 2xl.
 - **Trilho de sessões:** cada intenção é uma parada numa linha vertical de 1px; o nó reflete a fase (âmbar vazado aguardando, quadrado verde draft pronto, azul pulsante consultando, verde cheio publicada, tracejado vazio). Título, branch em mono e status na cor da fase. O item ativo sobe para raised com sombra.
 
 ### Tool Run (signature)
-Bloco de chamadas de tool: cabeçalho de 32px ("Contexto consultado · N chamadas" com os nomes das fontes na tinta de lane), linhas de altura fixa que entram com `row-strike`, e na calha as lanes que se desenham (`lane-draw`), com parada de raio 5 por chamada (tracejada quando o resultado é vazio, pulsante enquanto roda) e um fio fino a 45% de opacidade da parada até a linha.
+Bloco de chamadas de tool registradas: cabeçalho de 32px ("Contexto consultado · N chamadas" com os nomes das fontes na tinta de lane), linhas de altura fixa que entram com `row-strike`, e na calha as lanes que se desenham (`lane-draw`), com parada de raio 5 por chamada (tracejada quando o resultado é vazio ou indisponível) e um fio fino a 45% de opacidade da parada até a linha. A atividade chega junto com o resultado da geração; o bloco nunca anima chamadas em andamento nem mostra tempos que não foram medidos.
 
 ### Merge e publicação (signature)
 No draft, cada lane citada desce até uma cápsula verde que agrupa trilho e lanes; um fio verde liga a cápsula ao bloco. Ao publicar, a cápsula se preenche, a borda do draft fica sólida e o trilho cresce em verde (`trunk-grow`) até o nó `origin · repo · #N`; dali em diante o trilho da sessão corre em verde.
