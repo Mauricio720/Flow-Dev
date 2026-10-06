@@ -3,10 +3,10 @@
   "private": true,
   "packageManager": "pnpm@10.24.0",
   "scripts": {
-    "dev": "pnpm --filter web dev",
+    "dev": "pnpm --parallel --filter web --filter @flow-dev/api dev",
     "build": "pnpm --filter web build",
     "start": "pnpm --filter web start",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm --dir packages/api run typecheck && pnpm --dir apps/web run typecheck"
   }
 }

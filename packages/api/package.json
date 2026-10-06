@@ -6,28 +6,41 @@
   "exports": {
     ".": "./src/index.ts",
     "./server": "./src/server.ts",
-    "./schemas/*": "./src/schemas/*.ts"
+    "./schemas/*": "./src/schemas/*.ts",
+    "./spec": "./src/spec.ts"
   },
   "scripts": {
+    "dev": "tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "catalog:import": "tsx src/cli/catalogImport.ts",
-    "admins:provision": "tsx src/cli/adminsProvision.ts"
-    ,"test": "vitest run"
+    "admins:provision": "tsx src/cli/adminsProvision.ts",
+    "board:backfill": "tsx src/cli/boardBackfill.ts",
+    "labels:backfill": "tsx src/cli/labelsBackfill.ts",
+    "test": "vitest run",
+    "tasks:worker": "tsx src/cli/tasksWorker.ts",
+    "db:prepare": "tsx src/cli/databasePrepare.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "spec:worker": "tsx src/cli/specWorker.ts"
   },
   "dependencies": {
     "@trpc/server": "^11.19.0",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
+    "mdast-util-from-markdown": "^2.1.0",
+    "mdast-util-frontmatter": "^2.0.1",
+    "mdast-util-gfm": "^3.1.0",
+    "micromark-extension-frontmatter": "^2.0.0",
+    "micromark-extension-gfm": "^3.0.0",
     "postgres": "^3.4.9",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
     "drizzle-kit": "^0.31.11",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
-    ,"tsx": "^4.20.6"
   }
 }
