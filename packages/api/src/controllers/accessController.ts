@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import type { AccessDao } from "../application/database/dao/accessDao";
-import { AdminRequiredError, AssignmentService, TargetUserUnavailableError } from "../application/services/access/assignmentService";
+import { AdminRequiredError, AssignmentService, ProjectUnavailableError, TargetUserUnavailableError } from "../application/services/access/assignmentService";
 import type { SessionPrincipal } from "../context";
 
 export class AccessController {
@@ -12,10 +12,12 @@ export class AccessController {
   remove(actor: SessionPrincipal, target: { userId: string; projectId: string }) { return this.service.remove(actor, target); }
 }
 
-function toUserDto(user: { id: string; githubLogin: string; displayName?: string; avatarUrl?: string; lastProjectId: string | null }) { return { id: user.id, githubLogin: user.githubLogin, displayName: user.displayName, avatarUrl: user.avatarUrl, lastProjectId: user.lastProjectId }; }
+function toUserDto(user: { id: string; githubLogin: string; displayName?: string; avatarUrl?: string; lastProjectId: string | null; assignmentCount: number }) { return { id: user.id, githubLogin: user.githubLogin, displayName: user.displayName, avatarUrl: user.avatarUrl, lastProjectId: user.lastProjectId, assignmentCount: user.assignmentCount }; }
 
 export function mapAccessError(error: unknown): never {
+  if (error instanceof TRPCError) throw error;
   if (error instanceof AdminRequiredError) throw new TRPCError({ code: "FORBIDDEN", message: "Acesso administrativo necessário" });
   if (error instanceof TargetUserUnavailableError) throw new TRPCError({ code: "NOT_FOUND", message: "Usuário indisponível" });
+  if (error instanceof ProjectUnavailableError) throw new TRPCError({ code: "NOT_FOUND", message: "Projeto indisponível" });
   throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível concluir a operação" });
 }
