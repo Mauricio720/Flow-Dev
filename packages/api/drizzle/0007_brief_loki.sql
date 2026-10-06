@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "task_publication_attempts_created_task_idx" ON "task_publication_attempts" USING btree ("task_id") WHERE "task_publication_attempts"."outcome" = 'created';

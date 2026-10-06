@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS "task_spec_finalizations", "task_spec_approvals", "task_spec_documents", "task_spec_packages", "task_spec_events", "task_spec_interactions", "task_spec_commands", "task_spec_stages", "task_spec_attempts" CASCADE;
+ALTER TABLE IF EXISTS "task_spec_workflows" DROP CONSTRAINT IF EXISTS "task_spec_workflows_workspace_fk";
+DROP TABLE IF EXISTS "task_spec_workspaces";
+DROP TABLE IF EXISTS "task_spec_workflows";
+DROP FUNCTION IF EXISTS "guard_task_spec_package_update"();
+DROP FUNCTION IF EXISTS "guard_task_spec_approval_insert"();
+DROP FUNCTION IF EXISTS "guard_task_spec_immutable"();
+DROP FUNCTION IF EXISTS "guard_task_spec_workflow_update"();
+DROP FUNCTION IF EXISTS "guard_task_spec_workflow_insert"();
+ALTER TABLE "tasks" DROP CONSTRAINT IF EXISTS "tasks_id_project_unique";

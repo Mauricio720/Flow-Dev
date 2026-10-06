@@ -1,0 +1,2 @@
+ALTER TABLE "task_operations" ADD COLUMN "input_message_id" uuid;--> statement-breakpoint
+ALTER TABLE "task_operations" ADD CONSTRAINT "task_operations_input_message_id_task_messages_id_fk" FOREIGN KEY ("input_message_id") REFERENCES "public"."task_messages"("id") ON DELETE restrict ON UPDATE no action;

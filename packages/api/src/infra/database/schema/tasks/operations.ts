@@ -1,0 +1,91 @@
+import { check, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { taskDraftRevisions, taskMessages, tasks } from "./records";
+
+export const taskOperations = pgTable("task_operations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  kind: text("kind").notNull(),
+  state: text("state").notNull().default("queued"),
+  initiatedSessionId: uuid("initiated_session_id").notNull(),
+  baseTaskVersion: integer("base_task_version").notNull(),
+  baseRevisionId: uuid("base_revision_id").references(() => taskDraftRevisions.id, { onDelete: "restrict" }),
+  inputMessageId: uuid("input_message_id").references(() => taskMessages.id, { onDelete: "restrict" }),
+  publicationAttemptId: uuid("publication_attempt_id"),
+  inputHash: text("input_hash"),
+  executionId: uuid("execution_id"),
+  leaseOwner: text("lease_owner"),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
+  fence: integer("fence").notNull().default(0),
+  attempts: integer("attempts").notNull().default(0),
+  nextRunAt: timestamp("next_run_at", { withTimezone: true }).defaultNow().notNull(),
+  lastError: text("last_error"),
+  result: jsonb("result"),
+  proposalResolution: text("proposal_resolution"),
+  dispatchStartedAt: timestamp("dispatch_started_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("task_operations_kind_check", sql`${table.kind} in ('generate','publish','plan')`),
+  check("task_operations_plan_association_check", sql`(${table.kind} = 'plan' and ${table.publicationAttemptId} is not null and ${table.inputHash} ~ '^[0-9a-f]{64}$') or (${table.kind} <> 'plan' and ${table.publicationAttemptId} is null and ${table.inputHash} is null)`),
+  check("task_operations_state_check", sql`${table.state} in ('queued','running','succeeded','failed','uncertain')`),
+  check("task_operations_fence_check", sql`${table.fence} >= 0`),
+  check("task_operations_attempts_check", sql`${table.attempts} >= 0`),
+  check("task_operations_proposal_resolution_check", sql`${table.proposalResolution} is null or ${table.proposalResolution} in ('pending','applied','discarded')`),
+  uniqueIndex("task_operations_one_active_per_task_idx").on(table.taskId).where(sql`${table.state} in ('queued','running','uncertain')`),
+  uniqueIndex("task_operations_task_id_id_unique").on(table.taskId, table.id),
+  index("task_operations_queue_idx").on(table.state, table.nextRunAt, table.createdAt),
+  index("task_operations_task_kind_created_idx").on(table.taskId, table.kind, table.createdAt, table.id),
+]);
+
+export const taskEvidence = pgTable("task_evidence", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  operationId: uuid("operation_id").notNull().references(() => taskOperations.id, { onDelete: "restrict" }),
+  toolCallId: text("tool_call_id").notNull(),
+  repositoryId: text("repository_id").notNull(),
+  repositoryNodeId: text("repository_node_id").notNull(),
+  type: text("type").notNull(),
+  path: text("path"),
+  commitSha: text("commit_sha"),
+  fromLine: integer("from_line"),
+  toLine: integer("to_line"),
+  issueId: text("issue_id"),
+  issueNumber: integer("issue_number"),
+  url: text("url"),
+  sourceHash: text("source_hash").notNull(),
+  excerpt: text("excerpt").notNull(),
+  retrievedAt: timestamp("retrieved_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("task_evidence_task_operation_idx").on(table.taskId, table.operationId)]);
+
+export const taskToolActivity = pgTable("task_tool_activity", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  operationId: uuid("operation_id").notNull().references(() => taskOperations.id, { onDelete: "restrict" }),
+  executionId: uuid("execution_id").notNull(),
+  toolCallId: text("tool_call_id").notNull(),
+  tool: text("tool").notNull(),
+  target: text("target").notNull(),
+  status: text("status").notNull(),
+  reason: text("reason"),
+  durationMs: integer("duration_ms").notNull(),
+  evidenceIds: text("evidence_ids").array().notNull().default([]),
+  sequence: integer("sequence").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique("task_tool_activity_execution_call_unique").on(table.executionId, table.toolCallId),
+  check("task_tool_activity_status_check", sql`${table.status} in ('done','empty','unavailable')`),
+  check("task_tool_activity_duration_check", sql`${table.durationMs} >= 0`),
+]);
+
+export const taskToolCalls = pgTable("task_tool_calls", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
+  operationId: uuid("operation_id").notNull().references(() => taskOperations.id, { onDelete: "restrict" }),
+  executionId: uuid("execution_id").notNull(),
+  toolCallId: text("tool_call_id").notNull(),
+  inputHash: text("input_hash").notNull(),
+  result: jsonb("result").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [unique("task_tool_calls_execution_call_unique").on(table.executionId, table.toolCallId)]);

@@ -1,0 +1,2 @@
+ALTER TABLE "task_messages" DROP CONSTRAINT "task_messages_user_operation_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "task_messages_user_operation_unique" ON "task_messages" USING btree ("task_id","operation_id") WHERE "task_messages"."role" = 'user' and "task_messages"."operation_id" is not null;
