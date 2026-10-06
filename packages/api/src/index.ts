@@ -3,5 +3,6 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "./routers/index";
 
 export type { AppRouter };
+export type { IssueContextRequest } from "./application/github/scopedContextGateway";
 export type RouterInputs = inferRouterInputs<AppRouter>;
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
