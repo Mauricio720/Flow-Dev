@@ -40,6 +40,7 @@ describe("taskSpec.adjust", () => {
     const context = await reviewedStage();
     const input = await context.adjust();
     await context.setup.database.execute(`DELETE FROM project_assignments` as never);
+    await context.setup.database.execute(`DELETE FROM admin_designations WHERE github_user_id = '88'` as never);
     expect(await rejection(context.caller.adjust(input))).toMatchObject({ code: "FORBIDDEN", reason: "access_revoked" });
   });
 

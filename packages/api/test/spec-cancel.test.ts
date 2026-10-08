@@ -60,7 +60,7 @@ describe("taskSpec.cancel", () => {
     const context = await reviewedStage();
     expect(await rejection(context.caller.cancel(await context.cancel(crypto.randomUUID())))).toMatchObject({ code: "NOT_FOUND", reason: "spec_unavailable" });
     await context.setup.authorize(context.setup.readerId);
-    expect(await rejection(specCaller(context.setup, context.setup.readerId).cancel(await context.cancel(context.started.attemptId)))).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(await rejection(specCaller(context.setup, context.setup.readerId).cancel(await context.cancel(context.started.attemptId)))).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
   });
 
   it("IT-089 and IT-105 keep the current package pointer when a late capture arrives after a verified cancellation", async () => {

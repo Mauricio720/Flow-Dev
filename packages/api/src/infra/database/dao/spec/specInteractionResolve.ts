@@ -6,7 +6,7 @@ import type { PermissionTarget } from "../../../../application/spec/specPermissi
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskSpecAttempts, taskSpecInteractions, taskSpecStages, taskSpecWorkflows } from "../../schema";
 import type { Database } from "../../client";
-import { assertAuthor, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, saveCommand } from "./specCommandHelpers";
+import { assertOperator, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, saveCommand } from "./specCommandHelpers";
 
 export type ResolveInteractionInput = SpecCommandTarget & {
   action: "spec.answer" | "spec.permission";
@@ -21,7 +21,7 @@ export function resolveInteractionCommand(database: Database, input: ResolveInte
   return database.transaction(async (tx) => {
     const db = tx as unknown as Database;
     const task = await lockSpecTask(db, input);
-    assertAuthor(task, input.actorUserId);
+    await assertOperator(db, task, input.actorUserId);
     const replay = await findReplay(db, input, input.action);
     if (replay) return replay;
     const workflow = await lockSpecWorkflow(db, task.id);

@@ -1,3 +1,4 @@
+import { requirePlanningOperator } from "../tasks/planningOperatorGuard";
 import { and, eq } from "drizzle-orm";
 import type { SpecCommandResult, SpecCommandTarget } from "../../../../application/database/dao/taskSpecDao";
 import type { SpecAction, SpecReceipt, SpecReason } from "../../../../application/services/spec/specContracts";
@@ -19,8 +20,8 @@ export async function lockSpecWorkflow(database: Database, taskId: string) {
   return (await database.select().from(taskSpecWorkflows).where(eq(taskSpecWorkflows.taskId, taskId)).limit(1).for("update"))[0] ?? null;
 }
 
-export function assertAuthor(task: SpecTask, actorUserId: string) {
-  if (task.authorUserId !== actorUserId) throw new TaskError("author_required");
+export async function assertOperator(database: Database, task: SpecTask, actorUserId: string) {
+  await requirePlanningOperator(database, { taskId: task.id, actorUserId });
 }
 
 export function assertVersion(workflow: SpecWorkflowRow | null, expectedSpecVersion: number) {

@@ -8,12 +8,14 @@ import type { TaskEvidenceRecord } from "../../../../application/database/dao/ta
 import { planningListStatus } from "../../../../application/services/tasks/planningRules";
 import { parseIssueDraft, storedDraftLabels } from "../../../../application/services/tasks/draftRules";
 
+const AUTHORED_ORIGIN = "flow_dev";
+
 export class DrizzleTaskReadDao {
   constructor(private readonly database: Database) {}
 
   async list(input: { projectId: string; search?: string; cursor?: string; limit: number }) {
     const cursor = decodeTaskCursor(input.cursor, "tasks", input.projectId);
-    const filters = [eq(tasks.projectId, input.projectId)];
+    const filters = [eq(tasks.projectId, input.projectId), eq(tasks.origin, AUTHORED_ORIGIN)];
     if (input.search) filters.push(or(ilike(tasks.title, searchPattern(input.search)), inArray(tasks.authorUserId, this.authorsMatching(input.search)))!);
     if (cursor) filters.push(sql`(${tasks.createdAt} < ${cursor.position}::timestamptz or (${tasks.createdAt} = ${cursor.position}::timestamptz and ${tasks.id} < ${cursor.id ?? ""}::uuid))`);
     const rows = await this.database.select({ task: tasks, canonicalDraft: taskDraftRevisions.canonicalDraft, cursorCreatedAt: sql<string>`to_char(${tasks.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')` }).from(tasks).leftJoin(taskDraftRevisions, eq(taskDraftRevisions.id, tasks.currentRevisionId)).where(and(...filters)).orderBy(desc(tasks.createdAt), desc(tasks.id)).limit(input.limit + 1);
@@ -29,7 +31,7 @@ export class DrizzleTaskReadDao {
   }
 
   async findScoped(projectId: string, taskId: string) {
-    const row = (await this.database.select().from(tasks).where(and(eq(tasks.projectId, projectId), eq(tasks.id, taskId))).limit(1))[0];
+    const row = (await this.database.select().from(tasks).where(and(eq(tasks.projectId, projectId), eq(tasks.id, taskId), eq(tasks.origin, AUTHORED_ORIGIN))).limit(1))[0];
     return row ? toTaskRecord(row) : null;
   }
 

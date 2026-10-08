@@ -18,7 +18,7 @@ export async function persistSpecStart(db: Database, context: Context): Promise<
 
 async function createWorkflow(db: Database, context: Context) {
   const { task, route } = context;
-  const [workflow] = await db.insert(taskSpecWorkflows).values({ taskId: task.id, projectId: task.projectId, authorUserId: task.authorUserId, publicationId: context.publicationId, planningDecisionId: context.decisionId, selectedRoute: route, currentStage: context.target.stage }).returning();
+  const [workflow] = await db.insert(taskSpecWorkflows).values({ taskId: task.id, projectId: task.projectId, authorUserId: context.target.actorUserId, publicationId: context.publicationId, planningDecisionId: context.decisionId, selectedRoute: route, currentStage: context.target.stage }).returning();
   await db.insert(taskSpecStages).values(routeStages(route).map((stage) => ({ workflowId: workflow!.id, stage })));
   return workflow!;
 }

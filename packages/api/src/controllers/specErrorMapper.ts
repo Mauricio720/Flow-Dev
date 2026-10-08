@@ -7,8 +7,8 @@ type Code = "BAD_REQUEST" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "PRECONDITI
 const CODES: Record<Code, readonly TaskErrorReason[]> = {
   UNAUTHORIZED: ["session_required"],
   NOT_FOUND: ["spec_unavailable"],
-  FORBIDDEN: ["author_required", "access_revoked"],
-  PRECONDITION_FAILED: ["repository_authorization_needed", "planning_required", "publication_required", "stage_prerequisite", "route_unsupported", "package_incomplete", "decision_blocked", "workspace_unavailable", "runtime_incompatible", "runtime_unconfigured", "permission_out_of_scope", "repository_archived", "identity_mismatch", "destination_unavailable", "issue_permission_denied"],
+  FORBIDDEN: ["author_required", "access_revoked", "operator_required"],
+  PRECONDITION_FAILED: ["claim_unresolved", "issue_ineligible", "board_status_changed", "source_changed", "repository_authorization_needed", "planning_required", "publication_required", "stage_prerequisite", "route_unsupported", "package_incomplete", "decision_blocked", "workspace_unavailable", "runtime_incompatible", "runtime_unconfigured", "permission_out_of_scope", "repository_archived", "identity_mismatch", "destination_unavailable", "issue_permission_denied"],
   CONFLICT: ["spec_conflict", "request_key_reused", "attempt_active", "outcome_unknown", "interaction_stale", "interaction_resolved", "artifact_conflict", "stage_approved"],
   BAD_REQUEST: ["invalid_input", "invalid_cursor", "invalid_answer", "invalid_permission"],
   TOO_MANY_REQUESTS: ["spec_capacity", "provider_rate_limited", "interaction_queue_full"],
@@ -30,7 +30,7 @@ const MESSAGES: Partial<Record<TaskErrorReason, string>> = {
 const ASYNC_REASONS: readonly TaskErrorReason[] = ["context_limit", "package_limit", "artifact_invalid", "capture_failed", "runtime_failed", "runtime_incompatible", "access_revoked", "resource_limit", "provider_rate_limited", "artifact_conflict", "outcome_unknown", "workspace_unavailable", "repository_authorization_needed", "stage_prerequisite"];
 
 const DEFAULT_MESSAGE = "Não foi possível concluir a operação da Spec";
-const UNAVAILABLE_ALIASES: readonly TaskErrorReason[] = ["task_unavailable", "project_unavailable"];
+const UNAVAILABLE_ALIASES: readonly TaskErrorReason[] = ["task_unavailable", "project_unavailable", "work_unavailable"];
 const SAFE_FALLBACK_ALIASES: readonly TaskErrorReason[] = ["provider_unavailable", "invalid_provider_response", "invalid_stored_content", "service_unavailable"];
 
 export function normalizeSpecError(error: unknown) {

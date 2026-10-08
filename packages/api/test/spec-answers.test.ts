@@ -49,7 +49,7 @@ describe("taskSpec.answer", () => {
   it("IT-034 and IT-172 refuse a nonauthor administrator", async () => {
     const { setup, answer } = await waiting();
     await setup.authorize(setup.readerId);
-    expect(await rejection(specCaller(setup, setup.readerId).answer(answer({ text: "x" }) as never))).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(await rejection(specCaller(setup, setup.readerId).answer(answer({ text: "x" }) as never))).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
     expect((await stored(setup)).status).toBe("pending");
   });
   it("IT-035 and IT-193 arbitrate two tabs into one immutable winner", async () => {

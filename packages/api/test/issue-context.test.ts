@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { projectAssignments, taskEvidence, taskOperations, taskToolActivity } from "../src/infra/database/schema";
+import { adminDesignations, projectAssignments, taskEvidence, taskOperations, taskToolActivity } from "../src/infra/database/schema";
 import { DrizzleIssueContextDao } from "../src/infra/database/dao/tasks/drizzleIssueContextDao";
 import { DrizzleWorkerOperationDao } from "../src/infra/database/dao/tasks/drizzleTaskOperationDao";
 import { IssueContextController } from "../src/controllers/issueContextController";
@@ -48,6 +48,7 @@ describe("scoped task context with PostgreSQL", () => {
     await setup.caller.start({ projectId: setup.project.id, requestKey: "00000000-0000-4000-8000-000000000093", message: "Corrigir total" });
     const claim = await new DrizzleWorkerOperationDao(setup.database).claim("worker-1");
     await setup.database.delete(projectAssignments).where(eq(projectAssignments.userId, setup.ownerId));
+    await setup.database.delete(adminDesignations).where(eq(adminDesignations.githubUserId, "88"));
     const gateway = scopedGateway();
     const context = new IssueContextController(new DrizzleIssueContextDao(setup.database), setup.repositoryAccess, gateway);
     await expect(context.handle({ executionId: claim!.executionId, toolCallId: "tool-call-1", request: { tool: "searchProject", query: "cart" } }, claim!.contextCapability)).rejects.toMatchObject({ reason: "access_revoked" });

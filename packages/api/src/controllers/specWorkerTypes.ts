@@ -6,6 +6,7 @@ import type { SpecRuntimeLauncher } from "../application/spec/specRuntimeLaunche
 import type { SpecCaptureService } from "../application/services/spec/specCaptureService";
 import type { SpecFinalizationService } from "../application/services/spec/specFinalizationService";
 import type { SpecWorkspaceGateway } from "../application/spec/specWorkspaceGateway";
+import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 
 export type SpecWorkerSettings = {
   runnerId: string;
@@ -23,6 +24,7 @@ export type SpecWorkerDeps = {
   workspaces: SpecWorkspaceGateway;
   launcher: SpecRuntimeLauncher;
   access: SpecAccessProbe;
+  authorization?: Pick<WorkAuthorization, "requireOperate">;
   upstream: SpecUpstreamLoader;
   approvals: TaskSpecApprovalDao;
   capture: SpecCaptureService;

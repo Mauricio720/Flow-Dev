@@ -1,0 +1,1 @@
+ALTER TABLE "local_machines" ADD COLUMN "revocation_request_key" uuid;

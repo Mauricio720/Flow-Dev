@@ -1,12 +1,10 @@
-import type { TaskDao } from "../application/database/dao/taskDao";
+import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import type { SpecCommandResult, TaskSpecDao } from "../application/database/dao/taskSpecDao";
-import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
-import { ProjectUnavailableError } from "../application/services/access/projectAccessService";
 import type { SpecAction, SpecStage } from "../application/services/spec/specContracts";
 import type { SpecLifecycleService } from "../application/services/spec/specLifecycleService";
-import { TaskError } from "../application/services/tasks/taskErrors";
 import type { SessionPrincipal } from "../context";
 import { specEventDto, specEventSummaryDto, specPackageDto, specSnapshotDto } from "./mappers/specDtoMapper";
+import { lostProjectAccess, unavailableSpecError } from "./specAccessErrors";
 import { logSpecCommand } from "./specEvents";
 
 type Scope = { projectId: string; taskId: string };
@@ -14,11 +12,12 @@ type Command = Scope & { requestKey: string; expectedSpecVersion: number };
 type AcceptAction = Exclude<SpecAction, "spec.start" | "spec.answer" | "spec.permission">;
 
 export class TaskSpecController {
-  constructor(private readonly tasks: TaskDao, private readonly specs: TaskSpecDao, private readonly lifecycle: SpecLifecycleService, private readonly repositories: RepositoryAccessService) {}
+  constructor(private readonly authorization: WorkAuthorization, private readonly specs: TaskSpecDao, private readonly lifecycle: SpecLifecycleService) {}
 
   async byTask(actor: SessionPrincipal, input: Scope) {
     await this.requireRead(actor, input);
-    return specSnapshotDto(await this.specs.snapshot(input), actor.userId);
+    const canOperate = await this.authorization.assess({ ...input, actorId: actor.userId }, false).then((assessment) => assessment.reason === null && assessment.contentHash === assessment.source.snapshot.contentHash, () => false);
+    return specSnapshotDto(await this.specs.snapshot(input), { actorUserId: actor.userId, canOperate });
   }
 
   async events(actor: SessionPrincipal, input: Scope & { after?: string; before?: string; latest?: boolean; limit: number }) {
@@ -76,18 +75,17 @@ export class TaskSpecController {
   }
 
   private async requireRead(actor: SessionPrincipal, scope: Scope) {
-    try { await this.repositories.requirePersonalRead(actor, scope.projectId); }
-    catch (error) {
-      if (!(error instanceof ProjectUnavailableError)) throw error;
-      throw new TaskError(await this.specs.hadAccess({ ...scope, actorUserId: actor.userId }) ? "access_revoked" : "spec_unavailable");
-    }
+    try { await this.authorization.requireRead({ ...scope, actorId: actor.userId }); }
+    catch (error) { throw await unavailableSpecError(error, () => this.hadAccess(actor, scope)); }
   }
 
   private async requireAuthor(actor: SessionPrincipal, scope: Scope) {
-    await this.requireRead(actor, scope);
-    const task = await this.tasks.findScoped(scope.projectId, scope.taskId);
-    if (!task) throw new TaskError("spec_unavailable");
-    if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
+    try { await this.authorization.requireOperate({ projectId: scope.projectId, taskId: scope.taskId, actorId: actor.userId }, { currentSource: true }); }
+    catch (error) { throw lostProjectAccess(error) ? await unavailableSpecError(error, () => this.hadAccess(actor, scope)) : error; }
+  }
+
+  private hadAccess(actor: SessionPrincipal, scope: Scope) {
+    return this.specs.hadAccess({ ...scope, actorUserId: actor.userId });
   }
 }
 

@@ -1,5 +1,4 @@
-import type { TaskDao } from "../application/database/dao/taskDao";
-import { mapTaskSummary } from "../application/database/dao/taskDao";
+import { mapTaskSummary, type TaskDao } from "../application/database/dao/taskDao";
 import type { SessionPrincipal } from "../context";
 import { parseIssueDraft, renderIssueBody, storedDraftLabels } from "../application/services/tasks/draftRules";
 import { validateHistorySearch, validateUserMessage } from "../application/services/tasks/inputRules";
@@ -23,15 +22,16 @@ export class TasksController {
 
   async byId(actor: SessionPrincipal, input: { projectId: string; taskId: string }) {
     await this.repositories.requireRead(actor, input.projectId);
-    return this.dao.snapshot((dao) => this.readWorkspace(dao, actor, input));
+    const viewer = { userId: actor.userId, isAdmin: await this.repositories.authoring.isAdmin(actor) };
+    return this.dao.snapshot((dao) => this.readWorkspace(dao, viewer, input));
   }
 
-  private async readWorkspace(dao: TaskDao, actor: SessionPrincipal, input: { projectId: string; taskId: string }) {
+  private async readWorkspace(dao: TaskDao, viewer: { userId: string; isAdmin: boolean }, input: { projectId: string; taskId: string }) {
     const task = await dao.findScoped(input.projectId, input.taskId);
     if (!task) throw new TaskError("task_unavailable");
     const [revision, pendingProposal, publication, activity, authorNames, planning] = await Promise.all([dao.currentRevision(task.id), dao.pendingProposal(task.id), dao.publication(task.id), dao.activity(task.id), dao.authorNames([task.authorUserId]), dao.planning(task.id)]);
-    const isAuthor = task.authorUserId === actor.userId;
-    return { task: summaryDto(mapTaskSummary(task, revision ? storedDraftLabels(revision.canonicalDraft) : []), authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal, publication: publicationDto(publication), activity, planning: planningDto(planning, { isAuthor }), permissions: { canEdit: isAuthor }, lastError: task.lastError ? { reason: task.lastError } : null };
+    const canAuthor = viewer.isAdmin && task.authorUserId === viewer.userId;
+    return { task: summaryDto(mapTaskSummary(task, revision ? storedDraftLabels(revision.canonicalDraft) : []), authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal, publication: publicationDto(publication), activity, planning: planningDto(planning, { canOperate: false }), permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? { reason: task.lastError } : null };
   }
 
   async messages(actor: SessionPrincipal, input: { projectId: string; taskId: string; cursor?: string; limit: number }) {
@@ -48,13 +48,13 @@ export class TasksController {
   async start(actor: SessionPrincipal, input: { projectId: string; requestKey: string; message: string }) {
     const message = validateUserMessage(input.message);
     const repository = await this.repositories.requireRead(actor, input.projectId);
+    await this.repositories.authoring.requireAdmin(actor);
     return this.dao.start({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor), repositoryId: repository.githubId, repositoryNodeId: repository.nodeId, message });
   }
 
   async send(actor: SessionPrincipal, input: { projectId: string; taskId: string; requestKey: string; expectedVersion: number; message: string }) {
     const message = validateUserMessage(input.message);
-    const task = await this.requireTask(actor, input.projectId, input.taskId);
-    if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
+    const task = await this.requireAuthoredTask(actor, input.projectId, input.taskId);
     const kind = task.status === "awaiting_clarification" ? "clarification" : "refinement";
     return this.dao.send({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor), message }, kind);
   }
@@ -65,24 +65,28 @@ export class TasksController {
   }
 
   async retryGeneration(actor: SessionPrincipal, input: { projectId: string; taskId: string; requestKey: string; expectedVersion: number; failedOperationId: string }) {
-    const task = await this.requireTask(actor, input.projectId, input.taskId);
-    if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
+    await this.requireAuthoredTask(actor, input.projectId, input.taskId);
     return this.dao.retryGeneration({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor) });
   }
 
   async resolveRefinement(actor: SessionPrincipal, input: { projectId: string; taskId: string; requestKey: string; expectedVersion: number; proposalOperationId: string; decision: "apply" | "discard"; selectedPaths: string[] }) {
-    const task = await this.requireTask(actor, input.projectId, input.taskId);
-    if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
+    await this.requireAuthoredTask(actor, input.projectId, input.taskId);
     return this.dao.resolveRefinement({ ...input, actorUserId: actor.userId });
   }
 
   async saveDraft(actor: SessionPrincipal, input: { projectId: string; taskId: string; requestKey: string; expectedVersion: number; baseRevisionId: string; draft: unknown; evidenceBindings: unknown[] }) {
-    const task = await this.requireTask(actor, input.projectId, input.taskId);
-    if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
+    const task = await this.requireAuthoredTask(actor, input.projectId, input.taskId);
     const draft = parseIssueDraft(input.draft);
     renderIssueBody(draft);
     const evidenceBindings = buildManualEvidenceBindings(draft, task.repositoryId, await this.dao.evidence(task.id), await this.dao.currentRevision(task.id));
     return this.dao.saveDraft({ ...input, actorUserId: actor.userId, draft, evidenceBindings });
+  }
+
+  private async requireAuthoredTask(actor: SessionPrincipal, projectId: string, taskId: string) {
+    const task = await this.requireTask(actor, projectId, taskId);
+    await this.repositories.authoring.requireAdmin(actor);
+    if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
+    return task;
   }
 
   private async requireTask(actor: SessionPrincipal, projectId: string, taskId: string) {

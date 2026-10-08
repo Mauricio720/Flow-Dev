@@ -15,7 +15,7 @@ export async function readSpecSnapshot(database: Database, scope: { projectId: s
     if (!task) throw new TaskError("spec_unavailable");
     const planning = await readPlanningProjection(db, task.id);
     const workflow = (await db.select().from(taskSpecWorkflows).where(eq(taskSpecWorkflows.taskId, task.id)).limit(1))[0] ?? null;
-    const base = { eligibility: { taskStatus: planning.taskStatus, publication: planning.publication, planning: planning.decision && { status: planning.decision.status, selectedRoute: planning.decision.selectedRoute } }, taskAuthorUserId: task.authorUserId, planning };
+    const base = { eligibility: { taskStatus: planning.taskStatus, publication: planning.publication, planning: planning.decision && { status: planning.decision.status, selectedRoute: planning.decision.selectedRoute, sourceSnapshotId: planning.decision.sourceSnapshotId, publicationAttemptId: planning.decision.publicationAttemptId }, source: planning.source && { snapshotId: planning.source.snapshotId, publicationAttemptId: planning.source.publicationAttemptId, claimState: planning.source.claim?.state ?? null } }, taskAuthorUserId: task.authorUserId, planning };
     if (!workflow) return { ...base, workflow: null, stages: [], attempt: null, interactions: [], packageCount: 0, latestEventSequence: 0 };
     return { ...base, ...(await readWorkflowParts(db, workflow)) };
   }, { isolationLevel: "repeatable read" });

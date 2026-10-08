@@ -23,11 +23,6 @@ export class DrizzleTaskPlanningDao implements TaskPlanningDao {
 
   projection(taskId: string) { return readPlanningProjection(this.database, taskId); }
 
-  async publishedIssueNodeId(taskId: string) {
-    const row = (await this.database.select({ issueNodeId: taskPublicationAttempts.issueNodeId }).from(taskPublicationAttempts).where(and(eq(taskPublicationAttempts.taskId, taskId), eq(taskPublicationAttempts.outcome, CREATED_OUTCOME))).limit(1))[0];
-    return row?.issueNodeId ?? null;
-  }
-
   start(input: Parameters<TaskPlanningDao["start"]>[0]) { return this.guard(() => acceptPlanningStart(this.database, input)); }
   retry(input: Parameters<TaskPlanningDao["retry"]>[0]) { return this.guard(() => acceptPlanningRetry(this.database, input)); }
   selectRoute(input: Parameters<TaskPlanningDao["selectRoute"]>[0]) { return this.guard(() => savePlanningRoute(this.database, input)); }

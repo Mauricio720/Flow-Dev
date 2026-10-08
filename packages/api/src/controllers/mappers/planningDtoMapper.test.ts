@@ -5,14 +5,14 @@ import { planningDto } from "./planningDtoMapper";
 
 const createdAt = new Date("2026-10-05T12:00:00.000Z");
 const publication = { outcome: "created", taskId: "t", repositoryBindingMatches: true, attemptId: "a", repositoryId: "1", repositoryNodeId: "R", issueId: "2", issueNumber: 3, issueUrl: "https://github.com/a/b/issues/3", title: "Título", bodyMarkdown: "Corpo" };
-const decision: PlanningDecisionRecord = { id: "d", taskId: "t", publicationAttemptId: "a", operationId: "o", executionId: "e", version: 1, recommendedRoute: "tech_spec", complexity: "medium", summary: "Resumo", reasons: ["Motivo"], uncertainties: [], selectedRoute: "tech_spec", decisionSource: "AI", status: "review", createdAt, approvedByUserId: null, approvedAt: null };
-const record = (overrides: Partial<PlanningProjectionRecord>): PlanningProjectionRecord => ({ taskStatus: "published", planningStatus: "review", operation: null, decision, publication, ...overrides });
-const author = { isAuthor: true };
+const decision: PlanningDecisionRecord = { id: "d", taskId: "t", publicationAttemptId: "a", sourceSnapshotId: null, requesterUserId: null, sourceFormatVersion: 1, operationId: "o", executionId: "e", version: 1, recommendedRoute: "tech_spec", complexity: "medium", summary: "Resumo", reasons: ["Motivo"], uncertainties: [], selectedRoute: "tech_spec", decisionSource: "AI", status: "review", createdAt, approvedByUserId: null, approvedAt: null };
+const record = (overrides: Partial<PlanningProjectionRecord>): PlanningProjectionRecord => ({ taskStatus: "published", planningStatus: "review", operation: null, decision, publication, source: null, history: [], ...overrides });
+const author = { canOperate: true };
 
 describe("planning DTO mapper", () => {
   it("UT-043 returns ISO times and only named assessment fields", () => {
     const dto = planningDto(record({}), author);
-    expect(dto.decision).toEqual({ id: "d", taskId: "t", publicationAttemptId: "a", operationId: "o", executionId: "e", version: 1, recommendedRoute: "tech_spec", complexity: "medium", summary: "Resumo", reasons: ["Motivo"], uncertainties: [], selectedRoute: "tech_spec", decisionSource: "AI", status: "review", createdAt: "2026-10-05T12:00:00.000Z", approvedByUserId: null, approvedAt: null });
+    expect(dto.decision).toEqual({ id: "d", taskId: "t", publicationAttemptId: "a", sourceSnapshotId: null, matchesCurrentSource: null, operationId: "o", executionId: "e", version: 1, recommendedRoute: "tech_spec", complexity: "medium", summary: "Resumo", reasons: ["Motivo"], uncertainties: [], selectedRoute: "tech_spec", decisionSource: "AI", status: "review", createdAt: "2026-10-05T12:00:00.000Z", approvedByUserId: null, approvedAt: null });
     expect(dto.permissions).toEqual({ canStart: false, canRetry: false, canSelectRoute: true, canApprove: true });
   });
 
@@ -30,7 +30,7 @@ describe("planning DTO mapper", () => {
   });
 
   it("gives readers no permissions and nonpublished tasks no planning status", () => {
-    expect(planningDto(record({}), { isAuthor: false }).permissions).toEqual({ canStart: false, canRetry: false, canSelectRoute: false, canApprove: false });
+    expect(planningDto(record({}), { canOperate: false }).permissions).toEqual({ canStart: false, canRetry: false, canSelectRoute: false, canApprove: false });
     expect(planningDto(record({ taskStatus: "draft_ready", planningStatus: null, decision: null }), author).status).toBeNull();
   });
 });

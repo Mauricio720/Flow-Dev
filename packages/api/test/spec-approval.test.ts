@@ -56,7 +56,7 @@ describe("taskSpec.approve", () => {
   it("IT-074 and IT-172 refuse a reader", async () => {
     const { setup, input } = await reviewed();
     await setup.authorize(setup.readerId);
-    expect(await rejection(specCaller(setup, setup.readerId).approve(await input()))).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(await rejection(specCaller(setup, setup.readerId).approve(await input()))).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
   });
   it("rejects the approval when the installed bytes drifted or the author lost access", async () => {
     const drifted = await reviewed();

@@ -8,7 +8,7 @@ import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskSpecAttempts, taskSpecStages, taskSpecWorkspaces } from "../../schema";
 import type { Database } from "../../client";
 import { readPlanningProjection } from "../tasks/planningProjection";
-import { assertAuthor, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, type SpecTask, type SpecWorkflowRow } from "./specCommandHelpers";
+import { assertOperator, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, type SpecTask, type SpecWorkflowRow } from "./specCommandHelpers";
 import { assertCapacity } from "./specCapacity";
 import { persistSpecStart } from "./specStartPersist";
 
@@ -21,7 +21,7 @@ export function acceptSpecStart(database: Database, target: StartTarget): Promis
   return database.transaction(async (tx) => {
     const db = tx as unknown as Database;
     const task = await lockSpecTask(db, target);
-    assertAuthor(task, target.actorUserId);
+    await assertOperator(db, task, target.actorUserId);
     const replay = await findReplay(db, target, START_ACTION);
     if (replay) return replay;
     const workflow = await lockSpecWorkflow(db, task.id);

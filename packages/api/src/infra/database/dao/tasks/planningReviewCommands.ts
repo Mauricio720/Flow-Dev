@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { selectionSource } from "../../../../application/services/tasks/planningRules";
 import { assertApprovable, assertSelectable, isApprovalReplay } from "../../../../application/services/tasks/planningTransitions";
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
@@ -7,6 +7,8 @@ import type { PlanningRoute } from "../../../../application/services/tasks/plann
 import { taskPlanningDecisions, tasks } from "../../schema";
 import type { Database } from "../../client";
 import { findPlanningReplay, findPlanningTask, savePlanningReceipt } from "./planningReceiptHelpers";
+import { requirePlanningOperator } from "./planningOperatorGuard";
+import { assertDecisionCurrent } from "./planningDecisionCurrent";
 
 type ReviewTarget = PlanningCommandTarget & { expectedVersion: number; expectedDecisionVersion: number; decisionId: string };
 
@@ -14,10 +16,11 @@ export function savePlanningRoute(database: Database, input: ReviewTarget & { se
   return database.transaction(async (tx) => {
     const db = tx as unknown as Database;
     const task = await findPlanningTask(db, input);
-    if (task.authorUserId !== input.actorUserId) throw new TaskError("author_required");
+    await requirePlanningOperator(db, { taskId: task.id, actorUserId: input.actorUserId });
     const replay = await findPlanningReplay(db, input, "planning.selectRoute");
     if (replay) return { ...replay, replayed: true };
-    const decision = await findDecision(db, input);
+    const decision = await findDecision(db, { ...input, pointer: task.planningDecisionId });
+    if (decision) await assertDecisionCurrent(db, decision);
     assertSelectable(task, decision && asState(decision), input);
     if (!decision) throw new TaskError("planning_not_ready");
     const changed = decision.selectedRoute !== input.selectedRoute;
@@ -34,10 +37,11 @@ export function approvePlanningRoute(database: Database, input: ReviewTarget & {
   return database.transaction(async (tx) => {
     const db = tx as unknown as Database;
     const task = await findPlanningTask(db, input);
-    if (task.authorUserId !== input.actorUserId) throw new TaskError("author_required");
+    await requirePlanningOperator(db, { taskId: task.id, actorUserId: input.actorUserId });
     const replay = await findPlanningReplay(db, input, "planning.approve");
     if (replay) return { ...replay, replayed: true };
-    const decision = await findDecision(db, input);
+    const decision = await findDecision(db, { ...input, pointer: task.planningDecisionId });
+    if (decision && decision.status === "review") await assertDecisionCurrent(db, decision);
     if (decision && isApprovalReplay(asState(decision), input)) return { ...await approvedReceipt(db, input, task, decision), replayed: false };
     assertApprovable(task, decision && asState(decision), input);
     if (!decision) throw new TaskError("planning_not_ready");
@@ -50,8 +54,9 @@ export function approvePlanningRoute(database: Database, input: ReviewTarget & {
   });
 }
 
-async function findDecision(database: Database, input: { taskId: string; decisionId: string }) {
-  const decision = (await database.select().from(taskPlanningDecisions).where(eq(taskPlanningDecisions.taskId, input.taskId)).limit(1).for("update"))[0] ?? null;
+async function findDecision(database: Database, input: { taskId: string; decisionId: string; pointer: string | null }) {
+  const where = input.pointer ? eq(taskPlanningDecisions.id, input.pointer) : eq(taskPlanningDecisions.taskId, input.taskId);
+  const decision = (await database.select().from(taskPlanningDecisions).where(where).orderBy(desc(taskPlanningDecisions.createdAt)).limit(1).for("update"))[0] ?? null;
   if (decision && decision.id !== input.decisionId) throw new TaskError("decision_unavailable");
   return decision;
 }

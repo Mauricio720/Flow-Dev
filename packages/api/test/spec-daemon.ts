@@ -9,7 +9,7 @@ export type DaemonState = {
   provider: string;
   workspaces: { id: string; root_dir: string; name: string }[];
   sessions: { id: string; name: string; workspace_id: string; state: string; verified: boolean; stop_reason?: string; pending: Record<string, unknown>[] }[];
-  prompts: { message_id: string; idempotency_key: string; session: string }[];
+  prompts: { message_id: string; idempotency_key: string; session: string; runtime?: Record<string, unknown> }[];
   dropNextCreateResponse: boolean;
   duplicateSessions: number;
   promptStatus: number;
@@ -86,7 +86,7 @@ function sessionRoute(state: DaemonState, call: Call, response: ServerResponse) 
 }
 
 function prompt(state: DaemonState, call: Call, response: ServerResponse, session: string) {
-  state.prompts.push({ message_id: String(call.body.message_id), idempotency_key: String(call.body.idempotency_key), session });
+  state.prompts.push({ message_id: String(call.body.message_id), idempotency_key: String(call.body.idempotency_key), session, runtime: call.body.runtime as Record<string, unknown> | undefined });
   if (state.promptStatus >= 400) return json(response, state.promptStatus, { error: "prompt rejected" });
   json(response, state.promptStatus, { prompt: { message_id: call.body.message_id, idempotency_key: call.body.idempotency_key, status: "queued", delivery: "direct", replayed: false, queue_position: 0, new_turn_id: "turn-1" } });
 }

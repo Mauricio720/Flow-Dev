@@ -7,6 +7,7 @@ import { taskContextCapabilities, taskDraftRevisions, taskEvidence, taskMessages
 import type { Database } from "../../client";
 import { bindGeneratedDraft } from "./generationEvidenceBindings";
 import { loadBindableEvidence } from "./retainedEvidence";
+import { authorOf } from "./authorOf";
 
 export async function lockOperation(database: Database, claim: WorkerClaim) {
   const operation = (await database.select().from(taskOperations).where(and(eq(taskOperations.id, claim.operationId), eq(taskOperations.taskId, claim.taskId), eq(taskOperations.state, "running"), eq(taskOperations.leaseOwner, claim.workerId), eq(taskOperations.executionId, claim.executionId), eq(taskOperations.fence, claim.fence))).limit(1).for("update"))[0];
@@ -54,7 +55,7 @@ export async function storeDraft(database: Database, claim: WorkerClaim, task: t
 
 async function createRevision(database: Database, claim: WorkerClaim, task: typeof tasks.$inferSelect, operation: typeof taskOperations.$inferSelect, draft: unknown, bindings: unknown[]) {
   const last = (await database.select({ revisionNumber: taskDraftRevisions.revisionNumber }).from(taskDraftRevisions).where(eq(taskDraftRevisions.taskId, task.id)).orderBy(desc(taskDraftRevisions.revisionNumber)).limit(1))[0];
-  const [revision] = await database.insert(taskDraftRevisions).values({ taskId: task.id, revisionNumber: (last?.revisionNumber ?? 0) + 1, parentRevisionId: operation.baseRevisionId, operationId: claim.operationId, canonicalDraft: draft, evidenceBindings: bindings, manuallyEditedPaths: [], createdByUserId: task.authorUserId }).returning({ id: taskDraftRevisions.id });
+  const [revision] = await database.insert(taskDraftRevisions).values({ taskId: task.id, revisionNumber: (last?.revisionNumber ?? 0) + 1, parentRevisionId: operation.baseRevisionId, operationId: claim.operationId, canonicalDraft: draft, evidenceBindings: bindings, manuallyEditedPaths: [], createdByUserId: authorOf(task) }).returning({ id: taskDraftRevisions.id });
   if (!revision) throw new TaskError("service_unavailable");
   return revision;
 }

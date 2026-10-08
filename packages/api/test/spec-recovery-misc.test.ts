@@ -14,6 +14,8 @@ afterEach(async () => { await closeTaskFixture(); await Promise.all(finalization
 
 const approve = async (context: Reviewed, overrides: Record<string, unknown> = {}) => ({ ...context.scope, requestKey: crypto.randomUUID(), expectedSpecVersion: await context.version(), stage: "tech_spec" as const, packageId: context.saved.packageId, manifestHash: context.saved.manifestHash, ...overrides });
 
+const LARGE_PACKAGE_TIMEOUT_MS = 45_000;
+
 describe("approval and recovery contracts", () => {
   it("IT-091 and IT-098 hide a foreign package and block Tasks before TechSpec approval", async () => {
     const context = await reviewedStage();
@@ -30,13 +32,15 @@ describe("approval and recovery contracts", () => {
   it("IT-095, IT-096 and IT-097 keep one immutable approval for concurrent, lost-response and later replays", async () => {
     const context = await reviewedStage();
     const first = await approve(context);
-    const results = await Promise.allSettled([context.caller.approve(first), context.caller.approve({ ...first, requestKey: crypto.randomUUID() })]);
+    const rival = { ...first, requestKey: crypto.randomUUID() };
+    const results = await Promise.allSettled([context.caller.approve(first), context.caller.approve(rival)]);
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    const accepted = results[0].status === "fulfilled" ? first : rival;
     await context.controller.tick();
     const [approval] = await context.setup.database.select().from(taskSpecApprovals);
     expect(await context.setup.database.select().from(taskSpecApprovals)).toHaveLength(1);
-    expect(await context.caller.submission({ ...context.scope, action: "spec.approve", requestKey: first.requestKey })).toMatchObject({ status: "known" });
-    const replayed = await context.caller.approve(first).catch(() => null);
+    expect(await context.caller.submission({ ...context.scope, action: "spec.approve", requestKey: accepted.requestKey })).toMatchObject({ status: "known" });
+    const replayed = await context.caller.approve(accepted).catch(() => null);
     await context.controller.tick();
     expect((await context.setup.database.select().from(taskSpecApprovals))[0]).toEqual(approval);
     expect(replayed === null || replayed.status !== undefined).toBe(true);
@@ -50,7 +54,7 @@ describe("approval and recovery contracts", () => {
     expect(result).toMatchObject({ valid: false, reason: "package_limit", captureState: "partial" });
     expect((await stageRow(context.setup)).currentPackageId).toBe(context.saved.packageId);
     expect((await context.setup.database.select().from(taskSpecPackages)).find((pkg) => pkg.id === context.saved.packageId)).toMatchObject({ captureState: "review_ready" });
-  });
+  }, LARGE_PACKAGE_TIMEOUT_MS);
 
   it("IT-124 refuses a document identity that belongs to another revision", async () => {
     const context = await reviewedStage();

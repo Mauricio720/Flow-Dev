@@ -19,6 +19,7 @@ import { SpecCaptureService } from "../application/services/spec/specCaptureServ
 import { DrizzleTaskSpecCaptureDao } from "./database/dao/spec/drizzleTaskSpecCaptureDao";
 import { COMPOZY_PIN } from "../application/spec/specPins";
 import { SPEC_RUNNER_CONCURRENT_ATTEMPTS } from "../application/services/spec/specLimits";
+import { createWorkAuthorization } from "./assignedIssuesComposition";
 
 const GITHUB_REMOTE_BASE = "https://github.com";
 const MAX_CHECKOUT_BYTES = 5 * 1024 ** 3;
@@ -38,6 +39,7 @@ export function createProductionSpecWorkerController(configuration: SpecConfigur
     finalization: new SpecFinalizationService(new DrizzleTaskSpecFinalizationDao(database), workspaces),
     launcher: new PodmanRuntimeLauncher(configuration),
     access: new GitHubSpecAccessProbe(createRepositoryAccessService(database)),
+    authorization: createWorkAuthorization(database),
     upstream: async (claim) => (await dao.approvedUpstream(claim)).flatMap((item) => item.entries),
     approvals: new DrizzleTaskSpecApprovalDao(database),
     capture: new SpecCaptureService(new DrizzleTaskSpecCaptureDao(database)),

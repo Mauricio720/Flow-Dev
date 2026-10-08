@@ -1,3 +1,4 @@
+import { operatorAuthorization } from "./operator-support";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rm } from "node:fs/promises";
 import { eq } from "drizzle-orm";
@@ -19,7 +20,7 @@ afterEach(async () => { await closeTaskFixture(); await Promise.all(finalization
 
 const callerWith = (context: Reviewed, admission: { assertReady(): Promise<void> }) => {
   const dao = new DrizzleTaskSpecDao(context.setup.database);
-  const controller = new TaskSpecController(context.setup.taskDao, dao, new SpecLifecycleService(dao, admission), context.setup.repositoryAccess);
+  const controller = new TaskSpecController(operatorAuthorization(context.setup.database, context.setup.repositoryAccess, context.setup.world), dao, new SpecLifecycleService(dao, admission), context.setup.repositoryAccess);
   return createTaskSpecRouter(controller).createCaller({ principal: { userId: context.setup.ownerId, sessionId: context.setup.sessionId }, requestId: "retry" });
 };
 async function failedStage() {

@@ -7,11 +7,11 @@ beforeEach(() => vi.stubEnv("TASK_CURSOR_SECRET", "spec-test-cursor-secret"));
 afterEach(closeTaskFixture);
 
 describe.each([...SPEC_COMMANDS, "submission"] as const)("taskSpec.%s command guards", (name) => {
-  it("IT-172 requires the immutable author", async () => {
+  it("IT-172 requires the claimed operator", async () => {
     const setup = await specTask();
     await setup.authorize(setup.readerId);
     const result = await rejection(callProcedure(specCaller(setup, setup.readerId), name, specInputs(setup)[name]));
-    expect(result).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(result).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
   });
 });
 

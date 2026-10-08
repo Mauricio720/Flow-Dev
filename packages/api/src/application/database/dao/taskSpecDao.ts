@@ -14,7 +14,7 @@ export type SpecInteractionRecord = { id: string; attemptId: string; kind: strin
 export type SpecWorkflowRecord = { id: string; authorUserId: string; selectedRoute: SpecRoute; version: number; currentStage: SpecStage; state: SpecState };
 export type SpecSnapshotRecord = {
   eligibility: SpecEligibilityInput;
-  taskAuthorUserId: string;
+  taskAuthorUserId: string | null;
   workflow: SpecWorkflowRecord | null;
   stages: SpecStageRecord[];
   attempt: SpecAttemptRecord | null;

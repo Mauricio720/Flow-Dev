@@ -1,3 +1,4 @@
+import { operatorAuthorization } from "./operator-support";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecLifecycleService } from "../src/application/services/spec/specLifecycleService";
 import { DrizzleTaskSpecDao } from "../src/infra/database/dao/spec/drizzleTaskSpecDao";
@@ -16,7 +17,7 @@ afterEach(async () => { await closeTaskFixture(); await Promise.all(finalization
 
 const withAdmission = (setup: Awaited<ReturnType<typeof specTask>>, admission: { assertReady(): Promise<void> }) => {
   const dao = new DrizzleTaskSpecDao(setup.database);
-  return createTaskSpecRouter(new TaskSpecController(setup.taskDao, dao, new SpecLifecycleService(dao, admission), setup.repositoryAccess)).createCaller({ principal: { userId: setup.ownerId, sessionId: setup.sessionId }, requestId: "admission" });
+  return createTaskSpecRouter(new TaskSpecController(operatorAuthorization(setup.database, setup.repositoryAccess, setup.world), dao, new SpecLifecycleService(dao, admission), setup.repositoryAccess)).createCaller({ principal: { userId: setup.ownerId, sessionId: setup.sessionId }, requestId: "admission" });
 };
 const complete = { SPEC_ENABLED: "true", SPEC_RUNNER_ID: "r", SPEC_WORKSPACE_ROOT: "/srv", SPEC_RUNTIME_IMAGE: "img", SPEC_PROVIDER: "p", SPEC_MODEL: "m", SPEC_PROVIDER_ACCOUNT_REF: "a", SPEC_DOCS_PROXY_URL: "https://d", SPEC_COMPOZY_BINARY_SHA256: COMPOZY_PIN.binarySha256, SPEC_COMPOZY_OPENAPI_SHA256: COMPOZY_PIN.openApiSha256, SPEC_BUNDLE_SHA256: "b".repeat(64) };
 

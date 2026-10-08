@@ -7,7 +7,7 @@ import { TaskError } from "../application/services/tasks/taskErrors";
 import { TranscriptionController } from "./transcriptionController";
 
 const actor = { userId: "user-1", sessionId: "session-1" };
-const repositoryAccess = { requireRead: async () => ({ githubId: "1", nodeId: "repo-1" }) } as never;
+const repositoryAccess = { authoring: { requireAdmin: async () => {} }, requireRead: async () => ({ githubId: "1", nodeId: "repo-1" }) } as never;
 const tasks = { findScoped: async () => null } as unknown as TaskDao;
 let lease: TaskCapture | null = null;
 const captures: TaskCaptureDao = {

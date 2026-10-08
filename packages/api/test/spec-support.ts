@@ -1,3 +1,4 @@
+import { operatorAuthorization } from "./operator-support";
 import { eq } from "drizzle-orm";
 import { taskPlanningDecisions, tasks } from "../src/infra/database/schema";
 import { DrizzleTaskSpecDao } from "../src/infra/database/dao/spec/drizzleTaskSpecDao";
@@ -24,7 +25,7 @@ export async function approvePlanning(setup: SpecSetup) {
 }
 
 export function specRouter(setup: SpecSetup, dao: TaskSpecDao = new DrizzleTaskSpecDao(setup.database)) {
-  return createTaskSpecRouter(new TaskSpecController(setup.taskDao, dao, new SpecLifecycleService(dao), setup.repositoryAccess));
+  return createTaskSpecRouter(new TaskSpecController(operatorAuthorization(setup.database, setup.repositoryAccess, setup.world), dao, new SpecLifecycleService(dao), setup.repositoryAccess));
 }
 
 export function specCaller(setup: SpecSetup, userId: string | null = setup.ownerId, dao: TaskSpecDao = new DrizzleTaskSpecDao(setup.database)) {

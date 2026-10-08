@@ -8,7 +8,10 @@ import { tasks } from "./records";
 export const taskPlanningDecisions = pgTable("task_planning_decisions", {
   id: uuid("id").defaultRandom().primaryKey(),
   taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
-  publicationAttemptId: uuid("publication_attempt_id").notNull().references(() => taskPublicationAttempts.id, { onDelete: "restrict" }),
+  publicationAttemptId: uuid("publication_attempt_id").references(() => taskPublicationAttempts.id, { onDelete: "restrict" }),
+  sourceSnapshotId: uuid("source_snapshot_id"),
+  requesterUserId: uuid("requester_user_id").references(() => users.id, { onDelete: "restrict" }),
+  sourceFormatVersion: integer("source_format_version").notNull().default(1),
   operationId: uuid("operation_id").notNull().references(() => taskOperations.id, { onDelete: "restrict" }),
   executionId: uuid("execution_id").notNull(),
   version: integer("version").notNull().default(1),
@@ -24,7 +27,6 @@ export const taskPlanningDecisions = pgTable("task_planning_decisions", {
   approvedByUserId: uuid("approved_by_user_id").references(() => users.id, { onDelete: "restrict" }),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
 }, (table) => [
-  uniqueIndex("task_planning_decisions_task_unique").on(table.taskId),
   uniqueIndex("task_planning_decisions_operation_unique").on(table.operationId),
   check("task_planning_decisions_version_check", sql`${table.version} > 0`),
   check("task_planning_decisions_route_check", sql`${table.recommendedRoute} in ('direct_execution','tech_spec','prd') and ${table.selectedRoute} in ('direct_execution','tech_spec','prd')`),

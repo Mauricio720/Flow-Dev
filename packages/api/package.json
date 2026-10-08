@@ -10,7 +10,7 @@
     "./spec": "./src/spec.ts"
   },
   "scripts": {
-    "dev": "tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts",
+    "dev": "env -u LD_PRELOAD sh -c 'tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts & tsx src/cli/localConnector.ts dev --server http://localhost:3000 & trap \"kill 0\" EXIT INT TERM; wait'",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -22,9 +22,13 @@
     "tasks:worker": "tsx src/cli/tasksWorker.ts",
     "db:prepare": "tsx src/cli/databasePrepare.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "spec:worker": "tsx src/cli/specWorker.ts"
+    "spec:worker": "tsx src/cli/specWorker.ts",
+    "claims:reconcile": "tsx --env-file=../../apps/web/.env.local src/cli/claimsReconciler.ts",
+    "taskflow:worker": "tsx --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts",
+    "local:connector": "tsx src/cli/localConnector.ts"
   },
   "dependencies": {
+    "@compozy/cli": "0.3.0-beta.29",
     "@trpc/server": "^11.19.0",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",

@@ -46,7 +46,7 @@ describe("spec start", () => {
     const setup = await specTask();
     await setup.authorize(setup.readerId);
     const result = await rejection(specCaller(setup, setup.readerId).start(startInput(setup)));
-    expect(result).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(result).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
     expect(await setup.database.select().from(taskSpecAttempts)).toHaveLength(0);
   });
 
@@ -83,7 +83,7 @@ describe("spec start", () => {
     expect(await rejection(specCaller(lacking).start(startInput(lacking)))).toMatchObject({ code: "PRECONDITION_FAILED", reason: "publication_required" });
     await closeTaskFixture();
     const draft = await unpublishedTask();
-    expect(await rejection(specCaller(draft).start(startInput(draft)))).toMatchObject({ code: "PRECONDITION_FAILED", reason: "publication_required" });
+    expect(await rejection(specCaller(draft).start(startInput(draft)))).toMatchObject({ code: "NOT_FOUND", reason: "spec_unavailable" });
   });
 
   it("IT-177 and IT-178 reject unapproved planning and a direct execution route", async () => {

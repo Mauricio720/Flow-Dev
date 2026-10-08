@@ -72,7 +72,7 @@ describe("reader and administrator observation", () => {
     const detail = await admin.byTask(specScope(setup));
     expect(detail).toMatchObject({ state: "canceled", permissions: { isAuthor: false, canStart: false } });
     expect((await admin.packages({ ...specScope(setup), limit: 20 })).items[0]).toMatchObject({ captureState: "partial" });
-    expect(await rejection(admin.cancel({ ...specScope(setup), requestKey: crypto.randomUUID(), expectedSpecVersion: 1, attemptId: started.attemptId }))).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(await rejection(admin.cancel({ ...specScope(setup), requestKey: crypto.randomUUID(), expectedSpecVersion: 1, attemptId: started.attemptId }))).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
   });
 
   it("IT-145 and IT-147 show the administrator the current approval attribution without mutation controls", async () => {

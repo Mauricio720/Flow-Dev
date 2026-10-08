@@ -39,3 +39,7 @@ export function githubResponse(url: string, identity = repository) {
   return Response.json(url.includes("/user/repos") ? [rest] : rest);
 }
 export type Fixture = Awaited<ReturnType<typeof fixture>>;
+
+export async function designateAdmin(state: Pick<Fixture, "database">, githubUserId: string, resolvedLogin: string) {
+  await state.database.insert(adminDesignations).values({ githubUserId, resolvedLogin }).onConflictDoNothing();
+}

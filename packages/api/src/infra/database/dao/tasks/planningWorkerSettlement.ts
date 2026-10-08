@@ -6,14 +6,15 @@ import type { Database } from "../../client";
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 const SUCCESS_PROTOCOL_VERSION = 1;
+const SOURCE_FORMAT = 2;
 
 export function completePlanning(database: Database, input: PlanningSettlement, now: Date) {
   return database.transaction(async (tx) => {
     await lockCurrent(tx, input.claim, now, true);
     const { result } = input.envelope;
-    const decision = (await tx.insert(taskPlanningDecisions).values({ taskId: input.claim.taskId, publicationAttemptId: await publicationOf(tx, input.claim), operationId: input.claim.operationId, executionId: input.claim.executionId, recommendedRoute: result.recommendedRoute, selectedRoute: result.recommendedRoute, decisionSource: "AI", complexity: result.complexity, summary: result.summary, reasons: result.reasons, uncertainties: result.uncertainties }).returning({ id: taskPlanningDecisions.id }))[0]!;
+    const decision = (await tx.insert(taskPlanningDecisions).values({ taskId: input.claim.taskId, ...await operationLinks(tx, input.claim), operationId: input.claim.operationId, executionId: input.claim.executionId, recommendedRoute: result.recommendedRoute, selectedRoute: result.recommendedRoute, decisionSource: "AI", complexity: result.complexity, summary: result.summary, reasons: result.reasons, uncertainties: result.uncertainties }).returning({ id: taskPlanningDecisions.id }))[0]!;
     await tx.update(taskOperations).set({ state: "succeeded", result: { protocolVersion: SUCCESS_PROTOCOL_VERSION, decisionId: decision.id }, leaseOwner: null, leaseUntil: null, lastError: null, updatedAt: now }).where(eq(taskOperations.id, input.claim.operationId));
-    await tx.update(tasks).set({ planningStatus: "review", activeOperationId: null, version: sql`${tasks.version} + 1`, updatedAt: now }).where(eq(tasks.id, input.claim.taskId));
+    await tx.update(tasks).set({ planningStatus: "review", planningDecisionId: decision.id, activeOperationId: null, version: sql`${tasks.version} + 1`, updatedAt: now }).where(eq(tasks.id, input.claim.taskId));
   });
 }
 
@@ -41,8 +42,10 @@ async function lockCurrent(tx: Tx, claim: PlanningClaim, now: Date, requireLease
   if (!operation || !current) throw new TaskError("stale_execution");
 }
 
-async function publicationOf(tx: Tx, claim: PlanningClaim) {
-  const operation = (await tx.select({ publicationAttemptId: taskOperations.publicationAttemptId }).from(taskOperations).where(eq(taskOperations.id, claim.operationId)).limit(1))[0];
-  if (!operation?.publicationAttemptId) throw new TaskError("invalid_stored_content");
-  return operation.publicationAttemptId;
+async function operationLinks(tx: Tx, claim: PlanningClaim) {
+  const operation = (await tx.select().from(taskOperations).where(eq(taskOperations.id, claim.operationId)).limit(1))[0];
+  const legacy = operation?.sourceFormatVersion === 1 && operation.publicationAttemptId;
+  const sourced = operation?.sourceFormatVersion === SOURCE_FORMAT && operation.sourceSnapshotId;
+  if (!legacy && !sourced) throw new TaskError("invalid_stored_content");
+  return { publicationAttemptId: operation.publicationAttemptId, sourceSnapshotId: operation.sourceSnapshotId, requesterUserId: operation.requesterUserId, sourceFormatVersion: operation.sourceFormatVersion };
 }

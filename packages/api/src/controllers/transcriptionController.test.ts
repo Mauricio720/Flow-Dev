@@ -20,7 +20,7 @@ function matchesCapture(input: { userId: string; sessionId: string; captureId: s
 
 function makeController(userId = actor.userId, gateway = { transcribe: async () => ({ text: "Corrigir total" }) }) {
   const tasks = { findScoped: async () => ({ ...task, authorUserId: userId }) } as unknown as TaskDao;
-  const repositories = { requireRead: vi.fn(async () => ({ githubId: "202", nodeId: "REPO202" })) } as never;
+  const repositories = { authoring: { requireAdmin: async () => {}, isAdmin: async () => true }, requireRead: vi.fn(async () => ({ githubId: "202", nodeId: "REPO202" })) } as never;
   const validator = new AudioValidator("ffprobe", async () => ({ format: { format_name: "webm", duration: "1" }, streams: [{ codec_type: "audio", codec_name: "opus" }] }));
   return new TranscriptionController(tasks, captureDao, repositories, validator, gateway);
 }

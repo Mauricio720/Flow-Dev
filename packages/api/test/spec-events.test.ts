@@ -53,6 +53,7 @@ describe("taskSpec.events", () => {
     await append(3);
     const first = await caller.events({ ...specScope(setup), limit: 2 });
     await setup.database.execute(`DELETE FROM project_assignments` as never);
+    await setup.database.execute(`DELETE FROM admin_designations WHERE github_user_id = '88'` as never);
     expect(await rejection(caller.events({ ...specScope(setup), after: first.nextCursor!, limit: 2 }))).toMatchObject({ code: "FORBIDDEN", reason: "access_revoked" });
   });
 

@@ -7,7 +7,7 @@ import { taskSpecAttempts, taskSpecStages, taskSpecWorkflows, taskSpecWorkspaces
 import type { Database } from "../../client";
 import { readPlanningProjection } from "../tasks/planningProjection";
 import { assertCapacity } from "./specCapacity";
-import { assertAuthor, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, type SpecTask, type SpecWorkflowRow } from "./specCommandHelpers";
+import { assertOperator, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, type SpecTask, type SpecWorkflowRow } from "./specCommandHelpers";
 
 export const ACTIVE_ATTEMPT_STATES = ["queued", "dispatching", "running", "waiting", "finalizing", "stopping", "reconciling"];
 export const TERMINAL_FAILURE_STATES = ["failed", "canceled"];
@@ -19,7 +19,7 @@ export function runAction(database: Database, input: ActionInput, apply: (contex
   return database.transaction(async (tx) => {
     const db = tx as unknown as Database;
     const task = await lockSpecTask(db, input);
-    assertAuthor(task, input.actorUserId);
+    await assertOperator(db, task, input.actorUserId);
     const replay = await findReplay(db, input, input.action);
     if (replay) return replay;
     const workflow = await lockSpecWorkflow(db, task.id);

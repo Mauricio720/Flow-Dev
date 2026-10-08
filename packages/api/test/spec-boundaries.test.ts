@@ -30,6 +30,7 @@ describe.each(SPEC_PROCEDURES)("taskSpec.%s boundaries", (name) => {
   it("IT-169 reports revoked project access to a previously visible author", async () => {
     const setup = await specTask();
     await setup.database.execute(`DELETE FROM project_assignments` as never);
+    await setup.database.execute(`DELETE FROM admin_designations WHERE github_user_id = '88'` as never);
     expect(await rejection(callProcedure(specCaller(setup), name, specInputs(setup)[name]))).toMatchObject({ code: "FORBIDDEN", reason: "access_revoked" });
   });
 

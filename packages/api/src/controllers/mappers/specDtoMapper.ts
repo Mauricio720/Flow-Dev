@@ -14,10 +14,11 @@ export function startableStage(snapshot: SpecSnapshotRecord, firstStage: SpecSta
   return current?.state === APPROVED_STATE ? nextStage(workflow.selectedRoute, workflow.currentStage) : null;
 }
 
-export function specSnapshotDto(snapshot: SpecSnapshotRecord, actorUserId: string) {
+export function specSnapshotDto(snapshot: SpecSnapshotRecord, viewer: { actorUserId: string; canOperate: boolean }) {
+  const actorUserId = viewer.actorUserId;
   const eligibility = specEligibility(snapshot.eligibility);
   const { workflow } = snapshot;
-  const isAuthor = snapshot.taskAuthorUserId === actorUserId;
+  const isAuthor = viewer.canOperate;
   const nextStartableStage = eligibility.canStart ? startableStage(snapshot, eligibility.firstStage) : null;
   return {
     viewerId: actorUserId,

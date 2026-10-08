@@ -17,6 +17,10 @@ export async function superviseExecution(deps: SpecWorkerDeps, claim: SpecClaim)
   try {
     const ingest = await ingestEvents(deps, claim, identity);
     if (ingest.gap) return await deps.dao.settle(claim, { state: "reconciling", reason: "outcome_unknown", attention: REPLAY_GAP_ATTENTION });
+    if (ingest.canceled) {
+      await deps.launcher.stop(claim.attemptId).catch(() => undefined);
+      return await deps.dao.settle(claim, { state: "canceled", reason: null });
+    }
     await syncInteractions(deps, claim, identity);
     await deliverResolutions(deps, claim, identity);
     if (claim.state === RECONCILING_STATE) await deps.dao.markRunning(claim);

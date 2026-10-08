@@ -3,6 +3,7 @@ import { ProjectUnavailableError } from "../application/services/access/projectA
 import { RepositoryAuthorizationNeededError, RepositoryRateLimitedError } from "../application/github/repositoryErrors";
 import { RepositoryArchivedError, RepositoryForbiddenError, RepositoryIdentityMismatchError, RepositoryNotFoundError, RepositoryUnavailableError } from "../application/github/repositoryErrors";
 import { TaskError } from "../application/services/tasks/taskErrors";
+import { AssignedIssueError } from "../application/services/assigned-issues/assignedIssueErrors";
 
 export function mapTaskError(error: unknown): never {
   if (error instanceof TRPCError) throw error;
@@ -12,6 +13,7 @@ export function mapTaskError(error: unknown): never {
 
 export function normalizeTaskError(error: unknown) {
   if (error instanceof TaskError) return error;
+  if (error instanceof AssignedIssueError) return new TaskError(error.reason as TaskError["reason"], undefined, error, error.retryAfterSeconds);
   if (error instanceof ProjectUnavailableError) return new TaskError("project_unavailable", undefined, error);
   if (error instanceof RepositoryAuthorizationNeededError) return new TaskError("repository_authorization_needed", undefined, error);
   if (error instanceof RepositoryArchivedError) return new TaskError("repository_archived", undefined, error);
@@ -26,8 +28,9 @@ export function normalizeTaskError(error: unknown) {
 function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "PRECONDITION_FAILED" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED" | "TOO_MANY_REQUESTS" {
   if (reason === "session_required") return "UNAUTHORIZED";
   if (reason === "provider_rate_limited" || reason === "planning_capacity" || reason === "planning_rate_limited") return "TOO_MANY_REQUESTS";
-  if (["task_unavailable", "project_unavailable", "decision_unavailable"].includes(reason)) return "NOT_FOUND";
-  if (reason === "author_required" || reason === "access_revoked") return "FORBIDDEN";
+  if (["task_unavailable", "project_unavailable", "decision_unavailable", "work_unavailable"].includes(reason)) return "NOT_FOUND";
+  if (["author_required", "access_revoked", "admin_required", "operator_required"].includes(reason)) return "FORBIDDEN";
+  if (["claim_unresolved", "issue_ineligible", "board_status_changed", "source_changed"].includes(reason)) return "PRECONDITION_FAILED";
   if (["revision_conflict", "operation_active", "request_key_reused", "task_complete", "stale_proposal", "capture_active", "capture_expired", "attempt_not_uncertain", "refinement_pending", "generation_not_failed", "stale_execution", "planning_conflict", "planning_exists", "planning_retry_required", "planning_not_failed", "planning_approved", "planning_not_ready"].includes(reason)) return "CONFLICT";
   if (["repository_archived", "issues_disabled", "repository_authorization_needed", "destination_unavailable", "identity_mismatch", "issue_permission_denied", "preview_not_ready", "preview_changed", "publication_required"].includes(reason)) return "PRECONDITION_FAILED";
   if (["service_unavailable", "provider_unavailable", "invalid_provider_response", "invalid_stored_content", "planning_unconfigured", "planning_invalid_output", "planning_execution_mismatch", "planning_provider_unavailable", "planning_deadline", "planning_access_revoked"].includes(reason)) return "INTERNAL_SERVER_ERROR";

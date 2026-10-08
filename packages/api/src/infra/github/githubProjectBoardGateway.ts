@@ -1,19 +1,18 @@
-import { GITHUB_TIMEOUT_MS, githubRequest } from "./githubRequest";
-import { BacklogStatusMissingError, ProjectBoardNotFoundError, ReadyStatusMissingError } from "../../application/github/projectBoardGateway";
+import { GITHUB_TIMEOUT_MS } from "./githubRequest";
+import { DEFAULT_TRANSPORT, githubGraphql } from "./githubGraphql";
+import { BacklogStatusMissingError, ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
 import type { BacklogItem, BoardItemTarget, BoardReference, GitHubProjectBoardGateway, IssuePresence, ProjectBoard } from "../../application/github/projectBoardGateway";
-import { RepositoryAuthorizationNeededError, RepositoryForbiddenError, RepositoryRateLimitedError, RepositoryUnavailableError } from "../../application/github/repositoryErrors";
-import { findBacklogOption, findPriorityFieldId, findReadyOption } from "../../application/services/projects/projectBoardRules";
+import { RepositoryUnavailableError } from "../../application/github/repositoryErrors";
+import { findBacklogOption, findPriorityFieldId } from "../../application/services/projects/projectBoardRules";
 import { ADD_ITEM_MUTATION, BOARD_NODE_QUERY, ISSUE_PRESENCE_QUERY, ORGANIZATION_BOARD_QUERY, SET_PRIORITY_MUTATION, SET_STATUS_MUTATION, USER_BOARD_QUERY } from "./projectBoardQueries";
 import type { AddItemData, BoardNode, BoardNodeData, IssuePresenceData, OwnerBoardData } from "./projectBoardQueries";
 
-const ACCEPT = "application/vnd.github+json";
-const RATE_LIMIT_WAIT_SECONDS = 60;
 const CLOSED_ISSUE_STATE = "CLOSED";
-type GraphqlError = { type?: string };
 type StatusTarget = { fieldId: string; optionId: string };
 
 export class GitHubHttpProjectBoardGateway implements GitHubProjectBoardGateway {
-  constructor(private readonly fetcher: typeof fetch = fetch, private readonly baseUrl = "https://api.github.com", private readonly timeoutMs = GITHUB_TIMEOUT_MS) {}
+  private readonly transport: ReturnType<typeof DEFAULT_TRANSPORT>;
+  constructor(fetcher: typeof fetch = fetch, baseUrl = "https://api.github.com", timeoutMs = GITHUB_TIMEOUT_MS) { this.transport = DEFAULT_TRANSPORT(fetcher, baseUrl, timeoutMs); }
 
   async resolve(token: string, reference: BoardReference): Promise<ProjectBoard> {
     const query = reference.ownerKind === "organization" ? ORGANIZATION_BOARD_QUERY : USER_BOARD_QUERY;
@@ -30,11 +29,6 @@ export class GitHubHttpProjectBoardGateway implements GitHubProjectBoardGateway 
     const backlog = backlogTarget(board);
     const itemId = await this.setStatus(token, item, backlog);
     await this.setPriority(token, board, { itemId, points: item.priorityPoints });
-  }
-
-  async moveToReady(token: string, target: BoardItemTarget) {
-    const ready = readyTarget(await this.board(token, target.boardNodeId));
-    await this.setStatus(token, target, ready);
   }
 
   // addProjectV2ItemById returns the existing item when the issue is already on the board.
@@ -54,7 +48,7 @@ export class GitHubHttpProjectBoardGateway implements GitHubProjectBoardGateway 
   }
 
   private async setPriority(token: string, board: BoardNode, entry: { itemId: string; points?: number | null }) {
-    const fieldId = findPriorityFieldId([board.prioridade, board.priority]);
+    const fieldId = findPriorityFieldId(board.fields?.nodes ?? []);
     if (entry.points == null || !fieldId) return;
     await this.graphql(token, SET_PRIORITY_MUTATION, { board: board.id, item: entry.itemId, field: fieldId, points: entry.points });
   }
@@ -64,12 +58,8 @@ export class GitHubHttpProjectBoardGateway implements GitHubProjectBoardGateway 
     return openBoard(data.node);
   }
 
-  private async graphql<T>(token: string, query: string, variables: Record<string, unknown>): Promise<T> {
-    const init = { method: "POST", headers: { accept: ACCEPT, "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ query, variables }) };
-    const { body } = await githubRequest<{ data?: T; errors?: GraphqlError[] }>(this.fetcher, { url: this.baseUrl + "/graphql", init }, this.timeoutMs);
-    if (body.errors?.length) throw classify(body.errors);
-    if (!body.data) throw new RepositoryUnavailableError();
-    return body.data;
+  private graphql<T>(token: string, query: string, variables: Record<string, unknown>): Promise<T> {
+    return githubGraphql<T>(this.transport, token, query, variables);
   }
 }
 
@@ -84,17 +74,3 @@ function backlogTarget(board: BoardNode): StatusTarget {
   return { fieldId: board.field.id, optionId: option.id };
 }
 
-function readyTarget(board: BoardNode): StatusTarget {
-  const option = findReadyOption(board.field?.options ?? []);
-  if (!board.field?.id || !option) throw new ReadyStatusMissingError();
-  return { fieldId: board.field.id, optionId: option.id };
-}
-
-function classify(errors: GraphqlError[]) {
-  const types = errors.map((error) => error.type);
-  if (types.includes("INSUFFICIENT_SCOPES")) return new RepositoryAuthorizationNeededError("Project board scope is missing");
-  if (types.includes("RATE_LIMITED")) return new RepositoryRateLimitedError(RATE_LIMIT_WAIT_SECONDS);
-  if (types.includes("NOT_FOUND")) return new ProjectBoardNotFoundError();
-  if (types.includes("FORBIDDEN")) return new RepositoryForbiddenError();
-  return new RepositoryUnavailableError();
-}

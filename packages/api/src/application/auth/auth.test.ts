@@ -27,6 +27,12 @@ describe("auth contracts", () => {
     expect([task + "/extra", task.slice(0, -1), task + "?next=//evil.example", task.replace("/issues/", "/issues/%2e%2e/")].map(normalizeDestination)).toEqual(Array(4).fill("/projects"));
     expect(destinationProjectId("https://evil.example/task")).toBeNull();
   });
+  it("keeps assigned work and local project destinations", () => {
+    const project = "/projects/00000000-0000-4000-8000-000000000001";
+    const destinations = [project + "/work", project + "/work/00000000-0000-4000-8000-000000000011", project + "/settings/local-project"];
+    expect(destinations.map(normalizeDestination)).toEqual(destinations);
+    expect([project + "/work/x", project + "/settings/other", project + "/work/../issues"].map(normalizeDestination)).toEqual(Array(3).fill("/projects"));
+  });
   it("limits the eleventh origin attempt", () => { const limiter = new OriginRateLimiter(); for (let index = 0; index < 10; index++) expect(limiter.allow("origin", index)).toBe(true); expect(limiter.allow("origin", 10)).toBe(false); });
   it("rejects client supplied OAuth scopes", () => expect(() => validateSocialRequest({ provider: "github", scopes: ["repo"] })).toThrow());
   it("rejects malformed pagination cursors", () => expect(() => projectListInputSchema.parse({ cursor: "50" })).toThrow());

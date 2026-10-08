@@ -53,6 +53,7 @@ async function submitOnce(deps: SpecWorkerDeps, claim: SpecClaim, message: strin
   const submission = await deps.runtime.submit({ ...identity, messageId: claim.promptMessageId, idempotencyKey: claim.promptIdempotencyKey, message, provider: deps.settings.provider, model: deps.settings.model });
   if (submission.status === "accepted") return deps.dao.markPromptAccepted(claim, submission.turnId);
   if (submission.status === "queue_full") return deps.dao.release(claim);
+  if (submission.status === "rejected") throw new SpecRuntimeError("runtime_failed");
   await deps.dao.settle(claim, { state: "reconciling", reason: "outcome_unknown" });
 }
 

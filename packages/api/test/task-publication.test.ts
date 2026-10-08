@@ -11,7 +11,7 @@ import type { GitHubIssueGateway } from "../src/application/github/issueGateway"
 import { TaskPublicationController } from "../src/controllers/taskPublicationController";
 import { TaskPublicationWorkerController } from "../src/controllers/taskPublicationWorkerController";
 import { createTasksRouter } from "../src/routers/tasks";
-import { fixture, type Fixture } from "./fixture";
+import { designateAdmin, fixture, type Fixture } from "./fixture";
 
 let current: Fixture | undefined;
 afterEach(async () => { await current?.close(); current = undefined; });
@@ -19,6 +19,7 @@ afterEach(async () => { await current?.close(); current = undefined; });
 describe("task publication lifecycle with PostgreSQL", () => {
   it("UT-031 and IT-011 and IT-012 and IT-191 and IT-213 create once and recover the verified snapshot", async () => {
     current = await fixture();
+    await designateAdmin(current, "88", "member");
     const project = await current.project();
     await current.permissions.assign(current.member.id, project.id, current.admin.id);
     await current.authorize(current.member.id);
@@ -59,6 +60,7 @@ describe("task publication lifecycle with PostgreSQL", () => {
 
   it("IT-013/032 keeps uncertainty locked and does not blindly dispatch again", async () => {
     current = await fixture();
+    await designateAdmin(current, "88", "member");
     const prepared = await preparePublication(current);
     const gateway = publicationGateway({ status: "uncertain", reason: "delivery_unknown" });
     const worker = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(current.database), prepared.taskDao, prepared.repositoryAccess, gateway, "00000000-0000-4000-8000-000000000081");

@@ -48,7 +48,7 @@ describe("taskSpec.permission", () => {
   it("IT-044 refuses a reader and IT-048 hides foreign interactions", async () => {
     const { setup, input } = await pending();
     await setup.authorize(setup.readerId);
-    expect(await rejection(specCaller(setup, setup.readerId).permission(input("allow_once") as never))).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(await rejection(specCaller(setup, setup.readerId).permission(input("allow_once") as never))).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
     expect(await rejection(specCaller(setup).permission(input("allow_once", { interactionId: crypto.randomUUID() }) as never))).toMatchObject({ code: "NOT_FOUND", reason: "spec_unavailable" });
   });
 

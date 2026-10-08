@@ -1,6 +1,8 @@
 import type { PlanningClaim, TaskPlanningWorkerDao } from "../application/database/dao/taskPlanningWorkerDao";
 import type { PlanningGateway } from "../application/planning/planningGateway";
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
+import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
+import { AssignedIssueError } from "../application/services/assigned-issues/assignedIssueErrors";
 import { PLANNING_DEADLINE_MS, PLANNING_REQUEST_DEADLINE_MS } from "../application/services/tasks/planningWorkerRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import { classifyPlanningError } from "./planningWorkerOutcome";
@@ -11,7 +13,7 @@ const HEARTBEAT_MS = 15_000;
 type Run = { claim: PlanningClaim; startedAt: number };
 
 export class TaskPlanningWorkerController {
-  constructor(private readonly claims: TaskPlanningWorkerDao, private readonly repositories: RepositoryAccessService, private readonly gateway: PlanningGateway, private readonly workerId = crypto.randomUUID(), private readonly clock = () => new Date()) {}
+  constructor(private readonly claims: TaskPlanningWorkerDao, private readonly repositories: RepositoryAccessService, private readonly gateway: PlanningGateway, private readonly workerId = crypto.randomUUID(), private readonly clock = () => new Date(), private readonly authorization?: WorkAuthorization) {}
 
   async tick(shutdown?: AbortSignal) {
     const claim = await this.claims.claim(this.workerId);
@@ -52,8 +54,10 @@ export class TaskPlanningWorkerController {
   }
 
   private async authorize(claim: PlanningClaim) {
+    try { await this.authorization?.requireOperate({ projectId: claim.projectId, taskId: claim.taskId, actorId: claim.requesterUserId }, { currentSource: true }); }
+    catch (error) { if (error instanceof AssignedIssueError || error instanceof TaskError) throw new TaskError("planning_access_revoked", undefined, error); throw error; }
     if (!await this.claims.sessionActive(claim)) throw new TaskError("planning_access_revoked");
-    const repository = await this.repositories.requireRead({ userId: claim.authorUserId, sessionId: claim.sessionId }, claim.projectId);
+    const repository = await this.repositories.requireRead({ userId: claim.requesterUserId, sessionId: claim.sessionId }, claim.projectId);
     if (repository.githubId !== claim.repositoryId || repository.nodeId !== claim.repositoryNodeId) throw new TaskError("planning_access_revoked");
   }
 

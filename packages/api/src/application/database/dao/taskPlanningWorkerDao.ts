@@ -1,7 +1,7 @@
 import type { PlanningEnvelope } from "../../planning/planningGateway";
 import type { PlanningDispatch } from "../../services/tasks/planningContracts";
 
-export type PlanningClaim = { taskId: string; projectId: string; authorUserId: string; sessionId: string; operationId: string; executionId: string; fence: number; workerId: string; leaseUntil: Date; attempts: number; deadline: Date; repositoryId: string; repositoryNodeId: string; contextCapability: string };
+export type PlanningClaim = { taskId: string; projectId: string; requesterUserId: string; sessionId: string; operationId: string; executionId: string; fence: number; workerId: string; leaseUntil: Date; attempts: number; deadline: Date; repositoryId: string; repositoryNodeId: string; contextCapability: string };
 export type PlanningSettlement = { claim: PlanningClaim; envelope: PlanningEnvelope };
 export type PlanningFailure = { claim: PlanningClaim; reason: string };
 export type PlanningRequeue = PlanningFailure & { nextRunAt: Date };

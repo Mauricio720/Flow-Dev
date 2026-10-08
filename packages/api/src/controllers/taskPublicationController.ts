@@ -62,6 +62,7 @@ export class TaskPublicationController {
 
   private async requireAuthor(actor: SessionPrincipal, input: Scope) {
     await this.repositories.requireRead(actor, input.projectId);
+    await this.repositories.authoring.requireAdmin(actor);
     const task = await this.tasks.findScoped(input.projectId, input.taskId);
     if (!task) throw new TaskError("task_unavailable");
     if (task.authorUserId !== actor.userId) throw new TaskError("author_required");

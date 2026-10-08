@@ -26,10 +26,6 @@ export class PlanningService {
     return this.dao.approve({ ...input, payloadHash: planningPayloadHash(input) });
   }
 
-  publishedIssueNodeId(taskId: string) {
-    return this.dao.publishedIssueNodeId(taskId);
-  }
-
   async submission(input: Scope & { action: string; requestKey: string }) {
     const receipt = await this.dao.submission(input, input.action);
     return receipt ? { status: "accepted" as const, receipt } : { status: "not_accepted" as const };

@@ -4,6 +4,7 @@ import type { PublicationAttempt } from "../../../../application/database/dao/ta
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskOperations, taskPublicationAttempts, tasks } from "../../schema";
 import type { Database } from "../../client";
+import { bindPublishedSource } from "../assigned-issues/publicationBinding";
 
 export async function fenceTaskPublication(database: Database, taskId: string, attemptId: string): Promise<PublicationAttempt | null> {
   return database.transaction(async (tx) => {
@@ -46,6 +47,7 @@ async function recordCreated(database: Database, attempt: typeof taskPublication
   await database.update(taskPublicationAttempts).set({ outcome: "created", verifiedReceipt: receipt, issueId: receipt.issueId, issueNodeId: receipt.nodeId, issueNumber: receipt.number, issueUrl: receipt.url, issueCreatedAt: new Date(receipt.createdAt) }).where(eq(taskPublicationAttempts.id, attempt.id));
   await database.update(taskOperations).set({ state: "succeeded", result: { receipt }, leaseOwner: null, leaseUntil: null, updatedAt: now }).where(eq(taskOperations.id, attempt.operationId));
   await database.update(tasks).set({ status: "published", activeOperationId: null, lastError: null, version: sql`${tasks.version} + 1`, updatedAt: now }).where(and(eq(tasks.id, attempt.taskId), eq(tasks.activeOperationId, attempt.operationId)));
+  await bindPublishedSource(database, attempt, receipt);
 }
 
 async function recordRejected(database: Database, attempt: typeof taskPublicationAttempts.$inferSelect, reason: string, now: Date) {

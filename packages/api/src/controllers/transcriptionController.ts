@@ -22,6 +22,7 @@ export class TranscriptionController {
     if (activeProviderCalls >= MAX_PROVIDER_SLOTS) throw new TaskError("transcription_capacity");
     const captureId = randomUUID();
     await this.repositories.requireRead(actor, input.projectId);
+    await this.repositories.authoring.requireAdmin(actor);
     if (input.taskId) {
       if (input.expectedVersion === undefined) throw new TaskError("invalid_input");
       await this.requireWritableTask(actor, input.projectId, input.taskId, input.expectedVersion);
@@ -48,6 +49,7 @@ export class TranscriptionController {
     const capture = await this.captures.find({ userId: actor.userId, sessionId, captureId });
     if (!capture || capture.tokenHash !== hash(input.captureToken)) throw new TaskError("capture_expired");
     await this.repositories.requireRead(actor, capture.projectId);
+    await this.repositories.authoring.requireAdmin(actor);
     if (capture.taskId) await this.requireWritableTask(actor, capture.projectId, capture.taskId, capture.expectedVersion ?? undefined);
     const claimed = await this.captures.begin({ userId: actor.userId, sessionId, captureId, tokenHash: hash(input.captureToken) });
     if (!claimed) throw new TaskError("capture_expired");

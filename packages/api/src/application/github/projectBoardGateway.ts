@@ -7,12 +7,10 @@ export type IssuePresence = "absent" | "present" | "closed";
 
 export class ProjectBoardNotFoundError extends Error {}
 export class BacklogStatusMissingError extends Error {}
-export class ReadyStatusMissingError extends Error {}
 
 export interface GitHubProjectBoardGateway {
   resolve(token: string, reference: BoardReference): Promise<ProjectBoard>;
   assertBacklog(token: string, boardNodeId: string): Promise<void>;
   placeInBacklog(token: string, item: BacklogItem): Promise<void>;
-  moveToReady(token: string, target: BoardItemTarget): Promise<void>;
   issuePresence(token: string, target: BoardItemTarget): Promise<IssuePresence>;
 }

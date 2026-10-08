@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { and, asc, eq, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, lt, lte, or, sql } from "drizzle-orm";
 import type { PlanningClaim } from "../../../../application/database/dao/taskPlanningWorkerDao";
 import { PLANNING_DEADLINE_MS, PLANNING_LEASE_MS, PLANNING_MAX_DISPATCHES } from "../../../../application/services/tasks/planningWorkerRules";
-import { taskContextCapabilities, taskOperations, taskPublicationAttempts, tasks } from "../../schema";
+import { taskContextCapabilities, taskOperations, tasks } from "../../schema";
 import type { Database } from "../../client";
 import { hashCapability } from "./taskOperationClaim";
 
@@ -14,7 +14,7 @@ type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 export function claimPlanning(database: Database, workerId: string, now: Date): Promise<PlanningClaim | null> {
   return database.transaction(async (tx) => {
     await sweepPlanning(tx, now);
-    const row = (await tx.select({ operation: taskOperations, task: tasks, publication: taskPublicationAttempts }).from(taskOperations).innerJoin(tasks, eq(tasks.id, taskOperations.taskId)).innerJoin(taskPublicationAttempts, eq(taskPublicationAttempts.id, taskOperations.publicationAttemptId)).where(and(eq(taskOperations.kind, "plan"), eq(tasks.planningOperationId, taskOperations.id), eq(tasks.planningStatus, "in_progress"), lt(taskOperations.attempts, PLANNING_MAX_DISPATCHES), or(and(eq(taskOperations.state, "queued"), lte(taskOperations.nextRunAt, now)), and(eq(taskOperations.state, "running"), lte(taskOperations.leaseUntil, now))))).orderBy(asc(taskOperations.nextRunAt), asc(taskOperations.createdAt)).limit(1).for("update", { of: [tasks, taskOperations], skipLocked: true }))[0];
+    const row = (await tx.select({ operation: taskOperations, task: tasks }).from(taskOperations).innerJoin(tasks, eq(tasks.id, taskOperations.taskId)).where(and(eq(taskOperations.kind, "plan"), isNotNull(taskOperations.requesterUserId), eq(tasks.planningOperationId, taskOperations.id), eq(tasks.planningStatus, "in_progress"), lt(taskOperations.attempts, PLANNING_MAX_DISPATCHES), or(and(eq(taskOperations.state, "queued"), lte(taskOperations.nextRunAt, now)), and(eq(taskOperations.state, "running"), lte(taskOperations.leaseUntil, now))))).orderBy(asc(taskOperations.nextRunAt), asc(taskOperations.createdAt)).limit(1).for("update", { of: [tasks, taskOperations], skipLocked: true }))[0];
     if (!row) return null;
     const executionId = crypto.randomUUID();
     const leaseUntil = new Date(now.getTime() + PLANNING_LEASE_MS);
@@ -22,7 +22,7 @@ export function claimPlanning(database: Database, workerId: string, now: Date): 
     await tx.update(taskOperations).set({ state: "running", executionId, leaseOwner: workerId, leaseUntil, heartbeatAt: now, fence, attempts: row.operation.attempts + 1, updatedAt: now }).where(eq(taskOperations.id, row.operation.id));
     await tx.update(tasks).set({ version: sql`${tasks.version} + 1`, updatedAt: now }).where(eq(tasks.id, row.task.id));
     const contextCapability = await issueCapability(tx, { operationId: row.operation.id, executionId, fence, expiresAt: leaseUntil }, now);
-    return { taskId: row.task.id, projectId: row.task.projectId, authorUserId: row.task.authorUserId, sessionId: row.operation.initiatedSessionId, operationId: row.operation.id, executionId, fence, workerId, leaseUntil, attempts: row.operation.attempts + 1, deadline: new Date(row.operation.createdAt.getTime() + PLANNING_DEADLINE_MS), repositoryId: row.publication.repositoryId, repositoryNodeId: row.publication.repositoryNodeId, contextCapability };
+    return { taskId: row.task.id, projectId: row.task.projectId, requesterUserId: row.operation.requesterUserId!, sessionId: row.operation.initiatedSessionId, operationId: row.operation.id, executionId, fence, workerId, leaseUntil, attempts: row.operation.attempts + 1, deadline: new Date(row.operation.createdAt.getTime() + PLANNING_DEADLINE_MS), repositoryId: row.task.repositoryId, repositoryNodeId: row.task.repositoryNodeId, contextCapability };
   });
 }
 

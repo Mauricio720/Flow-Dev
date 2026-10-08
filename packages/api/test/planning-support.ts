@@ -9,6 +9,7 @@ import { TasksController } from "../src/controllers/tasksController";
 import { createTasksRouter } from "../src/routers/tasks";
 import { TaskError } from "../src/application/services/tasks/taskErrors";
 import { seedTask, taskFixture } from "./task-api-support";
+import { operatorAuthorization, operatorWorld, seedOperatorClaim } from "./operator-support";
 
 export const PLAN_OPERATION_ID = "00000000-0000-4000-8000-0000000000a1";
 export const PUBLISH_OPERATION_ID = "00000000-0000-4000-8000-0000000000a2";
@@ -23,7 +24,8 @@ export async function publishedTask(outcome = "created", version = 7, bodySnapsh
   await setup.database.insert(taskOperations).values({ id: PUBLISH_OPERATION_ID, taskId: setup.taskId, kind: "publish", state: "succeeded", initiatedSessionId: setup.sessionId, baseTaskVersion: version });
   await setup.database.insert(taskPublicationAttempts).values({ id: ATTEMPT_ID, taskId: setup.taskId, operationId: PUBLISH_OPERATION_ID, revisionId: setup.revisionId, publisherUserId: setup.ownerId, publisherGithubId: "88", repositoryId: "202", repositoryNodeId: "R_202", approvedOwner: "acme", approvedName: "private", previewHash: "h", titleSnapshot: "Título", bodySnapshot, approvalSessionId: setup.sessionId, outcome, issueId: "4101", issueNodeId: "I_41", issueNumber: 41, issueUrl: "https://github.com/acme/private/issues/41", issueCreatedAt: new Date() });
   await setup.database.update(tasks).set({ status: "published" }).where(eq(tasks.id, setup.taskId));
-  return setup;
+  if (outcome === "created") await seedOperatorClaim({ database: setup.database, projectId: setup.project.id, taskId: setup.taskId, attemptId: ATTEMPT_ID, operatorId: setup.ownerId }, { title: "Título", body: bodySnapshot });
+  return Object.assign(setup, { world: operatorWorld({ body: bodySnapshot }) });
 }
 
 export async function seedPlanOperation(setup: PlanningSetup, state: string, id = PLAN_OPERATION_ID, planningStatus: string | null = "in_progress") {
@@ -37,7 +39,7 @@ export async function seedReview(setup: PlanningSetup, overrides: Record<string,
 }
 
 export function planningCaller(setup: PlanningSetup, userId: string | null = setup.ownerId, configured = true, planningDao: TaskPlanningDao = new DrizzleTaskPlanningDao(setup.database)) {
-  const planning = new TaskPlanningController(setup.taskDao, new PlanningService(planningDao), setup.repositoryAccess, configured ? () => {} : requireMissing);
+  const planning = new TaskPlanningController(new PlanningService(planningDao), operatorAuthorization(setup.database, setup.repositoryAccess, setup.world), configured ? () => {} : requireMissing);
   const tasksController = new TasksController(setup.taskDao, setup.repositoryAccess);
   return createTasksRouter(tasksController, undefined, planning).createCaller({ principal: userId ? { userId, sessionId: setup.sessionId } : null, requestId: "planning-test" });
 }
@@ -65,7 +67,7 @@ function requireMissing() {
   throw new TaskError("planning_unconfigured");
 }
 
-export async function addPublishedTask(setup: PlanningSetup, snapshot: { title?: string; body?: string; authorId?: string } = {}) {
+export async function addPublishedTask(setup: PlanningSetup, snapshot: { title?: string; body?: string; authorId?: string; operatorId?: string } = {}) {
   const authorId = snapshot.authorId ?? setup.ownerId;
   const taskId = crypto.randomUUID();
   const attemptId = crypto.randomUUID();
@@ -75,8 +77,9 @@ export async function addPublishedTask(setup: PlanningSetup, snapshot: { title?:
   await setup.database.insert(tasks).values({ id: taskId, projectId: setup.project.id, authorUserId: authorId, repositoryId: "202", repositoryNodeId: "R_202", status: "draft_ready", version: 3, title: "Adicional" });
   await setup.database.insert(taskDraftRevisions).values({ id: revisionId, taskId, revisionNumber: 1, canonicalDraft: draft, createdByUserId: setup.ownerId });
   await setup.database.insert(taskOperations).values({ id: publishId, taskId, kind: "publish", state: "succeeded", initiatedSessionId: setup.sessionId, baseTaskVersion: 3 });
-  await setup.database.insert(taskPublicationAttempts).values({ id: attemptId, taskId, operationId: publishId, revisionId, publisherUserId: setup.ownerId, publisherGithubId: "88", repositoryId: "202", repositoryNodeId: "R_202", approvedOwner: "acme", approvedName: "private", previewHash: "h", titleSnapshot: snapshot.title ?? "Outro título", bodySnapshot: snapshot.body ?? "Outro corpo", approvalSessionId: setup.sessionId, outcome: "created", issueId: attemptId, issueNodeId: "I", issueNumber: 7, issueUrl: "https://github.com/acme/private/issues/7", issueCreatedAt: new Date() });
+  await setup.database.insert(taskPublicationAttempts).values({ id: attemptId, taskId, operationId: publishId, revisionId, publisherUserId: setup.ownerId, publisherGithubId: "88", repositoryId: "202", repositoryNodeId: "R_202", approvedOwner: "acme", approvedName: "private", previewHash: "h", titleSnapshot: snapshot.title ?? "Outro título", bodySnapshot: snapshot.body ?? "Outro corpo", approvalSessionId: setup.sessionId, outcome: "created", issueId: attemptId, issueNodeId: `I_${attemptId}`, issueNumber: 7, issueUrl: "https://github.com/acme/private/issues/7", issueCreatedAt: new Date() });
   await setup.database.update(tasks).set({ status: "published" }).where(eq(tasks.id, taskId));
+  await seedOperatorClaim({ database: setup.database, projectId: setup.project.id, taskId, attemptId, operatorId: snapshot.operatorId ?? snapshot.authorId ?? setup.ownerId, world: setup.world }, { title: snapshot.title ?? "Outro título", body: snapshot.body ?? "Outro corpo" });
   return taskId;
 }
 

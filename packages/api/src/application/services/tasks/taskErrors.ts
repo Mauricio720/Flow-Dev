@@ -23,7 +23,8 @@ export type TaskErrorReason =
   | "workspace_unavailable" | "runtime_incompatible" | "runtime_unconfigured" | "permission_out_of_scope" | "spec_conflict" | "attempt_active"
   | "outcome_unknown" | "interaction_stale" | "interaction_resolved" | "artifact_conflict" | "stage_approved" | "invalid_answer"
   | "invalid_permission" | "spec_capacity" | "interaction_queue_full" | "package_limit" | "artifact_invalid" | "capture_failed"
-  | "runtime_failed" | "resource_limit";
+  | "runtime_failed" | "resource_limit" | "admin_required" | "operator_required" | "claim_unresolved" | "issue_ineligible" | "board_status_changed"
+  | "source_changed" | "work_unavailable";
 
 export class TaskError extends Error {
   constructor(readonly reason: TaskErrorReason, readonly fieldErrors?: Record<string, string>, cause?: unknown, readonly retryAfterSeconds?: number) {

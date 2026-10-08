@@ -10,7 +10,7 @@ import { TaskPublicationController } from "../src/controllers/taskPublicationCon
 import { TaskPublicationWorkerController } from "../src/controllers/taskPublicationWorkerController";
 import { createTasksRouter } from "../src/routers/tasks";
 import { sessions, taskDraftRevisions, tasks } from "../src/infra/database/schema";
-import { fixture } from "./fixture";
+import { designateAdmin, fixture } from "./fixture";
 import { draft } from "./task-api-support";
 
 type Eligibility = { archived?: boolean; issuesEnabled?: boolean; canRead?: boolean; canCreateIssues?: boolean; repositoryId?: string; publisherGithubId?: string; error?: "provider_rate_limited" };
@@ -19,6 +19,7 @@ type Options = { draft?: typeof draft; withoutRevision?: boolean; archived?: boo
 export async function publicationCase(options: Options = {}) {
   const state = await fixture();
   const project = await state.project();
+  await designateAdmin(state, "88", "member");
   await state.permissions.assign(state.member.id, project.id, state.admin.id);
   await state.authorize(state.member.id);
   const sessionId = "00000000-0000-4000-8000-000000000091";

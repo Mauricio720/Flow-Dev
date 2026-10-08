@@ -18,7 +18,7 @@ describe("planning workspace reads", () => {
   it("IT-002 projects historical published tasks as awaiting without writes", async () => {
     const setup = await publishedTask();
     const detail = await planningCaller(setup).byId(scope(setup));
-    expect(detail.planning).toMatchObject({ status: "awaiting", eligibility: { canStart: true, reason: null }, operation: null, decision: null, permissions: { canStart: true } });
+    expect(detail.planning).toMatchObject({ status: "awaiting", eligibility: { canStart: true, reason: null }, operation: null, decision: null, permissions: { canStart: false } });
     expect(await setup.database.select().from(taskOperations).where(eq(taskOperations.kind, "plan"))).toHaveLength(0);
   });
 
@@ -75,7 +75,7 @@ describe("planning workspace reads", () => {
     const before = await setup.database.select().from(taskPublicationAttempts);
     setup.githubFetcher.mockImplementation(async (url) => githubResponse(String(url), { ...repository, archived: true }));
     const caller = planningCaller(setup);
-    await caller.planning.start(planningBase(setup));
+    expect(await rejection(caller.planning.start(planningBase(setup)))).toMatchObject({ code: "PRECONDITION_FAILED", reason: "issue_ineligible" });
     expect(await setup.database.select().from(taskPublicationAttempts)).toEqual(before);
     expect(setup.githubFetcher.mock.calls.some((call) => String(call[0]).includes("/issues"))).toBe(false);
   });
@@ -92,16 +92,16 @@ describe("planning authorization and error boundaries", () => {
     const setup = await publishedTask();
     const caller = planningCaller(setup);
     const unknownProject = await Promise.allSettled(allPlanningCalls({ ...setup, project: { ...setup.project, id: crypto.randomUUID() } } as PlanningSetup, caller));
-    expectAll(unknownProject, "NOT_FOUND", "project_unavailable");
+    expectSplit(unknownProject, ["NOT_FOUND", "project_unavailable"], ["NOT_FOUND", "work_unavailable"]);
     const unknownTask = await Promise.allSettled(allPlanningCalls({ ...setup, taskId: crypto.randomUUID() } as PlanningSetup, caller));
-    expectAll(unknownTask, "NOT_FOUND", "task_unavailable");
+    expectSplit(unknownTask, ["NOT_FOUND", "task_unavailable"], ["NOT_FOUND", "work_unavailable"]);
   });
 
   it("IT-055 and IT-056 deny nonauthors and missing personal authorization", async () => {
     const setup = await publishedTask();
     await setup.authorize(setup.readerId);
     const mutations = (await Promise.allSettled(allPlanningCalls(setup, planningCaller(setup, setup.readerId)).slice(1)));
-    expectAll(mutations, "FORBIDDEN", "author_required");
+    expect(mutations.map((result) => result.status === "rejected" ? [result.reason.code, result.reason.cause?.reason] : "resolved")).toEqual([...Array(mutations.length - 1).fill(["FORBIDDEN", "operator_required"]), "resolved"]);
     expect(await setup.database.select().from(taskOperations).where(eq(taskOperations.kind, "plan"))).toHaveLength(0);
     await setup.database.delete(githubRepositoryAuthorizations).where(eq(githubRepositoryAuthorizations.userId, setup.readerId));
     expectAll(await Promise.allSettled(allPlanningCalls(setup, planningCaller(setup, setup.readerId))), "PRECONDITION_FAILED", "repository_authorization_needed");
@@ -120,7 +120,7 @@ describe("planning authorization and error boundaries", () => {
   it("IT-059 and IT-060 preserve safe repository access failures and rate limits", async () => {
     const setup = await publishedTask();
     setup.githubFetcher.mockImplementation(async () => new Response("", { status: 404 }));
-    expectAll(await Promise.allSettled(allPlanningCalls(setup, planningCaller(setup))), "PRECONDITION_FAILED", "destination_unavailable");
+    expectSplit(await Promise.allSettled(allPlanningCalls(setup, planningCaller(setup))), ["PRECONDITION_FAILED", "destination_unavailable"], ["NOT_FOUND", "work_unavailable"]);
     setup.githubFetcher.mockImplementation(async () => new Response("", { status: 429, headers: { "retry-after": "45" } }));
     const limited = await Promise.allSettled(allPlanningCalls(setup, planningCaller(setup)));
     expectAll(limited, "TOO_MANY_REQUESTS", "provider_rate_limited");
@@ -167,6 +167,10 @@ function allPlanningCalls(setup: PlanningSetup, caller: ReturnType<typeof planni
   const command = () => ({ ...base, requestKey: crypto.randomUUID(), expectedVersion: 7 });
   const review = { decisionId: crypto.randomUUID(), expectedDecisionVersion: 1 };
   return [caller.byId(base), caller.planning.start(command()), caller.planning.retry({ ...command(), failedOperationId: crypto.randomUUID() }), caller.planning.selectRoute({ ...command(), ...review, selectedRoute: "prd" }), caller.planning.approve({ ...command(), ...review, reviewedRoute: "prd" }), caller.planning.submission({ ...base, requestKey: crypto.randomUUID(), action: "planning.start" })];
+}
+
+function expectSplit(results: PromiseSettledResult<unknown>[], first: [string, string], rest: [string, string]) {
+  expect(results.map((result) => result.status === "rejected" ? [result.reason.code, result.reason.cause?.reason] : "resolved")).toEqual([first, ...Array(results.length - 1).fill(rest)]);
 }
 
 function expectAll(results: PromiseSettledResult<unknown>[], code: string, reason: string) {

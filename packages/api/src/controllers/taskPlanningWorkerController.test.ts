@@ -1,18 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PlanningClaim, TaskPlanningWorkerDao } from "../application/database/dao/taskPlanningWorkerDao";
+import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import { TaskPlanningWorkerController } from "./taskPlanningWorkerController";
 
 const WORKER_ID = "00000000-0000-4000-8000-000000000001";
 const now = new Date("2026-10-05T12:00:00.000Z");
-const claim: PlanningClaim = { taskId: "t", projectId: "p", authorUserId: "u", sessionId: "s", operationId: "o", executionId: "e", fence: 1, workerId: "w", leaseUntil: new Date(now.getTime() + 60_000), attempts: 1, deadline: new Date(now.getTime() + 900_000), repositoryId: "1", repositoryNodeId: "R", contextCapability: "c" };
+const claim: PlanningClaim = { taskId: "t", projectId: "p", requesterUserId: "u", sessionId: "s", operationId: "o", executionId: "e", fence: 1, workerId: "w", leaseUntil: new Date(now.getTime() + 60_000), attempts: 1, deadline: new Date(now.getTime() + 900_000), repositoryId: "1", repositoryNodeId: "R", contextCapability: "c" };
 const input = { protocolVersion: 1 as const, operationId: "o", executionId: "e", taskId: "t", inputHash: "h", publication: { attemptId: "a", repositoryId: "1", repositoryNodeId: "R", issueId: "2", issueNumber: 3, title: "T", bodyMarkdown: "B" }, issueUrl: "https://github.com/acme/shop/issues/3", contextCapability: "c" };
 const envelope = { protocolVersion: 1 as const, operationId: "o", executionId: "e", taskId: "t", inputHash: "h", result: { recommendedRoute: "prd" as const, complexity: "high" as const, summary: "S", reasons: ["R"], uncertainties: [] } };
 
-function build(overrides: Partial<TaskPlanningWorkerDao> = {}, analyze = vi.fn(async () => envelope)) {
+function build(overrides: Partial<TaskPlanningWorkerDao> = {}, analyze = vi.fn(async () => envelope), authorize = vi.fn(async () => ({ projectId: "p", taskId: "t", actorId: "u", sourceSnapshotId: "S1", claimRevision: 1 }))) {
   const dao = { claim: vi.fn(async () => claim), heartbeat: vi.fn(async () => {}), sessionActive: vi.fn(async () => true), input: vi.fn(async () => input), complete: vi.fn(async () => {}), fail: vi.fn(async () => {}), requeue: vi.fn(async () => {}), ...overrides } as unknown as TaskPlanningWorkerDao;
   const repositories = { requireRead: vi.fn(async () => ({ githubId: "1", nodeId: "R" })) } as never;
-  return { dao, analyze, worker: new TaskPlanningWorkerController(dao, repositories, { analyze }, WORKER_ID, () => now) };
+  return { dao, analyze, authorize, worker: new TaskPlanningWorkerController(dao, repositories, { analyze }, WORKER_ID, () => now, { requireOperate: authorize } as unknown as WorkAuthorization) };
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -29,6 +30,23 @@ describe("TaskPlanningWorkerController", () => {
     vi.spyOn(console, "info").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { worker, dao, analyze } = build({ sessionActive: vi.fn(async () => false) });
+    await worker.tick();
+    expect(dao.fail).toHaveBeenCalledWith({ claim, reason: "planning_access_revoked" });
+    expect(analyze).not.toHaveBeenCalled();
+  });
+
+  it("IT-023 rechecks current operator eligibility as the accepted requester before provider dispatch", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    const { worker, authorize, analyze } = build();
+    await worker.tick();
+    expect(authorize).toHaveBeenCalledWith({ projectId: "p", taskId: "t", actorId: "u" }, { currentSource: true });
+    expect(analyze).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not dispatch a queued planning request after operator eligibility is revoked", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { worker, dao, analyze } = build({}, vi.fn(async () => envelope), vi.fn(async () => { throw new TaskError("operator_required"); }));
     await worker.tick();
     expect(dao.fail).toHaveBeenCalledWith({ claim, reason: "planning_access_revoked" });
     expect(analyze).not.toHaveBeenCalled();

@@ -6,7 +6,7 @@ import { DrizzleProjectDao } from "../src/infra/database/dao/projects/drizzlePro
 import { RepositoryAccessService } from "../src/application/services/projects/repositoryAccessService";
 import { TasksController } from "../src/controllers/tasksController";
 import { createTasksRouter } from "../src/routers/tasks";
-import { fixture, type Fixture } from "./fixture";
+import { designateAdmin, fixture, type Fixture } from "./fixture";
 
 export const storedDraftDefaults = { priorityPoints: null, labels: ["generica"] };
 export const draft = { title: "Corrigir total", context: "O total permanece antigo", objective: "Recalcular total", constraints: [], relevantContext: [], productConsiderations: [], references: [] };
@@ -15,6 +15,7 @@ let current: Fixture | undefined;
 export async function taskFixture() {
   current = await fixture();
   const project = await current.project();
+  await designateAdmin(current, "88", "member");
   await current.permissions.assign(current.member.id, project.id, current.admin.id);
   await current.authorize(current.member.id);
   const sessionId = "00000000-0000-4000-8000-000000000091";

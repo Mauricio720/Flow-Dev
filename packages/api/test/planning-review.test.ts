@@ -145,7 +145,7 @@ describe("planning approval", () => {
     await setup.authorize(setup.readerId);
     const selectionInput = await selection(setup, "prd");
     await planningCaller(setup).planning.approve(await approval(setup, "tech_spec"));
-    expect(await rejection(planningCaller(setup, setup.readerId).planning.selectRoute(selectionInput))).toMatchObject({ code: "FORBIDDEN", reason: "author_required" });
+    expect(await rejection(planningCaller(setup, setup.readerId).planning.selectRoute(selectionInput))).toMatchObject({ code: "FORBIDDEN", reason: "operator_required" });
     expect((await setup.database.select().from(taskPlanningDecisions))[0]).toMatchObject({ status: "approved", selectedRoute: "tech_spec", approvedByUserId: setup.ownerId });
   });
 
