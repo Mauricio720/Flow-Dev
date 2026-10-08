@@ -4,8 +4,8 @@ import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { MAX_SEARCH_CODE_POINTS, codePoints, type HistoryLoad, type TaskSummary } from "../contract";
 import { historyPollInterval, historyReducer, initialHistoryState, type HistoryRequest } from "../historyState";
-import { taskFailure } from "../taskFailure";
-import { usePolling } from "./usePolling";
+import { taskFailure } from "@/lib/tasks/taskFailure";
+import { usePolling } from "@/hooks/usePolling";
 
 const SEARCH_DELAY_MS = 250;
 

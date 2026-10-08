@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { TaskPublication } from "../contract";
 import type { DraftSource } from "../draftSources";
 import { SOURCE_KINDS } from "../toolModel";
-import { GUTTER_COMPACT, GraphRow, LANE_X, LANE_X_COMPACT } from "./Graph";
+import { GUTTER_COMPACT, GraphRow, LANE_X, LANE_X_COMPACT } from "@/components/tasks/Graph";
 import { MERGE_Y, MergeLanes } from "./MergeLanes";
 
 const WIDE_GUTTER = 72;

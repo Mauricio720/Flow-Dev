@@ -27,7 +27,7 @@ describe("project selection from the catalog", () => {
     renderCatalog({ kind: "ready", page: pageOf([P1]) }, { isAdmin: false, lastProjectId });
     await userEvent.click(screen.getByRole("link", { name: "Projeto Alfa acme/private" }));
     await waitFor(() => expect(useRouter().push).toHaveBeenCalledTimes(1));
-    expect(useRouter().push).toHaveBeenCalledWith("/projects/p1");
+    expect(useRouter().push).toHaveBeenCalledWith("/projects/p1/work");
     expect(lastProjectId).toBe("p1");
   });
 
@@ -39,7 +39,7 @@ describe("project selection from the catalog", () => {
     await userEvent.click(screen.getByRole("link", { name: "Projeto Docs octo/docs" }));
     answers.p2.resolve(P2);
     answers.p1.resolve(P1);
-    await waitFor(() => expect(useRouter().push).toHaveBeenCalledWith("/projects/p2"));
+    await waitFor(() => expect(useRouter().push).toHaveBeenCalledWith("/projects/p2/work"));
     expect(useRouter().push).toHaveBeenCalledTimes(1);
   });
 

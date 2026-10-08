@@ -1,13 +1,13 @@
 "use client";
 
 import { repositoryLabel } from "@/components/projects/RepositoryIdentity";
+import { projectWorkPath } from "@/lib/navigation/projectRoutes";
 import type { Project } from "@/lib/projects/contract";
 import { composerGuard, composerPlaceholder } from "../composerModel";
 import type { TaskSnapshot } from "../contract";
 import { draftSources } from "../draftSources";
 import type { ActionContext } from "../hooks/actionContext";
 import { useDictation } from "../hooks/useDictation";
-import { usePlanningActions } from "../hooks/usePlanningActions";
 import { useTaskActions, type TaskActions } from "../hooks/useTaskActions";
 import { failedOperationId, threadEntries } from "../threadModel";
 import { Composer } from "./Composer";
@@ -16,9 +16,6 @@ import { DraftReview } from "./DraftReview";
 import { DraftStage } from "./DraftStage";
 import { EmptyIntent } from "./EmptyIntent";
 import { StageFrame } from "./StageFrame";
-import { PlanningStage } from "./PlanningStage";
-import { SpecStage } from "../spec/SpecStage";
-import { specVisible } from "../spec/specVisibility";
 import { CompletedNotice, ConversationNotice } from "./StageNotices";
 import { TaskProgress } from "./TaskProgress";
 import { Thread } from "./Thread";
@@ -34,18 +31,15 @@ function AuthorThread({ project, snapshot, actions, context, capturing, locked, 
   const revision = detail.currentRevision;
   const failed = failedOperationId(messages);
   const repository = repositoryLabel(project);
-  const planning = usePlanningActions({ ...context, planning: detail.planning });
   return (
     <Thread title={detail.task.title} entries={threadEntries(messages, detail.activity)} authorLabel={AUTHOR_LABEL} hasMore={snapshot.moreMessages !== null} onLoadMore={() => void controls.loadMoreMessages()}>
       {snapshot.conversationFailure && <ConversationNotice onRefresh={() => void controls.refresh()} />}
       <TaskProgress detail={detail} busy={actions.busy} onRetry={failed && !locked ? () => void actions.retryGeneration(failed) : null} />
       {revision && (
         <DraftStage sources={draftSources(revision)} publication={detail.publication}>
-          {hasOutcome(detail) ? <DraftOutcome detail={detail} revision={revision} repository={repository} onCheck={() => void controls.refresh()} /> : <DraftReview detail={detail} revision={revision} actions={actions} context={context} repository={repository} repositoryId={project.repository?.githubId ?? null} capturing={capturing} locked={locked} />}
+          {hasOutcome(detail) ? <DraftOutcome detail={detail} revision={revision} repository={repository} workHref={projectWorkPath(project.id)} onCheck={() => void controls.refresh()} /> : <DraftReview detail={detail} revision={revision} actions={actions} context={context} repository={repository} repositoryId={project.repository?.githubId ?? null} capturing={capturing} locked={locked} />}
         </DraftStage>
       )}
-      {detail.task.status === "published" && <PlanningStage detail={detail} actions={planning} onRefresh={() => void controls.refresh()} />}
-      {specVisible(detail) && <SpecStage project={project} taskId={detail.task.id} decision={detail.planning.decision} canAct onFailure={controls.onFailure} />}
     </Thread>
   );
 }

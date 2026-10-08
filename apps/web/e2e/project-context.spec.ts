@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 
 test("E2E-002 switching projects keeps the latest one as route and header context", async ({ page, seed, signInAs }) => {
-  const member = await seed.user();
+  const member = await seed.user({ admin: true });
   const first = await seed.project({ label: "Primeiro", assignedTo: [member] });
   const second = await seed.project({ label: "Segundo", assignedTo: [member] });
   await signInAs(page, member);
@@ -40,4 +40,18 @@ test("a visitor following a project menu link signs in first and keeps the desti
   await expect(page).toHaveURL(/\/login\?/);
   expect(new URL(page.url()).searchParams.get("next")).toBe(`/projects/${project.id}/issues`);
   await expect(page.getByText(project.name)).toHaveCount(0);
+});
+
+test("E2E-002 a non-administrator lands on assigned work and never sees the authoring menu", async ({ page, seed, signInAs }) => {
+  const member = await seed.user();
+  const project = await seed.project({ assignedTo: [member] });
+  await signInAs(page, member);
+  await page.goto("/projects");
+  await page.getByRole("link", { name: `${project.name} ${project.repository}` }).click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${project.id}/work$`));
+  const menus = page.getByRole("navigation", { name: "Menus do projeto" });
+  await expect(menus.getByRole("link", { name: "Trabalho atribuído" })).toHaveAttribute("aria-current", "page");
+  await expect(menus.getByRole("link", { name: "Issues" })).toHaveCount(0);
+  await page.goto("/");
+  await expect(page).toHaveURL(new RegExp(`/projects/${project.id}/work$`));
 });

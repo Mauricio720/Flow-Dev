@@ -12,22 +12,20 @@ import { useStatusAnnouncement } from "../hooks/useStatusAnnouncement";
 import { useTaskHistory } from "../hooks/useTaskHistory";
 import { useTaskNavigation } from "../hooks/useTaskNavigation";
 import { useTaskWorkspace } from "../hooks/useTaskWorkspace";
-import { ACCESS_LOCK_COPY, accessProblem } from "../taskFailure";
+import { ACCESS_LOCK_COPY, accessProblem } from "@/lib/tasks/taskFailure";
 import { RailDrawer } from "./RailDrawer";
 import { SessionRail } from "./SessionRail";
 import { SourcesDrawer } from "./SourcesDrawer";
 import { SourcesPanel } from "./SourcesPanel";
-import { SpecInitialProvider } from "../spec/specInitialContext";
-import { EMPTY_SELECTION } from "../spec/specSelectionParams";
 import { TaskStage } from "./TaskStage";
 import { TopBar } from "./TopBar";
 import { AccessNotice } from "./WorkspaceNotices";
 
 const NEW_INTENT_TITLE = "Nova intenção";
 
-type Props = { project: Project; initial: WorkspaceLoad };
+type Props = { project: Project; initial: WorkspaceLoad; canAuthor: boolean };
 
-function useWorkspaceData({ project, initial }: Props) {
+function useWorkspaceData({ project, initial }: Omit<Props, "canAuthor">) {
   const navigation = useTaskNavigation(project.id, initial.taskId);
   const history = useTaskHistory(project.id, initial.history);
   const [reported, setReported] = useState<TaskFailure | null>(null);
@@ -56,23 +54,22 @@ function useRevokedRedirect(revoked: boolean) {
   }, [revoked, router]);
 }
 
-export function Workspace({ project, initial }: Props) {
+export function Workspace({ project, initial, canAuthor }: Props) {
   const { navigation, history, workspace, problem, controls } = useWorkspaceData({ project, initial });
   const { grid, toggleGrid } = useGridPreference();
   const [railOpen, setRailOpen] = useState(false);
   const detail = workspace.snapshot?.detail ?? null;
-  const announcement = useStatusAnnouncement(workspace.scope, detail?.task.status ?? null, detail?.planning.status ?? null);
+  const announcement = useStatusAnnouncement(workspace.scope, detail?.task.status ?? null);
   useRevokedRedirect(problem === "revoked");
   function select(taskId: string | null) {
     navigation.select(taskId);
     setRailOpen(false);
   }
-  const rail = <SessionRail history={history} items={withCurrentTask(history.items, detail?.task ?? null)} activeId={navigation.taskId} onSelect={select} />;
+  const rail = <SessionRail history={history} items={withCurrentTask(history.items, detail?.task ?? null)} activeId={navigation.taskId} canAuthor={canAuthor} onSelect={select} />;
   const revision = detail?.currentRevision ?? null;
-  const sources = <SourcesPanel activity={detail?.activity ?? []} sources={revision ? draftSources(revision) : []} hasDraft={revision !== null} planningBasis={detail?.publication && detail.planning.status ? detail.publication.issueNumber : null} />;
+  const sources = <SourcesPanel activity={detail?.activity ?? []} sources={revision ? draftSources(revision) : []} hasDraft={revision !== null} planningBasis={detail?.publication ? detail.publication.issueNumber : null} />;
   const returnPath = navigation.taskId ? projectTaskPath(project.id, navigation.taskId) : projectIssuesPath(project.id);
   return (
-    <SpecInitialProvider value={{ load: initial.spec ?? { kind: "none" }, selection: initial.specSelection ?? EMPTY_SELECTION }}>
     <div className="flex min-h-0 flex-1 flex-col">
       <TopBar title={detail?.task.title || NEW_INTENT_TITLE} grid={grid} onToggleGrid={toggleGrid} rail={<RailDrawer open={railOpen} onOpenChange={setRailOpen}>{rail}</RailDrawer>} sources={<SourcesDrawer>{sources}</SourcesDrawer>} />
       <p role="status" aria-label="Estado da tarefa" className="sr-only">{announcement}</p>
@@ -80,11 +77,10 @@ export function Workspace({ project, initial }: Props) {
         <div className="hidden min-h-0 border-r border-line bg-surface xl:block">{rail}</div>
         <main className="relative flex min-h-0 flex-col">
           <AccessNotice problem={problem} returnPath={returnPath} />
-          {problem !== "revoked" && <TaskStage project={project} workspace={workspace} lock={problem ? ACCESS_LOCK_COPY[problem] : null} grid={grid} controls={controls} />}
+          {problem !== "revoked" && <TaskStage project={project} workspace={workspace} lock={problem ? ACCESS_LOCK_COPY[problem] : null} grid={grid} canAuthor={canAuthor} controls={controls} />}
         </main>
         <div className="hidden min-h-0 border-l border-line bg-surface 2xl:block">{sources}</div>
       </div>
     </div>
-    </SpecInitialProvider>
   );
 }

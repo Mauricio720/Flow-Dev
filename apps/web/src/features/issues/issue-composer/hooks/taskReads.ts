@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc/client";
 import type { TaskDetail, TaskSnapshot } from "../contract";
-import { taskFailure } from "../taskFailure";
+import { taskFailure } from "@/lib/tasks/taskFailure";
 import { MESSAGE_PAGE_SIZE, collectMessages } from "../taskMessages";
 
 export type TaskTarget = { projectId: string; taskId: string };

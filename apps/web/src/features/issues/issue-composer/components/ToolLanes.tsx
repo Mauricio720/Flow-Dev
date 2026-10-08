@@ -1,7 +1,7 @@
 import type { ToolActivity } from "../contract";
 import type { SourceKind } from "../draftSources";
 import { TOOL_SOURCE } from "../toolModel";
-import { CELL, GUTTER_COMPACT, LANE_X, LANE_X_COMPACT, TRUNK_X, forkOffset, laneColor } from "./Graph";
+import { CELL, GUTTER_COMPACT, LANE_X, LANE_X_COMPACT, TRUNK_X, forkOffset, laneColor } from "@/components/tasks/Graph";
 
 const HEADER = 32;
 const STOP_RADIUS = 5;

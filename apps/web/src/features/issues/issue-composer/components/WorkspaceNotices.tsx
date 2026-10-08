@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { PROJECTS_PATH, expiredSessionPath, repositoryConnectPath } from "@/lib/navigation/projectRoutes";
 import type { TaskFailure } from "../contract";
-import type { AccessProblem } from "../taskFailure";
+import type { AccessProblem } from "@/lib/tasks/taskFailure";
 import { failureMessage } from "../taskCopy";
 
 const SESSION_NOTE = "Sua sessão expirou. Entre novamente para continuar; o que já foi salvo permanece na tarefa.";

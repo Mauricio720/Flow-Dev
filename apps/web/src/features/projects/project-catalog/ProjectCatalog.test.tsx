@@ -51,7 +51,7 @@ describe("project catalog", () => {
     list.mockResolvedValue(pageOf([P1, P2]));
     await userEvent.click(screen.getByRole("button", { name: "Carregar mais projetos" }));
     await screen.findByRole("link", { name: "Projeto Docs octo/docs" });
-    expect(entries().map((entry) => entry.getAttribute("href"))).toEqual(["/projects/p1", "/projects/p2"]);
+    expect(entries().map((entry) => entry.getAttribute("href"))).toEqual(["/projects/p1/work", "/projects/p2/work"]);
     expect(list).toHaveBeenCalledWith({ search: undefined, cursor: "cursor-2" });
   });
 
@@ -69,6 +69,18 @@ describe("project catalog", () => {
     renderCatalog({ kind: "ready", page: pageOf([]) }, ADMIN);
     expect(screen.getByRole("heading", { name: "Nenhum projeto criado ainda" })).toBeTruthy();
     expect(screen.queryByText("Seu espaço ainda está vazio")).toBeNull();
+  });
+
+  it("UT-010 shows a Portuguese no-access state without any issue creation shortcut", () => {
+    renderCatalog({ kind: "ready", page: pageOf([]) });
+    expect(screen.getByRole("heading", { name: "Seu espaço ainda está vazio" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Criar projeto|Nova intenção|Criar Issue/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Criar|Nova intenção/ })).toBeNull();
+  });
+
+  it("opens the overview for an administrator and the assigned work for everyone else", () => {
+    renderCatalog({ kind: "ready", page: pageOf([P1]) }, ADMIN);
+    expect(entries().map((entry) => entry.getAttribute("href"))).toEqual(["/projects/p1"]);
   });
 
   it("clears private names and asks for sign-in when the session expires", async () => {

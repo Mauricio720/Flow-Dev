@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { ThreadEntry } from "../threadModel";
-import { formatMoment } from "../toolModel";
-import { GraphRow, RichText } from "./Graph";
+import { formatMoment } from "@/lib/tasks/formatMoment";
+import { GraphRow, RichText } from "@/components/tasks/Graph";
 import { ToolRun } from "./ToolRun";
 
 const AGENT_NAME = "Issue Author";

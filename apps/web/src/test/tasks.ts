@@ -35,7 +35,7 @@ export function revisionOf(draft: Partial<IssueDraft> = {}, patch: Partial<TaskR
 }
 
 export function detailOf(patch: Partial<TaskDetail> = {}): TaskDetail {
-  return { task: summaryOf(), currentRevision: revisionOf(), pendingProposal: null, publication: null, activity: [], planning: planningOf(), permissions: { canEdit: true }, lastError: null, ...patch };
+  return { task: summaryOf(), currentRevision: revisionOf(), pendingProposal: null, publication: null, activity: [], planning: planningOf(), permissions: { canEdit: true }, lastError: null, ...patch, viewerCanAuthor: patch.viewerCanAuthor ?? true };
 }
 
 export function messageOf(sequence: number, role: TaskMessage["role"], content: string): TaskMessage {

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DRAFT, O, P, R7, T, callerRejection, detailOf, messageOf, publishedDetail, summaryOf } from "@/test/tasks";
 import { loadTaskWorkspace } from "./loadTaskWorkspace";
 
-const caller = vi.hoisted(() => ({ tasks: { list: vi.fn(), byId: vi.fn(), messages: vi.fn() }, taskSpec: { byTask: vi.fn() } }));
+const caller = vi.hoisted(() => ({ tasks: { list: vi.fn(), byId: vi.fn(), messages: vi.fn() }, taskSpec: { byTask: vi.fn() }, taskFlow: { byTask: vi.fn() } }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/trpc/server", () => ({ getServerCaller: async () => caller }));
@@ -51,21 +51,13 @@ describe("loadTaskWorkspace", () => {
     expect(redirect).toHaveBeenCalledWith(`/login?erro=sessao_expirada&next=${encodeURIComponent(`/projects/${P}/issues/${T}`)}`);
   });
 
-  it("IT-006 returns the saved route from the scoped Spec read without issuing any command", async () => {
-    const detail = { ...publishedDetail(), planning: { ...publishedDetail().planning, status: "approved" } } as never;
+  it("never reads the Spec or flow for a published task", async () => {
     caller.tasks.list.mockResolvedValue({ items: [summaryOf()], nextCursor: null });
-    caller.tasks.byId.mockResolvedValue(detail);
+    caller.tasks.byId.mockResolvedValue(publishedDetail());
     caller.tasks.messages.mockResolvedValue({ items: [], nextCursor: null });
-    caller.taskSpec.byTask.mockResolvedValue({ route: "prd", state: "not_started", specVersion: 0 });
-    const load = await loadTaskWorkspace(P, T, { stage: "tech_spec", packageId: null, documentId: null });
-    expect(load.spec).toEqual({ kind: "ready", snapshot: expect.objectContaining({ route: "prd", specVersion: 0 }) });
-    expect(load.specSelection?.stage).toBe("tech_spec");
-    expect(caller.taskSpec.byTask).toHaveBeenCalledExactlyOnceWith({ projectId: P, taskId: T });
-  });
-
-  it("skips the Spec read before approval and records an unavailable Spec as a failure", async () => {
-    serve();
-    expect((await loadTaskWorkspace(P, T)).spec).toEqual({ kind: "none" });
+    const load = await loadTaskWorkspace(P, T);
+    expect(load.task.kind).toBe("ready");
     expect(caller.taskSpec.byTask).not.toHaveBeenCalled();
+    expect(caller.taskFlow.byTask).not.toHaveBeenCalled();
   });
 });

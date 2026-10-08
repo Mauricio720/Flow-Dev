@@ -1,22 +1,24 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { STATUS_LABEL } from "../taskCopy";
 import type { TaskStatus } from "../contract";
-import { CONVERSATION_FAILURE_NOTICE, STALE_NOTICE } from "../planningCopy";
-import { GraphRow } from "./Graph";
+import { GraphRow } from "@/components/tasks/Graph";
 
 const READ_ONLY_ACTIONS = "Você pode consultar a conversa, o draft e as fontes. Enviar mensagens, ditar, editar e publicar ficam reservados à pessoa autora.";
-const COMPLETED_NOTE = "A Issue desta tarefa foi publicada e não aceita novas mensagens nem edições. O planejamento acompanha a mesma tarefa; para outra mudança, comece uma nova intenção.";
+const COMPLETED_NOTE = "A Issue desta tarefa foi publicada e não aceita novas mensagens nem edições. O trabalho seguinte acontece em Trabalho atribuído; para outra mudança, comece uma nova intenção.";
+const STALE_NOTICE = "Mostrando o último estado confirmado. A atualização mais recente falhou.";
+const CONVERSATION_FAILURE_NOTICE = "Não foi possível carregar a conversa agora. A Issue continua disponível.";
 
-type ReadOnlyProps = { author: string; status: TaskStatus; onNewIntent: () => void };
+type ReadOnlyProps = { author: string; status: TaskStatus; onNewIntent: (() => void) | null; workHref: string };
 
-export function ReadOnlyNotice({ author, status, onNewIntent }: ReadOnlyProps) {
+export function ReadOnlyNotice({ author, status, onNewIntent, workHref }: ReadOnlyProps) {
   return (
     <GraphRow node="head" last nodeY={50}>
       <section aria-label="Somente leitura" className="mt-6 mb-4 space-y-2 rounded-xl border border-line bg-raised px-4 py-3.5">
         <h2 className="text-sm font-semibold">Somente leitura · tarefa de {author}</h2>
         <p className="max-w-[65ch] text-sm leading-relaxed text-ink-2">{READ_ONLY_ACTIONS}</p>
         <p className="text-xs text-ink-3">Estado atual: {STATUS_LABEL[status]}.</p>
-        <Button type="button" variant="secondary" size="sm" onClick={onNewIntent}>Começar uma nova intenção</Button>
+        {onNewIntent ? <Button type="button" variant="secondary" size="sm" onClick={onNewIntent}>Começar uma nova intenção</Button> : <Button variant="secondary" size="sm" asChild><Link href={workHref}>Abrir Trabalho atribuído</Link></Button>}
       </section>
     </GraphRow>
   );

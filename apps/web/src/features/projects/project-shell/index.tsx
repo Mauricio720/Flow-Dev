@@ -14,12 +14,12 @@ function sectionPath(section: ShellSection, projectId: string) {
   return SHELL_MENUS.find((menu) => menu.section === section)!.path(projectId);
 }
 
-type Props = { project: Project; section: ShellSection; children: ReactNode };
+type Props = { project: Project; section: ShellSection; isAdmin: boolean; children: ReactNode };
 
-export function ProjectShell({ project, section, children }: Props) {
+export function ProjectShell({ project, section, isAdmin, children }: Props) {
   const access = useProjectAccess(project.id, sectionPath(section, project.id));
   if (access.revoked) return <ProjectUnavailable />;
-  const sidebar = <ProjectSidebar project={project} section={section} connection={access.kind} />;
+  const sidebar = <ProjectSidebar project={project} section={section} connection={access.kind} isAdmin={isAdmin} />;
   return (
     <div className="flex h-dvh">
       <aside aria-label="Projeto" className="hidden w-60 shrink-0 border-r border-line bg-surface lg:block">{sidebar}</aside>

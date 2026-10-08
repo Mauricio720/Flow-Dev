@@ -17,7 +17,7 @@ export function CatalogResults({ catalog, viewer, selection, connectionOf }: Pro
       {catalog.items.length > 0 && (
         <ul aria-label="Projetos disponíveis" className="mt-6 divide-y divide-line overflow-hidden rounded-xl border border-line bg-raised">
           {catalog.items.map((project) => (
-            <ProjectEntry key={project.id} project={project} connection={connectionOf(project.id)} opening={selection.pendingId === project.id} recent={viewer.lastProjectId === project.id} onChoose={(projectId) => void selection.choose(projectId)} />
+            <ProjectEntry key={project.id} project={project} connection={connectionOf(project.id)} opening={selection.pendingId === project.id} recent={viewer.lastProjectId === project.id} isAdmin={viewer.isAdmin} onChoose={(projectId) => void selection.choose(projectId)} />
           ))}
         </ul>
       )}

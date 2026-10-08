@@ -24,9 +24,8 @@ describe("workspace reducer and polling", () => {
     expect(state).toMatchObject({ phase: "failed", snapshot: null, failure });
   });
 
-  it("UT-055 polls active planning every 2s and other planning states every 15s", () => {
-    expect(pollInterval("published", "in_progress")).toBe(2_000);
-    for (const status of ["awaiting", "review", "failed", "approved"] as const) expect(pollInterval("published", status)).toBe(15_000);
+  it("polls pending authoring every 2s and a published task every 15s", () => {
+    expect(pollInterval("published")).toBe(15_000);
     expect(pollInterval("generating")).toBe(2_000);
     expect(pollInterval(null)).toBeNull();
   });

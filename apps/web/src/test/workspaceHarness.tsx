@@ -3,8 +3,8 @@ import { IssueComposer } from "@/features/issues/issue-composer";
 import type { WorkspaceLoad } from "@/features/issues/issue-composer/contract";
 import { CART_PROJECT } from "./tasks";
 
-export function renderWorkspace(initial: WorkspaceLoad) {
-  return render(<IssueComposer project={CART_PROJECT} initial={initial} />);
+export function renderWorkspace(initial: WorkspaceLoad, canAuthor = true) {
+  return render(<IssueComposer project={CART_PROJECT} initial={initial} canAuthor={canAuthor} />);
 }
 
 export async function recheck() {

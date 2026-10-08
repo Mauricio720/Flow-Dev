@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { startListening } from "@/test/dictationHarness";
 import { installDictation } from "@/test/media";
 import { serveTask, taskApi } from "@/test/taskApi";
-import { P, T, detailOf, loadOf, messageOf, taskRejection } from "@/test/tasks";
+import { P, T, detailOf, loadOf, messageOf, publishedDetail, taskRejection } from "@/test/tasks";
 import { recheck, renderWorkspace } from "@/test/workspaceHarness";
 
 const READER_DETAIL = detailOf({ permissions: { canEdit: false } });
@@ -37,6 +37,26 @@ describe("workspace access", () => {
     expect(notice.textContent).toContain("Estado atual: Draft pronto");
     expect(screen.getByText("Somente leitura. Apenas a pessoa autora pode editar, refinar ou publicar este draft.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Começar uma nova intenção" })).toBeTruthy();
+  });
+
+  it("UT-013 opens the old issues URL of a published task as authorized history without downstream controls", () => {
+    const published = { ...publishedDetail(), permissions: { canEdit: false }, viewerCanAuthor: false } as never;
+    serveTask(published, MESSAGES);
+    renderWorkspace(loadOf(published, MESSAGES), false);
+    expect(screen.getByRole("heading", { name: "Somente leitura · tarefa de Ana" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Ir para Trabalho atribuído" }).getAttribute("href")).toBe(`/projects/${P}/work`);
+    expect(screen.queryByRole("region", { name: "Planejamento" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Especificação do trabalho" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Analisar|Aprovar|Iniciar|Reivindicar/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Nova intenção|Começar uma nova intenção/ })).toBeNull();
+  });
+
+  it("offers no new-issue entry to a non administrator on the empty authoring page", () => {
+    renderWorkspace(loadOf(null), false);
+    expect(screen.getByRole("heading", { name: "Criação de Issues é para administradores" })).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Mensagem para o Issue Author" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Nova intenção" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Abrir Trabalho atribuído" }).getAttribute("href")).toBe(`/projects/${P}/work`);
   });
 
   it("UT-062 stops every microphone track when access is revoked during a capture", async () => {

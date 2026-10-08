@@ -1,5 +1,5 @@
 import type { SourceKind } from "../draftSources";
-import { TRUNK_X, forkOffset, laneColor } from "./Graph";
+import { TRUNK_X, forkOffset, laneColor } from "@/components/tasks/Graph";
 
 export const MERGE_Y = 76;
 const CAPSULE_RADIUS = 8;

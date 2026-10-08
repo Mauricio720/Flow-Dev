@@ -10,7 +10,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/projec
   if (context.kind === "unavailable") return <ProjectUnavailable />;
   const viewer = await loadViewer();
   return (
-    <ProjectShell project={context.project} section="settings">
+    <ProjectShell project={context.project} section="settings" isAdmin={viewer.isAdmin}>
       <ProjectSettings project={context.project} canEdit={viewer.isAdmin} />
     </ProjectShell>
   );

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import type { IssueDraft, TaskFailure } from "../contract";
-import { createRequestKeys, type RequestKeys } from "../requestKeys";
-import { fieldErrorsOf, taskFailure } from "../taskFailure";
+import { createRequestKeys, type RequestKeys } from "@/lib/tasks/requestKeys";
+import { fieldErrorsOf, taskFailure } from "@/lib/tasks/taskFailure";
 import type { ActionContext, TaskCommandBase } from "./actionContext";
 
 export type CommandFailure = { failure: TaskFailure; fieldErrors: Record<string, string> };

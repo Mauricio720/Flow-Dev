@@ -4,7 +4,7 @@ import type { IssueDraft } from "../contract";
 import { DRAFT_FIELD_LABEL, priorityCopy, type DraftErrors } from "../draftModel";
 import { VERIFICATION_LABEL, type DraftSource } from "../draftSources";
 import { DraftField } from "./DraftField";
-import { RichText } from "./Graph";
+import { RichText } from "@/components/tasks/Graph";
 
 const EMPTY_COLLECTION = "Sem itens.";
 const SOURCE_BADGE = { project: "ref-project", github: "ref-github" } as const;

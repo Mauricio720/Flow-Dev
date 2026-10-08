@@ -9,7 +9,7 @@ import type { AuthoringInput } from "../hooks/useDictation";
 import type { Submission } from "../hooks/useMessageActions";
 import { ComposerFeedback } from "./ComposerFeedback";
 import { DictationControls, DictationDisclosure } from "./DictationControls";
-import { GraphRow } from "./Graph";
+import { GraphRow } from "@/components/tasks/Graph";
 
 const INPUT_LABEL = "Mensagem para o Issue Author";
 const SUBMIT_KEY = "Enter";

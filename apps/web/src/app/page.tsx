@@ -14,7 +14,7 @@ async function restoredDestination() {
   if (!me.lastProjectId) return PROJECTS_PATH;
   try {
     const project = await caller.projects.byId({ projectId: me.lastProjectId });
-    return resolveHomeDestination(me.lastProjectId, [project.id]);
+    return resolveHomeDestination(me.lastProjectId, [project.id], { isAdmin: me.isAdmin });
   } catch (error) {
     if (trpcCode(error) === TRPC_NOT_FOUND) return REVOKED_ACCESS_PATH;
     throw error;

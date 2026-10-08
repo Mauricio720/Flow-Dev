@@ -15,22 +15,32 @@ import { useCatalog } from "./hooks/useCatalog";
 import { useProjectSelection } from "./hooks/useProjectSelection";
 
 const ACCESS_ADMIN_PATH = "/admin/access";
+const SOFTWARE_ADMIN_PATH = "/admin/software/compozy";
 const MEMBER_INTRO = "Projetos atribuídos à sua conta. Escolha um para abrir os menus no contexto do repositório dele.";
 const ADMIN_INTRO = "Todos os projetos do Flow Dev. Cada um aponta para um único repositório do GitHub.";
+
+function AdminLinks() {
+  return (
+    <>
+      <Button variant="ghost" size="sm" asChild><Link href={ACCESS_ADMIN_PATH}>Acessos</Link></Button>
+      <Button variant="ghost" size="sm" asChild><Link href={SOFTWARE_ADMIN_PATH}>Software</Link></Button>
+    </>
+  );
+}
 
 type Props = { initial: CatalogLoad; viewer: CatalogViewer; notice: string | null };
 
 export function ProjectCatalog({ initial, viewer, notice }: Props) {
   const router = useRouter();
   const catalog = useCatalog(initial);
-  const selection = useProjectSelection(catalog.reload);
+  const selection = useProjectSelection(catalog.reload, viewer.isAdmin);
   const connections = useConnectionStates(catalog.items.map((project) => project.id), (code) => {
     if (code === TRPC_UNAUTHORIZED) return router.replace(expiredSessionPath(PROJECTS_PATH));
     if (code === TRPC_NOT_FOUND) catalog.reload();
   });
   return (
     <div className="flex min-h-dvh flex-col">
-      <AppHeader actions={viewer.isAdmin && <Button variant="ghost" size="sm" asChild><Link href={ACCESS_ADMIN_PATH}>Acessos</Link></Button>} />
+      <AppHeader actions={viewer.isAdmin && <AdminLinks />} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

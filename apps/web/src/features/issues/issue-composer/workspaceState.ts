@@ -1,5 +1,5 @@
-import type { PlanningDetail, TaskFailure, TaskSnapshot, TaskStatus, WorkspaceLoad } from "./contract";
-import { accessProblem } from "./taskFailure";
+import type { TaskFailure, TaskSnapshot, TaskStatus, WorkspaceLoad } from "./contract";
+import { accessProblem } from "@/lib/tasks/taskFailure";
 
 export type WorkspacePhase = "empty" | "loading" | "ready" | "failed";
 export type WorkspaceState = { scope: string; phase: WorkspacePhase; snapshot: TaskSnapshot | null; failure: TaskFailure | null };
@@ -11,7 +11,6 @@ const NEW_INTENT_SCOPE = "nova";
 const PENDING_POLL_MS = 2_000;
 const IDLE_POLL_MS = 15_000;
 const PENDING_STATUSES: TaskStatus[] = ["generating", "publishing"];
-const PLANNING_IN_PROGRESS = "in_progress";
 
 export function taskScope(projectId: string, taskId: string | null) {
   return `${projectId}:${taskId ?? NEW_INTENT_SCOPE}`;
@@ -46,12 +45,7 @@ export function isPendingStatus(status: TaskStatus) {
   return PENDING_STATUSES.includes(status);
 }
 
-export function isPlanningActive(planningStatus: PlanningDetail["status"] | null | undefined) {
-  return planningStatus === PLANNING_IN_PROGRESS;
-}
-
-export function pollInterval(status: TaskStatus | null, planningStatus: PlanningDetail["status"] | null = null) {
+export function pollInterval(status: TaskStatus | null) {
   if (!status) return null;
-  if (status === "published") return isPlanningActive(planningStatus) ? PENDING_POLL_MS : IDLE_POLL_MS;
   return isPendingStatus(status) ? PENDING_POLL_MS : IDLE_POLL_MS;
 }

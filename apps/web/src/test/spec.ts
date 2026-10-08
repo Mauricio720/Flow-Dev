@@ -1,6 +1,6 @@
 import type { ReviewBlock } from "@flow-dev/api/spec";
-import type { SpecPackageDetail, SpecSnapshot } from "@/features/issues/issue-composer/spec/specContract";
-import type { LoadedDocument } from "@/features/issues/issue-composer/spec/useSpecPackage";
+import type { SpecPackageDetail, SpecSnapshot } from "@/features/issues/assigned-work/spec/specContract";
+import type { LoadedDocument } from "@/features/issues/assigned-work/spec/useSpecPackage";
 import { A, P, T } from "./tasks";
 
 export const W = "00000000-0000-4000-8000-0000000000a1";

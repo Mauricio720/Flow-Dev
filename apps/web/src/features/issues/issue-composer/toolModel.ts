@@ -22,7 +22,3 @@ export const OUTCOME_LABEL: Record<ToolActivity["status"], string> = {
 export function citedSources(calls: ToolActivity[]) {
   return SOURCE_KINDS.filter((source) => calls.some((call) => TOOL_SOURCE[call.tool] === source));
 }
-
-export function formatMoment(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
-}

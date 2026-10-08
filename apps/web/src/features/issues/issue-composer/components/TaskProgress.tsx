@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import type { TaskDetail } from "../contract";
 import { reasonMessage } from "../taskCopy";
-import { GraphRow } from "./Graph";
+import { GraphRow } from "@/components/tasks/Graph";
 import { WorkingRow } from "./ThreadRows";
 
 const GENERATING_LABEL = "Consultando o contexto e escrevendo o draft…";

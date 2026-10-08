@@ -6,9 +6,10 @@ import { PublishedResult } from "./PublishedResult";
 describe("PublishedResult", () => {
   it("UT-068 shows the rendered snapshot with raw Markdown in optional labeled details", () => {
     const publication = publishedDetail().publication!;
-    const { container } = render(<PublishedResult publication={publication} authorName="Ana" />);
+    const { container } = render(<PublishedResult publication={publication} authorName="Ana" workHref="/projects/p1/work" />);
     expect(screen.getByRole("link", { name: /Abrir no GitHub/ }).getAttribute("href")).toBe(publication.issueUrl);
     expect(screen.getByText(/Criada por Ana/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Ir para Trabalho atribuído" }).getAttribute("href")).toBe("/projects/p1/work");
     const details = container.querySelector("details");
     expect(details?.hasAttribute("open")).toBe(false);
     expect(details?.querySelector("summary")?.textContent).toContain("Markdown bruto");

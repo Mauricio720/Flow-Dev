@@ -7,7 +7,7 @@ const NAME_LIMIT = 60;
 const DESCRIPTION_LIMIT = 280;
 
 function renderEntry(project: ReturnType<typeof projectFixture>) {
-  return render(<ul><ProjectEntry project={project} connection="checking" opening={false} recent={false} onChoose={vi.fn()} /></ul>);
+  return render(<ul><ProjectEntry project={project} connection="checking" opening={false} recent={false} isAdmin onChoose={vi.fn()} /></ul>);
 }
 
 describe("catalog entry", () => {

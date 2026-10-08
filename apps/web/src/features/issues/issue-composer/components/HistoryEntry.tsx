@@ -3,7 +3,6 @@ import { TaskLabels } from "@/components/tasks/TaskLabels";
 import { TASK_STATUS_INK, TASK_STATUS_LABEL, TASK_STATUS_NODE } from "@/components/tasks/taskStatus";
 import { projectTaskPath } from "@/lib/navigation/projectRoutes";
 import type { TaskSummary } from "../contract";
-import { PLANNING_STATUS_LABEL } from "../planningCopy";
 
 const UNTITLED = "Tarefa sem título";
 const UNKNOWN_AUTHOR = "Autoria não identificada";
@@ -23,7 +22,7 @@ export function HistoryEntry({ task, active, onSelect }: Props) {
         <span aria-hidden="true" className={`${NODE_BASE} ${TASK_STATUS_NODE[task.status]}`} />
         <span className={`block truncate text-sm ${active ? "font-medium text-ink" : "text-ink-2"}`}>{task.title || UNTITLED}</span>
         <span className="mt-0.5 block truncate text-xs text-ink-3">{task.authorName ?? UNKNOWN_AUTHOR}</span>
-        <span className={`mt-0.5 block text-xs ${TASK_STATUS_INK[task.status]}`}>{TASK_STATUS_LABEL[task.status]}{task.planningStatus && task.planningStatus in PLANNING_STATUS_LABEL && <> · {PLANNING_STATUS_LABEL[task.planningStatus]}</>}</span>
+        <span className={`mt-0.5 block text-xs ${TASK_STATUS_INK[task.status]}`}>{TASK_STATUS_LABEL[task.status]}</span>
         {task.labels.length > 0 && <TaskLabels labels={task.labels} className="mt-1.5" />}
       </a>
     </li>

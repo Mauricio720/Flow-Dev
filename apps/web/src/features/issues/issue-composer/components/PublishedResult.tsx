@@ -1,16 +1,18 @@
+import Link from "next/link";
 import { ArrowUpRightIcon, CheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import type { TaskPublication } from "../contract";
 import { publishedIssueUrl, repositoryIssuesUrl } from "../publicationModel";
-import { formatMoment } from "../toolModel";
+import { formatMoment } from "@/lib/tasks/formatMoment";
 import { MarkdownPreview } from "./MarkdownPreview";
 
 const SNAPSHOT_NOTE = "Este é o snapshot aprovado na publicação. Ele não acompanha edições feitas depois no GitHub.";
 const UNTRUSTED_LINK = "O link registrado desta Issue não confere com o repositório do projeto, por isso não é oferecido aqui.";
 const UNCERTAIN_GUIDE = "A criação pode ter acontecido no GitHub, mas a resposta não foi confirmada. Confira as Issues do repositório antes de qualquer nova tentativa; criar de novo fica bloqueado até o resultado ser esclarecido.";
 const UNKNOWN_AUTHOR = "pessoa autora";
+const WORK_NOTE = "Publicar não inicia planejamento nem execução. Quem for atribuído à Issue e a vir em Ready reivindica o trabalho de forma explícita.";
 
-type PublishedProps = { publication: TaskPublication; authorName: string | null };
+type PublishedProps = { publication: TaskPublication; authorName: string | null; workHref: string };
 type UncertainProps = { repository: string; onCheck: () => void };
 
 function ExternalLink({ href, children }: { href: string; children: string }) {
@@ -21,7 +23,7 @@ function ExternalLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-export function PublishedResult({ publication, authorName }: PublishedProps) {
+export function PublishedResult({ publication, authorName, workHref }: PublishedProps) {
   const url = publishedIssueUrl(publication);
   return (
     <footer className="space-y-3 border-t border-line bg-surface px-5 py-3.5">
@@ -34,6 +36,8 @@ export function PublishedResult({ publication, authorName }: PublishedProps) {
         <pre tabIndex={0} aria-label="Corpo publicado em Markdown" className="max-h-80 overflow-auto border-t border-line p-3 font-mono text-[13px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{publication.bodyMarkdown}</pre>
       </details>
       {url ? <ExternalLink href={url}>Abrir no GitHub</ExternalLink> : <p role="alert" className="text-sm text-destructive">{UNTRUSTED_LINK}</p>}
+      <p className="max-w-[65ch] text-sm text-ink-2">{WORK_NOTE}</p>
+      <Button variant="outline" size="sm" asChild><Link href={workHref}>Ir para Trabalho atribuído</Link></Button>
     </footer>
   );
 }

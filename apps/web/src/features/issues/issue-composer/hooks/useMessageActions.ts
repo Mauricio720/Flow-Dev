@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import type { TaskFailure, TaskReceipt } from "../contract";
-import { createRequestKeys } from "../requestKeys";
-import { isUnconfirmed, taskFailure } from "../taskFailure";
+import { createRequestKeys } from "@/lib/tasks/requestKeys";
+import { isUnconfirmed, taskFailure } from "@/lib/tasks/taskFailure";
 import type { ActionContext } from "./actionContext";
 
 export type Submission = { phase: "idle" | "sending" | "unconfirmed" | "not_accepted" } | { phase: "rejected"; failure: TaskFailure };

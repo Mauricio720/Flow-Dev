@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
@@ -11,7 +11,7 @@ const DRAFT_LABEL = "Rascunho do workspace";
 
 function shellFor(project: Project) {
   return (
-    <ProjectShell project={project} section="issues">
+    <ProjectShell project={project} section="issues" isAdmin>
       <label>{DRAFT_LABEL}<input /></label>
     </ProjectShell>
   );
@@ -20,6 +20,25 @@ function shellFor(project: Project) {
 function activeProject() {
   return screen.getByRole("group", { name: "Projeto ativo" }).textContent;
 }
+
+describe("project shell navigation by role", () => {
+  it("shows an administrator the work, authoring and local project menus", () => {
+    states.mockImplementation(() => pendingForever());
+    render(shellFor(projectFixture("p1", "p1", OCTO_DOCS)));
+    const menus = within(screen.getByRole("navigation", { name: "Menus do projeto" }));
+    expect(menus.getByRole("link", { name: "Trabalho atribuído" }).getAttribute("href")).toBe("/projects/p1/work");
+    expect(menus.getByRole("link", { name: "Issues" }).getAttribute("href")).toBe("/projects/p1/issues");
+    expect(menus.getByRole("link", { name: "Projeto local" }).getAttribute("href")).toBe("/projects/p1/settings/local-project");
+  });
+
+  it("hides the authoring menu from a non administrator and marks the work menu current", () => {
+    states.mockImplementation(() => pendingForever());
+    render(<ProjectShell project={projectFixture("p1", "p1", OCTO_DOCS)} section="work" isAdmin={false}><p>conteúdo</p></ProjectShell>);
+    const menus = within(screen.getByRole("navigation", { name: "Menus do projeto" }));
+    expect(menus.queryByRole("link", { name: "Issues" })).toBeNull();
+    expect(menus.getByRole("link", { name: "Trabalho atribuído" }).getAttribute("aria-current")).toBe("page");
+  });
+});
 
 describe("project shell", () => {
   it("UT-043 shows p2 and acme/private in the header and drops the previous workspace", async () => {

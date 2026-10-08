@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ToolActivity } from "../contract";
 import { OUTCOME_LABEL, SOURCE_INK, SOURCE_LABEL, TOOL_SOURCE, citedSources } from "../toolModel";
-import { GraphRow } from "./Graph";
+import { GraphRow } from "@/components/tasks/Graph";
 import { COMPACT_LANES, ToolLanes, WIDE_LANES, blockHeight } from "./ToolLanes";
 
 const SETTLED_STATUS = "done";

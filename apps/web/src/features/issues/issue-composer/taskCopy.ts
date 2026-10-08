@@ -1,6 +1,4 @@
 import type { TaskFailure, TaskStatus } from "./contract";
-import { PLANNING_REASON_MESSAGE } from "./planningCopy";
-import { SPEC_REASON_MESSAGE } from "./spec/specReasons";
 
 export { TASK_STATUS_LABEL as STATUS_LABEL } from "@/components/tasks/taskStatus";
 
@@ -11,7 +9,7 @@ export const STATUS_ANNOUNCEMENT: Record<TaskStatus, string> = {
   generation_failed: "A geração falhou. O que já estava salvo continua disponível.",
   publishing: "Publicando a Issue no GitHub. Edição, mensagens e ditado ficam indisponíveis.",
   publication_uncertain: "Verificando publicação. Uma nova criação fica bloqueada até o resultado ser confirmado.",
-  published: "Issue publicada. O planejamento é a próxima etapa.",
+  published: "Issue publicada. O trabalho seguinte começa em Trabalho atribuído, com claim explícito.",
 };
 
 const FALLBACK_MESSAGE = "Não foi possível concluir a operação. O que já estava salvo continua disponível; tente novamente.";
@@ -23,6 +21,7 @@ const REASON_MESSAGE: Record<string, string> = {
   input_capacity: "A conversa chegou ao limite que o Issue Author consegue receber. O draft salvo continua disponível para revisão manual.",
   refinement_pending: "Resolva a proposta de refinamento antes de continuar.",
   author_required: "Somente a pessoa autora pode alterar esta tarefa.",
+  admin_required: "Somente administradores podem criar e publicar Issues neste projeto.",
   task_complete: "Esta tarefa já foi concluída. Comece uma nova intenção ou abra a Issue no GitHub.",
   operation_active: "Já existe uma operação em andamento nesta tarefa. Aguarde ela terminar.",
   revision_conflict: "A tarefa mudou em outra aba. Carregue a versão mais recente antes de continuar.",
@@ -54,7 +53,7 @@ const REASON_MESSAGE: Record<string, string> = {
 };
 
 export function reasonMessage(reason: string | null) {
-  return (reason && (REASON_MESSAGE[reason] ?? PLANNING_REASON_MESSAGE[reason] ?? SPEC_REASON_MESSAGE[reason])) || FALLBACK_MESSAGE;
+  return (reason && REASON_MESSAGE[reason]) || FALLBACK_MESSAGE;
 }
 
 export function failureMessage(failure: TaskFailure) {

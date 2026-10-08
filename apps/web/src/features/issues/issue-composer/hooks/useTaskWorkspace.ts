@@ -2,10 +2,10 @@
 
 import { useEffect, useEffectEvent, useReducer, useRef } from "react";
 import type { TaskFailure, WorkspaceLoad } from "../contract";
-import { accessProblem, isUnconfirmed, taskFailure } from "../taskFailure";
+import { accessProblem, isUnconfirmed, taskFailure } from "@/lib/tasks/taskFailure";
 import { initialWorkspaceState, pollInterval, scopeState, taskScope, workspaceReducer } from "../workspaceState";
 import { readMoreMessages, readSnapshot } from "./taskReads";
-import { usePolling } from "./usePolling";
+import { usePolling } from "@/hooks/usePolling";
 
 type Input = { projectId: string; taskId: string | null; initial: WorkspaceLoad; paused: boolean };
 
@@ -53,7 +53,7 @@ export function useTaskWorkspace(input: Input) {
     void refresh();
   };
   const detail = visible.snapshot?.detail ?? null;
-  usePolling(poll, paused ? null : pollInterval(detail?.task.status ?? null, detail?.planning.status ?? null));
+  usePolling(poll, paused ? null : pollInterval(detail?.task.status ?? null));
   return { ...visible, refresh, loadMoreMessages };
 }
 

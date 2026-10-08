@@ -1,5 +1,6 @@
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+import { trpc } from "@/lib/trpc/client";
 
 vi.mock("@/lib/trpc/client", () => ({
   trpc: {
@@ -19,6 +20,47 @@ vi.mock("@/lib/trpc/client", () => ({
       retry: { mutate: vi.fn() },
       returnToReview: { mutate: vi.fn() },
       approve: { mutate: vi.fn() },
+    },
+    assignedIssues: {
+      list: { query: vi.fn() },
+      byIssue: { query: vi.fn() },
+      claim: { mutate: vi.fn() },
+      claimStatus: { query: vi.fn() },
+      reconcileClaim: { mutate: vi.fn() },
+      active: { query: vi.fn() },
+      byTask: { query: vi.fn() },
+    },
+    taskFlow: {
+      options: { query: vi.fn() },
+      byTask: { query: vi.fn() },
+      runs: { query: vi.fn() },
+      questions: { query: vi.fn() },
+      answerQuestion: { mutate: vi.fn() },
+      package: { query: vi.fn() },
+      savePlan: { mutate: vi.fn() },
+      startAction: { mutate: vi.fn() },
+      cancelRun: { mutate: vi.fn() },
+      retryAction: { mutate: vi.fn() },
+      moveAction: { mutate: vi.fn() },
+      prepareLocalAction: { mutate: vi.fn() },
+      localPreparationStatus: { query: vi.fn() },
+      approvePackage: { mutate: vi.fn() },
+    },
+    software: {
+      compozy: {
+        get: { query: vi.fn() },
+        readiness: { query: vi.fn() },
+        connections: { query: vi.fn() },
+        history: { query: vi.fn() },
+        saveSettings: { mutate: vi.fn() },
+        beginCodexLogin: { mutate: vi.fn() },
+        beginClaudeLogin: { mutate: vi.fn() },
+        cancelRun: { mutate: vi.fn() },
+        pollLogin: { mutate: vi.fn() },
+        confirmAccount: { mutate: vi.fn() },
+        disconnect: { mutate: vi.fn() },
+        renameConnection: { mutate: vi.fn() },
+      },
     },
     projects: {
       list: { query: vi.fn() },
@@ -64,6 +106,8 @@ vi.mock("next/navigation", () => {
   });
   return { useRouter: () => router, redirect };
 });
+
+beforeEach(() => { vi.mocked(trpc.taskFlow.questions.query).mockResolvedValue([]); });
 
 afterEach(() => {
   cleanup();

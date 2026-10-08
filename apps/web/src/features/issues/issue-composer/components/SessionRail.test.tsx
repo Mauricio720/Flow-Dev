@@ -13,7 +13,7 @@ const SEARCH_DELAY_MS = 400;
 
 function Rail({ initial }: { initial: HistoryLoad }) {
   const history = useTaskHistory(P, initial);
-  return <SessionRail history={history} items={history.items} activeId={null} onSelect={vi.fn()} />;
+  return <SessionRail history={history} items={history.items} activeId={null} canAuthor onSelect={vi.fn()} />;
 }
 
 function renderRail(initial: HistoryLoad = { kind: "ready", page: { items: [T_TASK], nextCursor: null } }) {

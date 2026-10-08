@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { TaskFailure } from "../contract";
 import { PreviewContractError, loadPublicationPreview, requestPublication, type PublicationPreview } from "../publicationClient";
-import { createRequestKeys, type RequestKeys } from "../requestKeys";
-import { taskFailure } from "../taskFailure";
+import { createRequestKeys, type RequestKeys } from "@/lib/tasks/requestKeys";
+import { taskFailure } from "@/lib/tasks/taskFailure";
 import type { ActionContext } from "./actionContext";
 
 export type PreviewState = { status: "idle" | "loading" } | { status: "ready"; preview: PublicationPreview } | { status: "failed"; failure: TaskFailure };

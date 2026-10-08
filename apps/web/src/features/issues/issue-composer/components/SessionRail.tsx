@@ -11,7 +11,7 @@ import { HistoryStates } from "./HistoryStates";
 
 const SEARCH_LABEL = "Buscar tarefas por título ou autor";
 
-type Props = { history: TaskHistory; items: TaskSummary[]; activeId: string | null; onSelect: (taskId: string | null) => void };
+type Props = { history: TaskHistory; items: TaskSummary[]; activeId: string | null; canAuthor: boolean; onSelect: (taskId: string | null) => void };
 
 function HistorySearch({ history }: { history: TaskHistory }) {
   const id = useId();
@@ -24,14 +24,16 @@ function HistorySearch({ history }: { history: TaskHistory }) {
   );
 }
 
-export function SessionRail({ history, items, activeId, onSelect }: Props) {
+export function SessionRail({ history, items, activeId, canAuthor, onSelect }: Props) {
   return (
     <nav aria-label="Intenções" className="flex h-full flex-col">
       <div className="space-y-2 p-3">
-        <Button type="button" variant="secondary" onClick={() => onSelect(null)} aria-current={activeId === null ? "page" : undefined} className="w-full justify-start px-3">
-          <PlusIcon />
-          Nova intenção
-        </Button>
+        {canAuthor && (
+          <Button type="button" variant="secondary" onClick={() => onSelect(null)} aria-current={activeId === null ? "page" : undefined} className="w-full justify-start px-3">
+            <PlusIcon />
+            Nova intenção
+          </Button>
+        )}
         <HistorySearch history={history} />
       </div>
       <div className="flex items-center justify-between px-4 pt-2 pb-2">

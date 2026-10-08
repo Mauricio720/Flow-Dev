@@ -1,5 +1,5 @@
 import type { HistoryLoad, TaskFailure, TaskPage, TaskSummary } from "./contract";
-import { isPendingStatus, isPlanningActive } from "./workspaceState";
+import { isPendingStatus } from "./workspaceState";
 
 export type HistoryRequest = { search: string; cursor?: string; refresh?: boolean; background?: boolean };
 export type HistoryStatus = "ready" | "loading" | "failed";
@@ -60,5 +60,5 @@ export function historyReducer(state: HistoryState, action: HistoryAction): Hist
 
 export function historyPollInterval(state: HistoryState) {
   if (state.status !== "ready") return null;
-  return state.items.some((task) => isPendingStatus(task.status) || isPlanningActive(task.planningStatus)) ? BACKGROUND_POLL_MS : null;
+  return state.items.some((task) => isPendingStatus(task.status)) ? BACKGROUND_POLL_MS : null;
 }

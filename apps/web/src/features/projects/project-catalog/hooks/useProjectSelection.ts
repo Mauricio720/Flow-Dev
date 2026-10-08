@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { expiredSessionPath, projectPath } from "@/lib/navigation/projectRoutes";
+import { resolveHomeDestination } from "@/lib/navigation/resolveHomeDestination";
 import { TRPC_NOT_FOUND, TRPC_UNAUTHORIZED } from "@/lib/projects/contract";
 import { trpc } from "@/lib/trpc/client";
 import { trpcCode } from "@/lib/trpc/error";
 
 export type SelectionFailure = "unavailable" | "interrupted";
 
-export function useProjectSelection(onUnavailable: () => void) {
+export function useProjectSelection(onUnavailable: () => void, isAdmin: boolean) {
   const router = useRouter();
   const latest = useRef(0);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export function useProjectSelection(onUnavailable: () => void) {
     setFailure(null);
     try {
       await trpc.projects.select.mutate({ projectId });
-      if (attempt === latest.current) router.push(projectPath(projectId));
+      if (attempt === latest.current) router.push(resolveHomeDestination(projectId, [projectId], { isAdmin }));
     } catch (error) {
       if (attempt === latest.current) fail(error, projectId);
     }

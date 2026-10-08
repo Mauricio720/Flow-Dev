@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOutIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { clearAllSpecPending } from "@/features/issues/issue-composer/spec/specPendingStore";
+import { clearAllSpecPending } from "@/features/issues/assigned-work/spec/specPendingStore";
 import { authClient } from "@/lib/auth/client";
 
 const LOGIN_PATH = "/login";
