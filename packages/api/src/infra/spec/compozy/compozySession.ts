@@ -13,7 +13,7 @@ async function ensureWorkspace(transport: CompozyTransport, input: CreateRuntime
   const request = { method: "POST" as const, path: "/api/workspaces", body: { root_dir: input.workspaceRoot, name: input.workspaceName, default_agent: input.agentName } };
   const response = await send(transport, request).catch(() => null);
   if (response?.status === CREATED_STATUS) return parseCreated(response.body);
-  if (!response || response.status === CONFLICT_STATUS || response.status >= SERVER_ERROR_FLOOR) return findWorkspace(transport, input.workspaceRoot);
+  if (!response || response.status === CONFLICT_STATUS || response.status >= SERVER_ERROR_FLOOR) return findWorkspace(transport, input.workspaceRoot, response ? rejectionOf(response.body) : null);
   throw new SpecRuntimeError("runtime_failed");
 }
 
@@ -23,9 +23,15 @@ function parseCreated(body: unknown) {
   return parsed.data.workspace.id;
 }
 
-async function findWorkspace(transport: CompozyTransport, root: string) {
+function rejectionOf(body: unknown) {
+  const error = body && typeof body === "object" && "error" in body ? body.error : null;
+  return typeof error === "string" && error ? `O CompozyOS recusou abrir o projeto: ${error}` : "O CompozyOS recusou abrir o projeto.";
+}
+
+async function findWorkspace(transport: CompozyTransport, root: string, rejection: string | null) {
   const { workspaces } = await callOk(transport, { request: { method: "GET", path: "/api/workspaces" }, schema: workspacesSchema, accepted: [200] });
   const match = workspaces.find((workspace) => workspace.root_dir === root);
+  if (!match && rejection) throw new SpecRuntimeError("workspace_unavailable", false, rejection);
   if (!match) throw new SpecRuntimeError("outcome_unknown", true, "workspace conflict without match");
   return match.id;
 }

@@ -109,3 +109,14 @@ export { taskSpecAttempts, taskSpecStages, taskSpecWorkflows, taskSpecWorkspaces
 export { taskSpecCommands } from "./schema/tasks/specCommands";
 export { taskSpecEvents, taskSpecInteractions } from "./schema/tasks/specRuntime";
 export { taskSpecApprovals, taskSpecDocuments, taskSpecFinalizations, taskSpecPackages } from "./schema/tasks/specPackages";
+export { softwareAudit, softwareAuthOperations, softwareConnections, softwareSettings } from "./schema/software";
+export { taskExecutionPlans, taskExecutionPlanSaves } from "./schema/tasks/taskExecutionPlans";
+export { taskExecutionActions, taskExecutionRuntimeBindings } from "./schema/tasks/taskExecution";
+export { taskExecutionRuns } from "./schema/tasks/taskExecutionRuns";
+export { taskUnifiedPackageApprovals, taskUnifiedPackageFiles, taskUnifiedPackages } from "./schema/tasks/taskUnifiedPackages";
+export { taskIssueClaimAttempts, taskIssueClaims, taskIssueSnapshots, taskIssueSources } from "./schema/tasks/sources";
+export { localMachines, localPairings, localProjectLinks } from "./schema/localMachines";
+export { localCommandEvents, localCommands } from "./schema/localCommands";
+export { localCheckoutLocks } from "./schema/localCheckoutLocks";
+export { taskRunEvidence, taskRunGates } from "./schema/localExecutionEvidence";
+export { localLinkRequests } from "./schema/localLinkRequests";

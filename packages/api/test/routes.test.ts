@@ -26,7 +26,7 @@ describe("OAuth Route Handlers and durable storage", () => {
     const response = await POST(new Request("https://flow.test/api/github-repositories/connect", { method: "POST", headers: { origin: "https://flow.test" } }));
     expect(response.status).toBe(303);
     const target = new URL(response.headers.get("location")!);
-    expect(target.searchParams.get("scope")).toBe("repo offline_access");
+    expect(target.searchParams.get("scope")).toBe("repo project offline_access");
     expect(target.searchParams.get("code_challenge_method")).toBe("S256");
     expect((await current.client`SELECT count(*)::int AS n FROM github_repository_oauth_states`)[0]?.n).toBe(1);
     mocks.controller = new RepositoryOAuthController(new RepositoryAuthorizationService(current.store, current.oauth, current.cipher), current.store, { origin: "https://flow.test", clientId: "app", callbackUrl: "https://flow.test/api/github-repositories/callback" });

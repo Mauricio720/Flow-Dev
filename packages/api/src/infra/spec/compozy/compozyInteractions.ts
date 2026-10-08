@@ -2,6 +2,7 @@ import type { ResolveRuntimeInteraction, RuntimeIdentity, RuntimeInteraction, Ru
 import { mapResolution, UNKNOWN_RESOLUTION } from "../../../application/spec/specRuntimeOutcomes";
 import { answerSchema, approveSchema, interactionsSchema, type CompozyInteraction } from "./compozySchemas";
 import { callOk, send } from "./compozyCall";
+import { withFullQuestionText } from "./compozyClarifyText";
 import type { CompozyTransport } from "./compozyTransport";
 
 const QUEUE_FULL_STATUS = 413;
@@ -17,7 +18,7 @@ export function toInteraction(raw: CompozyInteraction): RuntimeInteraction {
 
 export async function listInteractions(transport: CompozyTransport, identity: RuntimeIdentity) {
   const body = await callOk(transport, { request: { method: "GET", path: `${base(identity)}/interactions` }, schema: interactionsSchema, accepted: [200] });
-  return body.interactions.map(toInteraction);
+  return withFullQuestionText(transport, identity, body.interactions.map(toInteraction));
 }
 
 export async function resolveInteraction(transport: CompozyTransport, input: ResolveRuntimeInteraction): Promise<RuntimeResolution> {
@@ -31,8 +32,8 @@ async function answerQuestion(transport: CompozyTransport, input: Extract<Resolv
   const parsed = response.status === 200 ? answerSchema.safeParse(response.body) : null;
   if (!parsed?.success) return reconcileResolution(transport, input);
   const record = await findRecord(transport, input);
-  if (!record || record.status === "pending") return UNKNOWN_RESOLUTION;
-  return mapResolution("answered", record.resolution ?? parsed.data.text);
+  if (record?.status === "pending") return UNKNOWN_RESOLUTION;
+  return mapResolution("answered", record?.resolution ?? parsed.data.text);
 }
 
 async function decidePermission(transport: CompozyTransport, input: Extract<ResolveRuntimeInteraction, { kind: "permission" }>): Promise<RuntimeResolution> {

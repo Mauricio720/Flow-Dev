@@ -20,10 +20,14 @@ export function mapResolution(raw: string, winningValue: string | null = null): 
 export const UNKNOWN_RESOLUTION: RuntimeResolution = mapResolution("");
 
 type StopInput = { state: RuntimeStop["state"]; verified: boolean; stopReason?: string | null; stopCause?: string | null; attention?: string | null };
-const CANCELED_REASON = "user_canceled";
+const CANCELED_REASONS = new Set(["canceled", "cancelled", "user_canceled"]);
+
+export function isCanceledStopReason(reason: string | null | undefined) {
+  return reason ? CANCELED_REASONS.has(reason.toLowerCase()) : false;
+}
 
 export function mapStop(input: StopInput): RuntimeStop {
   const settled = input.state === "stopped" && input.verified;
   const cause = input.stopReason ?? input.stopCause ?? null;
-  return { state: input.state, verified: input.verified, cause, attention: input.attention ?? null, settled, canceled: settled && cause === CANCELED_REASON };
+  return { state: input.state, verified: input.verified, cause, attention: input.attention ?? null, settled, canceled: settled && isCanceledStopReason(cause) };
 }

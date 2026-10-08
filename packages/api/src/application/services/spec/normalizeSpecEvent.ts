@@ -43,7 +43,7 @@ export function normalizeSpecEvent(event: RuntimeEvent, workspaceRoot: string | 
   const full = textOf(safeContent);
   const text = clip(full, SPEC_EVENT_DETAIL_MAX_BYTES, omitted);
   const source = field(safeContent, "source", "path", "file");
-  const status = field(safeContent, "status", "state");
+  const status = field(safeContent, "status", "state", "stop_reason", "prompt_stop_reason");
   const safeSource = source && !source.startsWith("/") && !source.includes("[caminho omitido]") ? source : null;
   const payload = { text: kind === "unsupported" ? "" : text, preview: clip(text, SPEC_EVENT_PREVIEW_MAX_BYTES, []), toolCallId: field(safeContent, "tool_call_id", "toolCallId"), tool: field(safeContent, "tool", "name"), source: safeSource, status, durationMs: numberField(safeContent, "duration_ms", "durationMs"), reason: field(safeContent, "reason", "error"), originalType: kind === "unsupported" ? redactText(event.type, workspaceRoot) : null, omitted: [...new Set(omitted)] };
   return { providerEventId: event.id, runtimeSequence: event.sequence, kind, payload };

@@ -16,13 +16,13 @@ export function assertPins(config: RuntimeConfiguration) {
   if (mismatch) throw new SpecRuntimeError("runtime_incompatible");
 }
 
-export async function runPreflight(transport: CompozyTransport, config: RuntimeConfiguration): Promise<RuntimeCapabilities> {
+export async function runPreflight(transport: CompozyTransport, config: RuntimeConfiguration, checkProvider = true): Promise<RuntimeCapabilities> {
   assertPins(config);
   const identity = await incompatibleOnFailure(() => callOk(transport, { request: { method: "GET", path: "/api/status/identity" }, schema: identitySchema, accepted: [200] }));
   if (normalizeVersion(identity.daemon.version) !== normalizeVersion(config.accepted.version)) throw new SpecRuntimeError("runtime_incompatible");
   const { agent } = await incompatibleOnFailure(() => callOk(transport, { request: { method: "GET", path: `/api/agents/${encodeURIComponent(config.agentName)}` }, schema: agentSchema, accepted: [200] }));
-  const permissionsOk = agent.permissions === MANAGED_PERMISSION_MODE;
-  const providerOk = agent.provider === config.provider && (!agent.model || agent.model === config.model);
+  const permissionsOk = agent.permissions === (config.permissionMode ?? MANAGED_PERMISSION_MODE);
+  const providerOk = !checkProvider || (agent.provider === config.provider && (!agent.model || agent.model === config.model));
   if (!permissionsOk || !providerOk) throw new SpecRuntimeError("runtime_incompatible");
   return { version: identity.daemon.version, schemaVersion: identity.schema_version, permissions: agent.permissions!, provider: agent.provider, definitionDigest: agent.definition_digest };
 }

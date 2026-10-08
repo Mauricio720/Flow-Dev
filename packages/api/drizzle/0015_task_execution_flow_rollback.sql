@@ -1,0 +1,10 @@
+DROP VIEW "task_flow_kinds";
+DROP TRIGGER "task_spec_workflows_no_unified" ON "task_spec_workflows";
+DROP FUNCTION "task_spec_workflow_requires_no_unified"();
+DROP TABLE "task_execution_runs";
+DROP FUNCTION "task_execution_runs_immutable_snapshot"();
+DROP TABLE "task_execution_runtime_bindings";
+DROP TABLE "task_execution_actions";
+DROP TABLE "task_execution_plan_saves";
+DROP TABLE "task_execution_plans";
+DROP FUNCTION "task_execution_plan_requires_no_legacy"();

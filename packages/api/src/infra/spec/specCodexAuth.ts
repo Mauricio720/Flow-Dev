@@ -23,6 +23,6 @@ export async function codexChatGptLoginReady(home: string, status: (home: string
 }
 
 async function codexLoginStatus(home: string) {
-  const { stdout } = await run("codex", ["login", "status", "-c", "cli_auth_credentials_store=file"], { env: { PATH: process.env.PATH, HOME: process.env.HOME, CODEX_HOME: home } });
+  const { stdout } = await run("codex", ["login", "status", "-c", "cli_auth_credentials_store=file"], { env: { PATH: process.env.PATH, HOME: process.env.HOME, CODEX_HOME: home } as unknown as NodeJS.ProcessEnv });
   return stdout.trim() === CODEX_LOGIN_STATUS;
 }

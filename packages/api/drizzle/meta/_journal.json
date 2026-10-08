@@ -99,6 +99,125 @@
       "when": 1791211943300,
       "tag": "0013_spec_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791211943301,
+      "tag": "0014_software_configuration",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791211943302,
+      "tag": "0015_task_execution_flow",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791211943303,
+      "tag": "0016_unified_spec_packages",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791211943304,
+      "tag": "0017_task_execution_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791211943305,
+      "tag": "0018_assigned_issue_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791211943306,
+      "tag": "0019_source_aware_planning",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791211943307,
+      "tag": "0020_local_workspace_target",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791392511213,
+      "tag": "0021_local_companion",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791395222853,
+      "tag": "0022_local_machine_revocation",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791395322787,
+      "tag": "0023_local_machine_heartbeat_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791395647502,
+      "tag": "0024_local_request_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791395963960,
+      "tag": "0025_local_command_transport",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791398533763,
+      "tag": "0026_brainy_sheva_callister",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791399163814,
+      "tag": "0027_harsh_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791401915925,
+      "tag": "0028_ordinary_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791406030505,
+      "tag": "0029_local_link_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791428400000,
+      "tag": "0030_local_loop_catalog",
+      "breakpoints": true
     }
   ]
 }

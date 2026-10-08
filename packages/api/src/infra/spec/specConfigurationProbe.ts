@@ -7,14 +7,22 @@ import type { SpecConfigurationProbe } from "./specConfiguration";
 
 const run = promisify(execFile);
 
+function podmanEnvironment() {
+  const { LD_PRELOAD: _injectedLibrary, ...environment } = process.env;
+  return environment;
+}
+
 export const productionConfigurationProbe: SpecConfigurationProbe = {
   directoryWritable: (path) => access(path, constants.W_OK).then(() => true, () => false),
   bundleDigest: async () => (await loadSpecBundle()).digest,
   codexChatGptLoginReady,
   isolationEnforceable: async () => {
     try {
-      const { stdout } = await run("podman", ["info", "--format", "{{.Host.Security.Rootless}}"]);
+      const { stdout } = await run("podman", ["info", "--format", "{{.Host.Security.Rootless}}"], { env: podmanEnvironment() });
       return stdout.trim() === "true";
-    } catch { return false; }
+    } catch (error) {
+      console.error("[software] podman rootless probe failed:", error instanceof Error ? error.message : error);
+      return false;
+    }
   },
 };

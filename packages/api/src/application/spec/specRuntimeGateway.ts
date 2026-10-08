@@ -2,12 +2,13 @@ import type { SpecReason } from "../services/spec/specContracts";
 
 export type RuntimeIdentity = { socketPath: string; workspaceId: string; sessionId: string };
 export type RuntimePins = { version: string; openApiSha256: string; binarySha256: string; bundleSha256: string };
-export type RuntimeConfiguration = { socketPath: string; agentName: string; provider: string; model: string; declared: RuntimePins; accepted: RuntimePins };
+export type RuntimeConfiguration = { socketPath: string; agentName: string; provider: string; model: string; declared: RuntimePins; accepted: RuntimePins; permissionMode?: "approve-reads" | "approve-all" };
 export type RuntimeCapabilities = { version: string; schemaVersion: string; permissions: string; provider: string; definitionDigest: string };
 export type CreateRuntimeSession = { socketPath: string; workspaceRoot: string; workspaceName: string; agentName: string; sessionName: string };
 export type RuntimeSession = { workspaceId: string; sessionId: string; name: string };
-export type SubmitSpecPrompt = RuntimeIdentity & { messageId: string; idempotencyKey: string; message: string; provider?: string; model?: string };
-export type RuntimeSubmission = { status: "accepted" | "queue_full" | "conflict" | "unknown"; messageId: string; idempotencyKey: string; turnId: string | null; replayed: boolean };
+export type SubmitSpecPrompt = RuntimeIdentity & { messageId: string; idempotencyKey: string; message: string; provider?: string; model?: string; reasoningEffort?: string | null };
+export type RuntimeRejection = { code: string | null; message: string | null };
+export type RuntimeSubmission = { status: "accepted" | "queue_full" | "conflict" | "rejected" | "unknown"; messageId: string; idempotencyKey: string; turnId: string | null; replayed: boolean; rejection?: RuntimeRejection };
 export type RuntimeCursor = RuntimeIdentity & { afterSequence: number; lastEventId?: string };
 export type RuntimeEvent = { sequence: number; id: string; type: string; turnId: string; timestamp: string; content: unknown };
 export type RuntimeInteraction = { id: string; providerRequestId: string; turnId: string | null; kind: "question" | "permission"; status: string; title: string | null; choices: string[]; decisions: string[]; toolId: string | null; resolution: string | null };

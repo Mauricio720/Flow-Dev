@@ -1,0 +1,30 @@
+import type { FlowUnitOfWork } from "../../database/dao/flowUnitOfWork";
+import type { SoftwareDao } from "../../database/dao/softwareDao";
+import type { TaskFlowDao } from "../../database/dao/taskFlowDao";
+import type { LocalExecutionEvidenceDao } from "../../database/dao/localExecutionEvidenceDao";
+import type { CompozyControlGateway } from "../../software/compozyControlGateway";
+import type { SpecRuntimeGateway } from "../../spec/specRuntimeGateway";
+import type { ControlWorkspaceResolver } from "./controlWorkspace";
+import type { LegacyProjection } from "./legacyProjection";
+import type { LocalProjectAccess } from "./localProjectAccess";
+import type { LocalRunInteractions } from "./localRunInteractions";
+import type { RunSocketPath } from "./taskFlowInteractionService";
+import type { RunControlDependencies } from "./taskFlowRunControl";
+import type { FreshReadiness, LoopAdmission, TaskFlowGate, WorkspaceAdmission } from "./taskFlowPorts";
+
+export type TaskFlowDependencies = {
+  unit: FlowUnitOfWork;
+  flow: TaskFlowDao;
+  software: SoftwareDao;
+  gateway: CompozyControlGateway;
+  readiness: FreshReadiness;
+  gate: TaskFlowGate;
+  legacy: LegacyProjection;
+  workspaces?: WorkspaceAdmission;
+  loops?: LoopAdmission;
+  resolver?: ControlWorkspaceResolver;
+  control?: Pick<RunControlDependencies, "executor" | "releaseGrant" | "owner" | "clock" | "leaseMs">;
+  interactions?: { gateway: SpecRuntimeGateway; socketPathFor: RunSocketPath; local?: LocalRunInteractions };
+  localProjects?: LocalProjectAccess;
+  localEvidence?: LocalExecutionEvidenceDao;
+};

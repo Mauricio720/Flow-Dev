@@ -1,6 +1,6 @@
 import { request } from "node:http";
 
-export type CompozyRequest = { method: "GET" | "POST"; path: string; body?: unknown; headers?: Record<string, string> };
+export type CompozyRequest = { method: "GET" | "POST" | "PUT" | "DELETE"; path: string; body?: unknown; headers?: Record<string, string> };
 export type CompozyResponse = { status: number; body: unknown };
 export type CompozyTransport = (input: CompozyRequest) => Promise<CompozyResponse>;
 
@@ -13,7 +13,7 @@ export class CompozyTransportError extends Error {
   }
 }
 
-export function unixSocketTransport(socketPath: string, timeoutMs = CONTROL_TIMEOUT_MS): CompozyTransport {
+export function unixSocketTransport(socketPath: string, timeoutMs = CONTROL_TIMEOUT_MS, deadlineMs?: number): CompozyTransport {
   return (input) => new Promise((resolve, reject) => {
     const payload = input.body === undefined ? undefined : JSON.stringify(input.body);
     const headers = { accept: "application/json", ...(payload ? { "content-type": "application/json", "content-length": String(Buffer.byteLength(payload)) } : {}), ...input.headers };
@@ -23,6 +23,8 @@ export function unixSocketTransport(socketPath: string, timeoutMs = CONTROL_TIME
       response.on("error", (error) => reject(new CompozyTransportError("connection", error.message)));
       response.on("end", () => resolve({ status: response.statusCode ?? 0, body: parseBody(Buffer.concat(chunks).toString("utf8")) }));
     });
+    const deadline = deadlineMs ? setTimeout(() => outgoing.destroy(new CompozyTransportError("timeout", "runtime control request exceeded its deadline")), deadlineMs) : null;
+    outgoing.on("close", () => { if (deadline) clearTimeout(deadline); });
     outgoing.on("timeout", () => outgoing.destroy(new CompozyTransportError("timeout", "runtime control request timed out")));
     outgoing.on("error", (error) => reject(error instanceof CompozyTransportError ? error : new CompozyTransportError("connection", error.message)));
     outgoing.end(payload);

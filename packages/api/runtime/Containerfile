@@ -1,0 +1,17 @@
+FROM docker.io/library/node:22-bookworm-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates curl procps \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g @openai/codex @anthropic-ai/claude-code @agentclientprotocol/codex-acp @agentclientprotocol/claude-agent-acp \
+ && npm cache clean --force
+
+COPY compozy /usr/local/bin/compozy
+COPY agents /opt/flow-runtime/agents
+COPY entrypoint.sh /usr/local/bin/flow-runtime-entrypoint
+
+RUN chmod 0755 /usr/local/bin/compozy /usr/local/bin/flow-runtime-entrypoint
+
+ENV HOME=/var/lib/compozy
+ENTRYPOINT ["/usr/local/bin/flow-runtime-entrypoint"]
