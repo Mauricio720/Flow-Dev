@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Deliver Software configuration and Codex connection"
 type: backend
 complexity: high
@@ -29,13 +29,13 @@ Deliver the administrator-owned Software vertical slice: global settings, readin
 
 ## Subtasks
 
-- [ ] 2.1 Add the additive Software settings, connection, auth-operation, and audit persistence contract.
-- [ ] 2.2 Deliver administrator authorization, CAS, idempotency, validation, and redacted audit behavior.
-- [ ] 2.3 Expose the Software tRPC query and mutation surface through thin controllers and routers.
-- [ ] 2.4 Integrate the opaque capability and credential services into Codex connection, polling, confirmation, reconnect, and disconnect behavior.
-- [ ] 2.5 Add the guarded global Software navigation and `/admin/software/compozy` experience.
-- [ ] 2.6 Implement accessible settings, readiness, connection, device-login, and audit UI states with safe pagination.
-- [ ] 2.7 Cover administrator, validation, concurrency, recovery, catalog, and audit cases at the designated test boundaries.
+- [x] 2.1 Add the additive Software settings, connection, auth-operation, and audit persistence contract.
+- [x] 2.2 Deliver administrator authorization, CAS, idempotency, validation, and redacted audit behavior.
+- [x] 2.3 Expose the Software tRPC query and mutation surface through thin controllers and routers.
+- [x] 2.4 Integrate the opaque capability and credential services into Codex connection, polling, confirmation, reconnect, and disconnect behavior.
+- [x] 2.5 Add the guarded global Software navigation and `/admin/software/compozy` experience.
+- [x] 2.6 Implement accessible settings, readiness, connection, device-login, and audit UI states with safe pagination.
+- [x] 2.7 Cover administrator, validation, concurrency, recovery, catalog, and audit cases at the designated test boundaries.
 
 ## Implementation Details
 
@@ -81,13 +81,13 @@ Follow the TechSpec “Data Models”, “API Endpoints”, and “Config Lifecy
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-001, UT-002, UT-003, UT-004, UT-022 — administrator enforcement, settings CAS/idempotency, audit, and setting bounds.
-- [ ] IT-002, IT-003, IT-004, IT-005, IT-006, IT-007 — guarded global Software route, session recovery, role loss, concurrent/retried reads, and global discoverability.
-- [ ] IT-010, IT-011, IT-012, IT-013, IT-014 — first-run, stale, changed, and shared-host readiness states.
-- [ ] IT-016, IT-017, IT-018, IT-019, IT-020, IT-021 — settings validation, authorization, CAS, idempotency, and revalidation.
-- [ ] IT-030, IT-031, IT-032, IT-034 — safe reconnect identity, absent connections, authorization, and repeated disconnect.
-- [ ] IT-037, IT-038, IT-039, IT-040, IT-041, IT-042 — connection labels, empty state, access, collision, historical identity, and pagination.
-- [ ] IT-072, IT-073, IT-074, IT-075, IT-076, IT-077 — redacted audit write, access, ordering, idempotency, and pagination behavior.
+- [x] UT-001, UT-002, UT-003, UT-004, UT-022 — administrator enforcement, settings CAS/idempotency, audit, and setting bounds.
+- [x] IT-002, IT-003, IT-004, IT-005, IT-006, IT-007 — guarded global Software route, session recovery, role loss, concurrent/retried reads, and global discoverability.
+- [x] IT-010, IT-011, IT-012, IT-013, IT-014 — first-run, stale, changed, and shared-host readiness states.
+- [x] IT-016, IT-017, IT-018, IT-019, IT-020, IT-021 — settings validation, authorization, CAS, idempotency, and revalidation.
+- [x] IT-030, IT-031, IT-032, IT-034 — safe reconnect identity, absent connections, authorization, and repeated disconnect.
+- [x] IT-037, IT-038, IT-039, IT-040, IT-041, IT-042 — connection labels, empty state, access, collision, historical identity, and pagination.
+- [x] IT-072, IT-073, IT-074, IT-075, IT-076, IT-077 — redacted audit write, access, ordering, idempotency, and pagination behavior.
 
 ### Deferred Gates
 

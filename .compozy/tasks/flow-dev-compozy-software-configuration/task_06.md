@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Add Claude, worktrees, and CompozyOS Loops"
 type: backend
 complexity: critical
@@ -29,14 +29,14 @@ Extend the foundation and task-flow lifecycle with Claude connection support, na
 
 ## Subtasks
 
-- [ ] 6.1 Add isolated Claude connection, status, revalidation, and failure semantics to the credential broker and Software surface.
-- [ ] 6.2 Extend the pinned capability gateway with worktree and Loop catalog/inspection/status contracts.
-- [ ] 6.3 Implement repository ownership, readiness, creation, exclusivity, and no-auto-cleanup worktree policy.
-- [ ] 6.4 Validate Loop definitions, versions, declared inputs, runtime roles, and prerequisites before admission.
-- [ ] 6.5 Start, monitor, cancel, retry, and reconcile Loop runs from accepted immutable snapshots.
-- [ ] 6.6 Pass only declared role bindings and task-scoped credentials into worker/container execution.
-- [ ] 6.7 Add author-facing safe states for Claude, worktrees, Loop definitions, and terminal outcomes.
-- [ ] 6.8 Exercise provider, catalog, workspace, Loop, reconciliation, and legacy-preservation boundaries.
+- [x] 6.1 Add isolated Claude connection, status, revalidation, and failure semantics to the credential broker and Software surface.
+- [x] 6.2 Extend the pinned capability gateway with worktree and Loop catalog/inspection/status contracts.
+- [x] 6.3 Implement repository ownership, readiness, creation, exclusivity, and no-auto-cleanup worktree policy.
+- [x] 6.4 Validate Loop definitions, versions, declared inputs, runtime roles, and prerequisites before admission.
+- [x] 6.5 Start, monitor, cancel, retry, and reconcile Loop runs from accepted immutable snapshots.
+- [x] 6.6 Pass only declared role bindings and task-scoped credentials into worker/container execution.
+- [x] 6.7 Add author-facing safe states for Claude, worktrees, Loop definitions, and terminal outcomes.
+- [x] 6.8 Exercise provider, catalog, workspace, Loop, reconciliation, and legacy-preservation boundaries.
 
 ## Implementation Details
 
@@ -79,12 +79,12 @@ Follow TechSpec “Integration Points”, “Testing Approach”, and developmen
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-007 — Claude API billing is rejected when subscription authentication was requested.
-- [ ] UT-011, UT-012 — foreign and concurrently writable worktrees are not admitted.
-- [ ] UT-013, UT-014, UT-021 — changed Loop versions, unsafe inputs, and missing declared runtime bindings fail before dispatch.
-- [ ] UT-019, UT-020 — upstream runtime errors are reduced safely and unknown Loop starts reconcile authoritatively.
-- [ ] IT-086, IT-087, IT-088, IT-089, IT-090, IT-091 — stale/live catalog, reasoning, entitlement, changed choice, historic provenance, and malformed identifier handling.
-- [ ] IT-100, IT-101, IT-102, IT-103, IT-105 — catalog/definition changes, unsafe inputs, ordered prerequisites, actual terminal Loop states, and duplicate starts.
+- [x] UT-007 — Claude API billing is rejected when subscription authentication was requested.
+- [x] UT-011, UT-012 — foreign and concurrently writable worktrees are not admitted.
+- [x] UT-013, UT-014, UT-021 — changed Loop versions, unsafe inputs, and missing declared runtime bindings fail before dispatch.
+- [x] UT-019, UT-020 — upstream runtime errors are reduced safely and unknown Loop starts reconcile authoritatively.
+- [x] IT-086, IT-087, IT-088, IT-089, IT-090, IT-091 — stale/live catalog, reasoning, entitlement, changed choice, historic provenance, and malformed identifier handling.
+- [x] IT-100, IT-101, IT-102, IT-103, IT-105 — catalog/definition changes, unsafe inputs, ordered prerequisites, actual terminal Loop states, and duplicate starts.
 
 ### Deferred Gates
 

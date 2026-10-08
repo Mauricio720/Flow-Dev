@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Plan, admit, and dispatch immutable task actions"
 type: backend
 complexity: critical
@@ -29,14 +29,14 @@ Implement the author-owned task-flow boundary from live options through idempote
 
 ## Subtasks
 
-- [ ] 4.1 Define task-flow application contracts for options, plans, actions, runs, and safe provenance.
-- [ ] 4.2 Deliver access-checked `taskFlow` queries and author-only plan/action command boundaries.
-- [ ] 4.3 Implement CAS and idempotency for proposed action-plan writes.
-- [ ] 4.4 Implement locked admission for ordering, approvals, current capability, and connection/workspace state.
-- [ ] 4.5 Persist immutable snapshots, run identities, outbox commands, and active-run fencing atomically.
-- [ ] 4.6 Dispatch and recover new actions from snapshots and narrow credential grants.
-- [ ] 4.7 Expose safe task status and provenance to authors and readers without configuration authority.
-- [ ] 4.8 Cover authorization, stale state, concurrency, restart, disconnection, and history behavior.
+- [x] 4.1 Define task-flow application contracts for options, plans, actions, runs, and safe provenance.
+- [x] 4.2 Deliver access-checked `taskFlow` queries and author-only plan/action command boundaries.
+- [x] 4.3 Implement CAS and idempotency for proposed action-plan writes.
+- [x] 4.4 Implement locked admission for ordering, approvals, current capability, and connection/workspace state.
+- [x] 4.5 Persist immutable snapshots, run identities, outbox commands, and active-run fencing atomically.
+- [x] 4.6 Dispatch and recover new actions from snapshots and narrow credential grants.
+- [x] 4.7 Expose safe task status and provenance to authors and readers without configuration authority.
+- [x] 4.8 Cover authorization, stale state, concurrency, restart, disconnection, and history behavior.
 
 ## Implementation Details
 
@@ -78,12 +78,12 @@ Follow TechSpec “Core Interfaces”, “API Endpoints”, “Safety Invariants
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-015, UT-016 — approved unified spec enables but does not start `create_tasks`; repeated start key returns one run ID.
-- [ ] IT-033, IT-035 — disconnect/start races and disconnected historical choices preserve task content and require fresh readiness.
-- [ ] IT-044, IT-045, IT-046, IT-047, IT-048, IT-049 — plan-option validity, availability, author permission, CAS, replay, and immutable active selections.
-- [ ] IT-051, IT-052, IT-053, IT-054, IT-055, IT-056 — action snapshot stability, unavailable proposals, duplicate starts, restart recovery, ordering, and long history.
-- [ ] IT-058, IT-059, IT-060, IT-061, IT-062, IT-063 — blocked admission, safe diagnostics, content preservation, and recovery.
-- [ ] IT-065, IT-066, IT-067, IT-068, IT-069, IT-070 — safe provenance visibility, revocation, refresh, hostile content, and pagination.
+- [x] UT-015, UT-016 — approved unified spec enables but does not start `create_tasks`; repeated start key returns one run ID.
+- [x] IT-033, IT-035 — disconnect/start races and disconnected historical choices preserve task content and require fresh readiness.
+- [x] IT-044, IT-045, IT-046, IT-047, IT-048, IT-049 — plan-option validity, availability, author permission, CAS, replay, and immutable active selections.
+- [x] IT-051, IT-052, IT-053, IT-054, IT-055, IT-056 — action snapshot stability, unavailable proposals, duplicate starts, restart recovery, ordering, and long history.
+- [x] IT-058, IT-059, IT-060, IT-061, IT-062, IT-063 — blocked admission, safe diagnostics, content preservation, and recovery.
+- [x] IT-065, IT-066, IT-067, IT-068, IT-069, IT-070 — safe provenance visibility, revocation, refresh, hostile content, and pagination.
 
 ### Deferred Gates
 

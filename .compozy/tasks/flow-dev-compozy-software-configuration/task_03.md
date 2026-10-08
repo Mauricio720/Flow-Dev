@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Add unified-flow persistence and legacy projection"
 type: backend
 complexity: high
@@ -29,11 +29,11 @@ Create the additive durable contract for an `os_unified` execution plan, actions
 
 ## Subtasks
 
-- [ ] 3.1 Define the unified plan, action, runtime-binding, and run schema modules.
-- [ ] 3.2 Add the additive migration, constraints, indexes, and migration-fixture registration.
-- [ ] 3.3 Define focused DAO contracts and persistence projections for unified flow data.
-- [ ] 3.4 Implement a legacy projection that reads the existing Spec workflow without mutation.
-- [ ] 3.5 Prove migration invariants, uniqueness, and legacy package preservation against populated fixtures.
+- [x] 3.1 Define the unified plan, action, runtime-binding, and run schema modules.
+- [x] 3.2 Add the additive migration, constraints, indexes, and migration-fixture registration.
+- [x] 3.3 Define focused DAO contracts and persistence projections for unified flow data.
+- [x] 3.4 Implement a legacy projection that reads the existing Spec workflow without mutation.
+- [x] 3.5 Prove migration invariants, uniqueness, and legacy package preservation against populated fixtures.
 
 ## Implementation Details
 
@@ -74,7 +74,7 @@ Follow TechSpec “Data Models”, “Impact Analysis”, and “Safety Invarian
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-018 — approved legacy PRD/Tech Spec workflow returns existing labels and package IDs unchanged.
+- [x] UT-018 — approved legacy PRD/Tech Spec workflow returns existing labels and package IDs unchanged.
 ## Success Criteria
 
 - Every task-required test case implemented and passing.

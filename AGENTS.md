@@ -32,6 +32,14 @@ Em uma funcionalidade tRPC ponta a ponta, combine `nextjs-folder-structure` para
 
 Execute as verificações pertinentes à mudança. Os comandos do monorepo são `pnpm lint`, `pnpm typecheck` e `pnpm build`; confira os scripts de cada pacote antes de escolher. Reporte o que foi executado e qualquer limitação.
 
+Mantenha a verificação proporcional à mudança:
+
+- Durante a implementação, rode apenas os arquivos de teste afetados (`pnpm --dir <pacote> exec vitest run <arquivo>`) e o `typecheck` do pacote alterado. Não rode typecheck a cada edição; agrupe as edições e verifique uma vez.
+- Rode a suíte completa de cada pacote alterado (`test`, e `test:integration` em `packages/api`) uma única vez, ao final da tarefa. Repita somente o que falhou até corrigir e então confirme com uma execução completa.
+- `pnpm build` e Playwright (`test:e2e`) só entram quando a tarefa altera rotas, configuração de build ou um fluxo visível coberto por um spec; nesse caso rode apenas o spec afetado. E2E completo pertence aos gates de feature e release.
+- Não aumente `testTimeout` nem reduza workers para contornar lentidão; investigue a causa.
+- `pnpm --dir packages/api test:integration` sobe sozinho um PostgreSQL descartável em memória (precisa de `pg_config`, `initdb` e `pg_ctl` instalados) e leva cerca de um minuto. Não defina `TEST_DATABASE_URL` localmente: com ela a suíte usa o servidor indicado e fica várias vezes mais lenta.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

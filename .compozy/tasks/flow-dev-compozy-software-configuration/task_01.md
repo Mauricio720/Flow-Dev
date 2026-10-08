@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Establish the CompozyOS control-plane foundation"
 type: infra
 complexity: high
@@ -29,12 +29,12 @@ Establish the pinned, server-only CompozyOS control plane that the remaining fea
 
 ## Subtasks
 
-- [ ] 1.1 Define typed application contracts for CompozyOS capability results, credential operations, and non-secret readiness states.
-- [ ] 1.2 Implement release-pinned provider probe and model-catalog adapters over the existing UDS transport conventions.
-- [ ] 1.3 Implement the host-only credential-broker boundary for safe Codex operation lifecycle and private attempt grants.
-- [ ] 1.4 Produce an independent readiness projection for application, account, runtime, and host layers.
-- [ ] 1.5 Map transport and provider failures to bounded domain codes without retaining upstream response bodies.
-- [ ] 1.6 Add contract and policy tests for expiration, idempotency, live catalog choices, and fail-closed diagnostics.
+- [x] 1.1 Define typed application contracts for CompozyOS capability results, credential operations, and non-secret readiness states.
+- [x] 1.2 Implement release-pinned provider probe and model-catalog adapters over the existing UDS transport conventions.
+- [x] 1.3 Implement the host-only credential-broker boundary for safe Codex operation lifecycle and private attempt grants.
+- [x] 1.4 Produce an independent readiness projection for application, account, runtime, and host layers.
+- [x] 1.5 Map transport and provider failures to bounded domain codes without retaining upstream response bodies.
+- [x] 1.6 Add contract and policy tests for expiration, idempotency, live catalog choices, and fail-closed diagnostics.
 
 ## Implementation Details
 
@@ -75,9 +75,9 @@ Follow TechSpec sections “System Architecture”, “Core Interfaces”, “In
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-005, UT-006 — expired and duplicate Codex login completion retain a safe, idempotent connection revision.
-- [ ] UT-008, UT-009, UT-010 — only live catalog capability and advertised reasoning choices are selectable.
-- [ ] IT-009 — malformed or contradictory readiness input is unknown/incompatible, never ready.
+- [x] UT-005, UT-006 — expired and duplicate Codex login completion retain a safe, idempotent connection revision.
+- [x] UT-008, UT-009, UT-010 — only live catalog capability and advertised reasoning choices are selectable.
+- [x] IT-009 — malformed or contradictory readiness input is unknown/incompatible, never ready.
 
 ## Success Criteria
 

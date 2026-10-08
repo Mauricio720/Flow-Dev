@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Review unified spec packages in the task workspace"
 type: frontend
 complexity: high
@@ -29,13 +29,13 @@ Add the unified `os_spec_v1` capture and review experience to the task workspace
 
 ## Subtasks
 
-- [ ] 5.1 Define unified package validation, manifest, and review projection without changing legacy package format.
-- [ ] 5.2 Select the unified or legacy workspace rendering path from the flow discriminator.
-- [ ] 5.3 Add unified spec, companion, diagnostic, historical-version, and safe provenance views.
-- [ ] 5.4 Add exact-version approval, conflict, and recovery interactions for authors.
-- [ ] 5.5 Expose `create_tasks` eligibility after approval without auto-starting it.
-- [ ] 5.6 Maintain reader/author separation, focus behavior, status text, and narrow-layout presentation.
-- [ ] 5.7 Add unit, integration, and UI coverage for invalid packages and legacy coexistence.
+- [x] 5.1 Define unified package validation, manifest, and review projection without changing legacy package format.
+- [x] 5.2 Select the unified or legacy workspace rendering path from the flow discriminator.
+- [x] 5.3 Add unified spec, companion, diagnostic, historical-version, and safe provenance views.
+- [x] 5.4 Add exact-version approval, conflict, and recovery interactions for authors.
+- [x] 5.5 Expose `create_tasks` eligibility after approval without auto-starting it.
+- [x] 5.6 Maintain reader/author separation, focus behavior, status text, and narrow-layout presentation.
+- [x] 5.7 Add unit, integration, and UI coverage for invalid packages and legacy coexistence.
 
 ## Implementation Details
 
@@ -75,8 +75,8 @@ Follow TechSpec “Unified artifact package”, “API Endpoints”, and develop
 
 Task-required cases assigned from `_tests.md`, the test contract — read each ID's full definition there before writing tests.
 
-- [ ] UT-017 — `_spec.md` missing its Technical part returns `package_invalid` without creating a review package.
-- [ ] IT-104 — an existing legacy split-stage task retains its route and approved package identifiers with no automatic conversion or duplicate unified spec.
+- [x] UT-017 — `_spec.md` missing its Technical part returns `package_invalid` without creating a review package.
+- [x] IT-104 — an existing legacy split-stage task retains its route and approved package identifiers with no automatic conversion or duplicate unified spec.
 
 ### Deferred Gates
 
