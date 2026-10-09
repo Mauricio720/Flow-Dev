@@ -33,7 +33,7 @@ function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" 
   if (["claim_unresolved", "issue_ineligible", "board_status_changed", "source_changed"].includes(reason)) return "PRECONDITION_FAILED";
   if (["revision_conflict", "operation_active", "request_key_reused", "task_complete", "stale_proposal", "capture_active", "capture_expired", "attempt_not_uncertain", "refinement_pending", "generation_not_failed", "stale_execution", "planning_conflict", "planning_exists", "planning_retry_required", "planning_not_failed", "planning_approved", "planning_not_ready"].includes(reason)) return "CONFLICT";
   if (["repository_archived", "issues_disabled", "repository_authorization_needed", "destination_unavailable", "identity_mismatch", "issue_permission_denied", "preview_not_ready", "preview_changed", "publication_required"].includes(reason)) return "PRECONDITION_FAILED";
-  if (["service_unavailable", "provider_unavailable", "invalid_provider_response", "invalid_stored_content", "planning_unconfigured", "planning_invalid_output", "planning_execution_mismatch", "planning_provider_unavailable", "planning_deadline", "planning_access_revoked"].includes(reason)) return "INTERNAL_SERVER_ERROR";
+  if (["service_unavailable", "provider_unavailable", "invalid_provider_response", "invalid_stored_content", "planning_unconfigured", "planning_invalid_output", "planning_execution_mismatch", "planning_provider_unavailable", "planning_deadline", "planning_access_revoked", "planning_workspace_unavailable"].includes(reason)) return "INTERNAL_SERVER_ERROR";
   return "BAD_REQUEST";
 }
 

@@ -4,7 +4,7 @@ import { PlanningDomainError } from "../application/services/tasks/planningContr
 import { planningRetryDelay } from "../application/services/tasks/planningWorkerRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
 
-const TRANSIENT_REASONS = ["planning_timeout", "planning_provider_unavailable", "planning_rate_limited"];
+const TRANSIENT_REASONS = ["planning_timeout", "planning_provider_unavailable", "planning_rate_limited", "planning_workspace_unavailable"];
 const ACCESS_ERRORS = [ProjectUnavailableError, RepositoryAuthorizationNeededError, RepositoryNotFoundError, RepositoryForbiddenError, RepositoryIdentityMismatchError, RepositoryArchivedError, AccountMismatchError, CredentialUnavailableError];
 const DEADLINE_REASON = "planning_deadline";
 
@@ -32,6 +32,7 @@ function planningReason(error: unknown) {
 }
 
 function taskReason(error: TaskError) {
+  if (error.reason === "workspace_unavailable") return "planning_workspace_unavailable";
   if (error.reason.startsWith("planning_") || error.reason === STALE_REASON || error.reason === INVALID_STORED_REASON) return error.reason;
   return accessReason(error.reason);
 }

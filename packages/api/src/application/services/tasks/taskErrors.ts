@@ -18,7 +18,7 @@ export type TaskErrorReason =
   | "publication_required" | "planning_input_limit" | "planning_invalid_output" | "planning_conflict" | "planning_unconfigured"
   | "planning_execution_mismatch" | "planning_provider_unavailable" | "planning_rate_limited" | "planning_capacity" | "planning_exists"
   | "planning_retry_required" | "planning_not_failed" | "planning_approved" | "planning_not_ready" | "decision_unavailable"
-  | "planning_deadline" | "planning_access_revoked" | "planning_timeout"
+  | "planning_deadline" | "planning_access_revoked" | "planning_timeout" | "planning_workspace_unavailable"
   | "spec_unavailable" | "planning_required" | "stage_prerequisite" | "route_unsupported" | "package_incomplete" | "decision_blocked"
   | "workspace_unavailable" | "runtime_incompatible" | "runtime_unconfigured" | "permission_out_of_scope" | "spec_conflict" | "attempt_active"
   | "outcome_unknown" | "interaction_stale" | "interaction_resolved" | "artifact_conflict" | "stage_approved" | "invalid_answer"
