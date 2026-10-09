@@ -18,7 +18,7 @@ export const PLANNING_STATUS_LABEL = { awaiting: "Aguardando planejamento", in_p
 export const PLANNING_ANNOUNCEMENT = {
   awaiting: "Issue publicada. O planejamento ainda não começou.",
   in_progress: "O Dev Control está analisando o snapshot da Issue.",
-  review: "Recomendação pronta. Revise a rota e aprove o planejamento.",
+  review: "Recomendação pronta e worktree desta Issue solicitado. Revise a rota e aprove o planejamento.",
   failed: "A análise de planejamento falhou. A Issue publicada não foi alterada.",
   approved: "Planejamento aprovado. Nenhuma atividade seguinte foi iniciada.",
 } as const;
@@ -46,6 +46,7 @@ export const PLANNING_REASON_MESSAGE: Record<string, string> = {
   planning_timeout: "O Dev Control não respondeu a tempo.",
   planning_rate_limited: "O Dev Control limitou as análises por agora.",
   planning_provider_unavailable: "O Dev Control está indisponível no momento.",
+  planning_workspace_unavailable: "Não foi possível preparar o worktree desta Issue. Tente o planejamento novamente.",
   planning_invalid_output: "O Dev Control devolveu um resultado inválido, que foi descartado.",
   planning_execution_mismatch: "O resultado do Dev Control não correspondia a esta análise e foi descartado.",
   planning_access_revoked: "O acesso necessário mudou durante a análise, que foi interrompida.",
