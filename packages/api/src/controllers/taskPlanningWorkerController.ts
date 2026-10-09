@@ -2,6 +2,7 @@ import type { PlanningClaim, TaskPlanningWorkerDao } from "../application/databa
 import type { PlanningGateway } from "../application/planning/planningGateway";
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
 import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
+import type { PlanningWorkspaceProvisioner } from "../application/planning/planningWorkspaceProvisioner";
 import { AssignedIssueError } from "../application/services/assigned-issues/assignedIssueErrors";
 import { PLANNING_DEADLINE_MS, PLANNING_REQUEST_DEADLINE_MS } from "../application/services/tasks/planningWorkerRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
@@ -13,7 +14,7 @@ const HEARTBEAT_MS = 15_000;
 type Run = { claim: PlanningClaim; startedAt: number };
 
 export class TaskPlanningWorkerController {
-  constructor(private readonly claims: TaskPlanningWorkerDao, private readonly repositories: RepositoryAccessService, private readonly gateway: PlanningGateway, private readonly workerId = crypto.randomUUID(), private readonly clock = () => new Date(), private readonly authorization?: WorkAuthorization) {}
+  constructor(private readonly claims: TaskPlanningWorkerDao, private readonly repositories: RepositoryAccessService, private readonly gateway: PlanningGateway, private readonly workerId = crypto.randomUUID(), private readonly clock = () => new Date(), private readonly authorization?: WorkAuthorization, private readonly workspaceProvisioner?: PlanningWorkspaceProvisioner) {}
 
   async tick(shutdown?: AbortSignal) {
     const claim = await this.claims.claim(this.workerId);
@@ -48,6 +49,8 @@ export class TaskPlanningWorkerController {
     await this.authorize(claim);
     const input = await this.claims.input(claim);
     const envelope = await this.gateway.analyze(input, signal);
+    if (heartbeatFailure()) throw new TaskError("stale_execution");
+    await this.workspaceProvisioner?.provision(claim);
     if (heartbeatFailure()) throw new TaskError("stale_execution");
     await this.claims.complete({ claim, envelope });
     logPlanningWorkerEvent("planning.saved", claim, { elapsedMs: this.elapsed(run) });
