@@ -38,7 +38,7 @@ export function overviewOf(overrides: Partial<FlowOverview> = {}): FlowOverview 
 export function planOf(state = "planned", reasoningEffort: string | null = "high"): NonNullable<FlowOverview["plan"]> {
   return {
     id: "plan1", revision: 1, status: "planned",
-    actions: [{ id: "a1", position: 1, kind: "create_spec", loopName: null, loopVersion: null, inputs: { language: "pt-BR" }, workspace: { kind: "isolated" }, state, bindings: [{ role: "main", connectionId: "c1", connectionLabel: "Codex principal", providerId: "codex", modelId: "gpt-5.6-sol", reasoningEffort, connectionAvailable: true }] }],
+    actions: [{ id: "a1", position: 1, kind: "create_spec", loopName: null, loopVersion: null, inputs: { language: "pt-BR" }, workspace: { kind: "isolated" }, state, concludedAt: null, activeRun: null, bindings: [{ role: "main", connectionId: "c1", connectionLabel: "Codex principal", providerId: "codex", modelId: "gpt-5.6-sol", reasoningEffort, connectionAvailable: true }] }],
   } as NonNullable<FlowOverview["plan"]>;
 }
 

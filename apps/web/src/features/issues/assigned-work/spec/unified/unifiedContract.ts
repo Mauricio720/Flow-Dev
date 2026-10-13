@@ -27,4 +27,4 @@ export type DocumentLanguage = "pt-BR" | "en";
 export type DraftRuntime = { connectionId: string; modelId: string; reasoningEffort: string | null };
 export type DraftWorkspace = { kind: "unselected" } | { kind: "isolated" } | { kind: "local" } | { kind: "existing"; worktreeId: string } | { kind: "new"; name: string };
 export type DraftLoop = { name: string; version: string; inputs: Record<string, string>; runtimes: Record<string, DraftRuntime | null> };
-export type DraftAction = { kind: "create_spec" | "create_tasks" | "loop"; language: DocumentLanguage; runtime: DraftRuntime | null; workspace: DraftWorkspace; loop?: DraftLoop };
+export type DraftAction = { kind: "create_spec" | "create_tasks" | "direct_execute" | "open_pull_request" | "loop"; language: DocumentLanguage; runtime: DraftRuntime | null; workspace: DraftWorkspace; loop?: DraftLoop };

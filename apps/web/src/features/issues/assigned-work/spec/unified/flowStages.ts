@@ -1,8 +1,9 @@
 import type { TimelineState } from "../../planningModel";
 import { isReviewStep } from "./loopNames";
+import { PULL_REQUEST_KIND, reviewPassedCleanly } from "./pullRequestOffer";
 import type { FlowAction, FlowOverview, FlowPackage } from "./unifiedContract";
 
-export type StageKey = "spec" | "spec_review" | "tasks" | "tasks_review" | "execution" | "review";
+export type StageKey = "spec" | "spec_review" | "tasks" | "tasks_review" | "execution" | "review" | "pull_request" | "direct";
 export type StageState = TimelineState | "yours";
 export type FlowStage = { key: StageKey; state: StageState };
 
@@ -10,6 +11,7 @@ export const ACTIVE_RUN_STATES = ["queued", "dispatching", "running", "waiting",
 export const FAILED_RUN_STATES = ["failed", "canceled", "blocked", "stalled", "exhausted"];
 export const SPEC_FORMAT = "os_spec_v1";
 export const TASKS_FORMAT = "os_tasks_v1";
+export const DIRECT_KIND = "direct_execute";
 const SUCCEEDED_STATE = "succeeded";
 
 export function latestPackage(packages: FlowPackage[], format: string) {
@@ -43,6 +45,12 @@ function executionState(loops: FlowAction[]): StageState {
   return "pending";
 }
 
+function publicationState(actions: FlowAction[], reviewPassed: boolean): StageState {
+  const state = executionState(actions);
+  if (state !== "pending") return state;
+  return reviewPassed ? "yours" : "pending";
+}
+
 function settleTurn(stages: FlowStage[]): FlowStage[] {
   const turn = stages.findIndex((stage) => stage.state !== "done");
   return stages.map((stage, index) => {
@@ -52,19 +60,22 @@ function settleTurn(stages: FlowStage[]): FlowStage[] {
   });
 }
 
-export function flowStages(overview: FlowOverview | null): FlowStage[] {
+export function flowStages(overview: FlowOverview | null, direct = false): FlowStage[] {
+  if (direct) return settleTurn([{ key: "direct", state: executionState(actionsOf(overview, DIRECT_KIND)) }]);
   const packages = overview?.packages ?? [];
   const spec = latestPackage(packages, SPEC_FORMAT);
   const tasks = latestPackage(packages, TASKS_FORMAT);
   const loops = actionsOf(overview, "loop");
-  return settleTurn([
+  const reviewLoops = loops.filter(isReviewStep);
+  const completedStages = settleTurn([
     { key: "spec", state: generationState(actionsOf(overview, "create_spec").at(-1) ?? null, spec !== null || tasks !== null) },
     { key: "spec_review", state: tasks ? "done" : reviewState(spec) },
     { key: "tasks", state: generationState(actionsOf(overview, "create_tasks").at(-1) ?? null, tasks !== null) },
     { key: "tasks_review", state: reviewState(tasks) },
     { key: "execution", state: executionState(loops.filter((loop) => !isReviewStep(loop))) },
-    { key: "review", state: executionState(loops.filter(isReviewStep)) },
+    { key: "review", state: executionState(reviewLoops) },
   ]);
+  return [...completedStages, { key: "pull_request", state: publicationState(actionsOf(overview, PULL_REQUEST_KIND), reviewPassedCleanly(loops)) }];
 }
 
 export function currentStageIndex(stages: FlowStage[]) {

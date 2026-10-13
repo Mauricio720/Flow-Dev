@@ -40,10 +40,13 @@ vi.mock("@/lib/trpc/client", () => ({
       savePlan: { mutate: vi.fn() },
       startAction: { mutate: vi.fn() },
       cancelRun: { mutate: vi.fn() },
+      concludeReview: { mutate: vi.fn() },
       retryAction: { mutate: vi.fn() },
       moveAction: { mutate: vi.fn() },
       prepareLocalAction: { mutate: vi.fn() },
       localPreparationStatus: { query: vi.fn() },
+      openLocalWorktree: { mutate: vi.fn() },
+      openLocalWorktreeStatus: { query: vi.fn() },
       approvePackage: { mutate: vi.fn() },
     },
     software: {

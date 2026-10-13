@@ -3,12 +3,23 @@ export const FLOW_REGION_LABEL = "Fluxo CompozyOS da tarefa";
 export const ACTION_LABELS: Record<string, string> = {
   create_spec: "Criar spec",
   create_tasks: "Criar tarefas",
+  direct_execute: "Execução direta",
+  open_pull_request: "Abrir Pull Request",
   loop: "Loop",
 };
 
 export const ACTION_DESCRIPTIONS: Record<string, string> = {
   create_spec: "Gera uma spec no idioma escolhido, com resumo executivo para leitura rápida e os contratos técnicos completos.",
   create_tasks: "Decompõe a spec aprovada em tarefas no idioma escolhido. Só fica disponível depois de aprovar a spec.",
+  direct_execute: "Implementa a Issue direto no worktree do seu projeto local, sem PRD, Tech Spec nem tarefas. O agente para e avisa se descobrir que falta uma decisão de especificação.",
+  open_pull_request: "Separa as alterações da Issue em commits, envia a branch ao GitHub e abre a Pull Request vinculada à Issue. Usa o git e o gh já autenticados na sua máquina e não altera código.",
+};
+
+export const LANGUAGE_FIELD_LABELS: Record<string, string> = { direct_execute: "Idioma do relatório e das perguntas", open_pull_request: "Idioma da Pull Request" };
+export const DOCUMENTS_LANGUAGE_LABEL = "Idioma dos documentos";
+export const LOCAL_ONLY_NOTES: Record<string, string> = {
+  direct_execute: "A execução direta roda somente no projeto local vinculado.",
+  open_pull_request: "A Pull Request é publicada a partir do worktree da Issue no projeto local vinculado.",
 };
 
 export const RUN_STATE_LABELS: Record<string, string> = {
@@ -34,6 +45,7 @@ export const START_REASONS: Record<string, string> = {
 
 export const FAILURE_COPY: Record<string, string> = {
   plan_version_changed: "O fluxo mudou em outra aba. O estado atual foi carregado; revise e salve de novo.",
+  route_unsupported: "Esta ação não combina com a rota aprovada no planejamento.",
   action_already_started: "Esta ação já foi iniciada e sua escolha não pode mais ser alterada.",
   action_active: "Já existe uma execução ativa para esta tarefa.",
   capacity_reached: "O limite de execuções simultâneas foi atingido por outra tarefa. Aguarde ela terminar, cancele-a ou aumente o limite em Configurações.",
@@ -42,7 +54,10 @@ export const FAILURE_COPY: Record<string, string> = {
   model_unavailable: "O modelo não está mais disponível. Escolha outra opção pronta.",
   reasoning_effort_unsupported: "Esse nível de raciocínio não é suportado pelo modelo.",
   connection_unavailable: "A conexão não está mais disponível.",
+  runtime_workspace_mismatch: "Esta conexão não pode executar neste checkout. Use o Projeto local vinculado com uma conexão local ou escolha uma conexão do servidor para um worktree.",
   auth_required: "A conta precisa ser reconectada por um administrador.",
+  preparation_expired: "A preparação local expirou. Prepare a ação novamente antes de iniciar.",
+  preparation_changed: "O checkout ou a preparação local mudou. Prepare a ação novamente antes de iniciar.",
   runtime_incompatible: "O runtime ou o host não está pronto. Um operador precisa reparar o ambiente.",
   software_not_enabled: "O Software CompozyOS não está habilitado.",
   package_version_changed: "Há uma versão mais nova do pacote. Revise a versão atual antes de aprovar.",
@@ -53,6 +68,8 @@ export const FAILURE_COPY: Record<string, string> = {
 export const PREPARATION_FAILED_STATES = ["failed", "blocked", "canceled", "expired", "unknown"];
 export const PREPARATION_FAILURES: Record<string, string> = {
   runtime_incompatible: "A preparação local foi recusada: confira na sua máquina a versão do CompozyOS e o login do provedor escolhido.",
+  preparation_expired: "A preparação local expirou. Prepare a ação novamente antes de iniciar.",
+  preparation_changed: "O checkout ou a preparação local mudou. Prepare a ação novamente antes de iniciar.",
   path_invalid: "A preparação local não encontrou o checkout vinculado. Refaça o vínculo em Projeto local.",
   gate_policy_unresolved: "A preparação local não conseguiu identificar as verificações obrigatórias do projeto.",
 };

@@ -10,7 +10,7 @@ import { PlanEditor } from "./PlanEditor";
 import { ReaderPlan } from "./ReaderPlan";
 import { RunHistory } from "./RunHistory";
 
-type Props = { tab: FlowTab; view: FlowView };
+type Props = { tab: FlowTab; view: FlowView; resumeActionId?: string | null };
 const PLAN_TITLE = "Ações da etapa";
 const DOCUMENTS_TITLE = "Documentos";
 const HISTORY_TITLE = "Histórico de execuções";
@@ -24,11 +24,11 @@ function PlanSlot({ pending, children }: { pending: boolean; children: ReactNode
   return pending ? <PlanSkeleton /> : null;
 }
 
-function PlanSection({ tab, view }: Props) {
+function PlanSection({ tab, view, resumeActionId }: Props) {
   const { data, commands, draft } = view;
   const plan = data.overview?.plan ?? null;
   if (!view.canAct) return <Section title={PLAN_TITLE}><ReaderPlan plan={plan} tab={tab} /></Section>;
-  return <Section title={PLAN_TITLE}><PlanSlot pending={!data.failed}>{data.options && <PlanEditor plan={plan} options={data.options} commands={commands} state={draft} tab={tab} />}</PlanSlot></Section>;
+  return <Section title={PLAN_TITLE}><PlanSlot pending={!data.failed}>{data.options && <PlanEditor plan={plan} options={data.options} commands={commands} state={draft} tab={tab} resumeActionId={resumeActionId} />}</PlanSlot></Section>;
 }
 
 function DocumentsSection({ tab, view }: Props) {
@@ -45,11 +45,11 @@ function HistorySection({ tab, view }: Props) {
   return <Section title={HISTORY_TITLE}><RunHistory runs={own} hasMore={runs.nextCursor !== null} loadingMore={loadingMore} onLoadMore={() => void loadMore()} /></Section>;
 }
 
-export function FlowTabSections({ tab, view, documentsFirst, waiting }: Props & { documentsFirst: boolean; waiting: boolean }) {
+export function FlowTabSections({ tab, view, documentsFirst, waiting, resumeActionId }: Props & { documentsFirst: boolean; waiting: boolean }) {
   const { overview, runs } = view.data;
   const hasPackages = overview?.packages.some((item) => item.format === tab.format) ?? false;
   const hasRuns = runs?.items.some((run) => ownsStep(tab, run)) ?? false;
-  const plan = <PlanSection key="plan" tab={tab} view={view} />;
+  const plan = <PlanSection key="plan" tab={tab} view={view} resumeActionId={resumeActionId} />;
   const documents = tab.format && (!waiting || hasPackages) ? <DocumentsSection key="documents" tab={tab} view={view} /> : null;
   return (
     <>

@@ -38,7 +38,7 @@ export function ConnectionsPanel({ items, hasMore, failed, onLoadMore, onChanged
       {failed && <p role="alert" className="mt-3 text-sm text-destructive">Não foi possível atualizar as conexões.</p>}
       {items.length === 0 ? <p className="mt-4 text-sm text-ink-2">{EMPTY_TEXT}</p> : (
         <ul className="mt-4 divide-y divide-line rounded-xl border border-line bg-raised">
-          {items.map((row) => <ConnectionRowView key={row.id} row={row} onReconnect={(target) => onBegin({ connectionId: target.id }, target.providerKind)} onRename={setRenaming} onDisconnect={(target) => void actions.disconnect(target)} />)}
+          {items.map((row) => <ConnectionRowView key={row.id} row={row} onReconnect={(target) => { if (target.providerKind !== "opencode") onBegin({ connectionId: target.id }, target.providerKind); }} onRename={setRenaming} onDisconnect={(target) => void actions.disconnect(target)} />)}
         </ul>
       )}
       {hasMore && <Button type="button" variant="outline" className="mt-4" onClick={onLoadMore}>Carregar mais conexões</Button>}

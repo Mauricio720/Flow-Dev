@@ -5,6 +5,8 @@ import { trpc } from "@/lib/trpc/client";
 import type { FlowOptions, FlowOverview, FlowRuns, FlowTarget } from "./unifiedContract";
 
 const POLL_INTERVAL_MS = 2000;
+const CATALOG_RECHECK_MS = 15_000;
+const UNCONFIRMED_CATALOG = "catalog_stale";
 const TERMINAL_STATES = ["succeeded", "failed", "canceled", "blocked", "stalled", "exhausted"];
 
 type Snapshot = { overview: FlowOverview; runs: FlowRuns; options: FlowOptions | null };
@@ -57,6 +59,13 @@ export function useFlowData({ target, initial, canAct }: Input) {
     const timer = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [active, refresh]);
+
+  const catalogUnconfirmed = snapshot?.options?.connections.some((connection) => connection.reason === UNCONFIRMED_CATALOG) ?? false;
+  useEffect(() => {
+    if (active || !catalogUnconfirmed) return;
+    const timer = window.setInterval(() => void refresh(), CATALOG_RECHECK_MS);
+    return () => window.clearInterval(timer);
+  }, [active, catalogUnconfirmed, refresh]);
 
   return { overview, runs: snapshot?.runs ?? null, options: snapshot?.options ?? null, failed, refresh, loadMore, loadingMore };
 }

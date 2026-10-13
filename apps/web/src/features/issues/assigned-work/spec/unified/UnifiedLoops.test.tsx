@@ -34,8 +34,8 @@ describe("loop and worktree choices", () => {
     await userEvent.selectOptions(await screen.findByLabelText("Adicionar Loop"), "implement-tasks");
     expect(screen.getByRole("option", { name: /locked v3 \(sem runtime configurável\)/ })).toHaveProperty("disabled", true);
     await userEvent.type(screen.getByLabelText("focus (obrigatório)"), "api");
-    await pickRuntime(screen.getByRole("group", { name: "Runtime: backend_runtime" }));
-    await pickRuntime(screen.getByRole("group", { name: "Runtime: frontend_runtime" }));
+    await pickRuntime(screen.getByRole("group", { name: "Agente de backend" }));
+    await pickRuntime(screen.getByRole("group", { name: "Agente de frontend" }));
     await userEvent.selectOptions(screen.getByLabelText("Onde implementar?"), "isolated");
     await userEvent.click(screen.getByRole("button", { name: "Salvar fluxo" }));
     await waitFor(() => expect(flow.savePlan.mutate).toHaveBeenCalledOnce());
@@ -51,8 +51,8 @@ describe("loop and worktree choices", () => {
     await openImplementation();
     await userEvent.click(await screen.findByRole("button", { name: "Adicionar Implementação" }));
     await userEvent.type(screen.getByLabelText("focus (obrigatório)"), "api");
-    await pickRuntime(screen.getByRole("group", { name: "Runtime: backend_runtime" }));
-    await pickRuntime(screen.getByRole("group", { name: "Runtime: frontend_runtime" }));
+    await pickRuntime(screen.getByRole("group", { name: "Agente de backend" }));
+    await pickRuntime(screen.getByRole("group", { name: "Agente de frontend" }));
     expect(screen.getByLabelText("Onde implementar?")).toHaveProperty("value", "unselected");
     await userEvent.click(screen.getByRole("button", { name: "Salvar fluxo" }));
     expect(flow.savePlan.mutate).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ describe("loop and worktree choices", () => {
     expect(screen.getByRole("heading", { name: /Review$/, level: 4 })).toBeTruthy();
     expect(screen.queryByLabelText(/Tarefa revisada/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Adicionar Review" })).toBeNull();
-    await pickRuntime(screen.getByRole("group", { name: "Runtime: agentes do Loop" }));
+    await pickRuntime(screen.getByRole("group", { name: "Agentes do Loop" }));
     await userEvent.click(screen.getByRole("button", { name: "Salvar fluxo" }));
     await waitFor(() => expect(flow.savePlan.mutate).toHaveBeenCalledOnce());
     expect(vi.mocked(flow.savePlan.mutate).mock.calls[0]![0].actions.at(-1)).toMatchObject({ kind: "loop", loopName: "review-and-fix", inputs: { task_name: "t1" }, runtimeBindings: { worker: { connectionId: "c1" } } });
@@ -124,7 +124,7 @@ describe("loop and worktree choices", () => {
     expect(screen.getByLabelText("Agente implementador")).toHaveProperty("placeholder", "Padrão: code_implementer");
     await userEvent.click(commit);
     await userEvent.selectOptions(screen.getByLabelText("Modo de execução"), "orchestrated");
-    await pickRuntime(screen.getByRole("group", { name: "Runtime: default_runtime" }));
+    await pickRuntime(screen.getByRole("group", { name: "Agente padrão" }));
     await userEvent.selectOptions(screen.getByLabelText("Onde implementar?"), "isolated");
     await userEvent.click(screen.getByRole("button", { name: "Salvar fluxo" }));
     await waitFor(() => expect(flow.savePlan.mutate).toHaveBeenCalledOnce());

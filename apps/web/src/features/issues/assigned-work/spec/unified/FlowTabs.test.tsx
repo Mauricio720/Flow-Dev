@@ -22,7 +22,7 @@ function renderFlow(overview: FlowOverview, runs = runsOf()) {
 describe("flow stages as tabs", () => {
   it("opens on the stage that needs the operator and keeps later stages closed until picked", async () => {
     renderFlow(overviewOf());
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["SpecAguardando você", "TarefasPendente", "ImplementaçãoPendente", "ReviewPendente"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["SpecAguardando você", "TarefasPendente", "ImplementaçãoPendente", "ReviewPendente", "Pull RequestPendente"]);
     expect(screen.getByRole("tab", { selected: true }).textContent).toContain("Spec");
     expect(screen.getByRole("heading", { name: "Inicie a spec" })).toBeTruthy();
     await userEvent.click(screen.getByRole("tab", TASKS_TAB));
@@ -68,6 +68,6 @@ describe("flow stages as tabs", () => {
     expect(document.activeElement?.textContent).toContain("Tarefas");
     expect(screen.getByRole("tab", { selected: true }).textContent).toContain("Tarefas");
     await userEvent.keyboard("{ArrowLeft}{ArrowLeft}");
-    expect(screen.getByRole("tab", { selected: true }).textContent).toContain("Review");
+    expect(screen.getByRole("tab", { selected: true }).textContent).toContain("Pull Request");
   });
 });

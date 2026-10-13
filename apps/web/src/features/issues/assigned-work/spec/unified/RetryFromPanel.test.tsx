@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
-import { FLOW_TARGET, connectionOf, optionsOf, overviewOf, planOf, runsOf } from "@/test/taskFlow";
+import { FLOW_TARGET, connectionOf, optionsOf, overviewOf, planOf, runOf, runsOf } from "@/test/taskFlow";
 import { UnifiedSpecStage } from "./UnifiedSpecStage";
 import type { FlowOverview } from "./unifiedContract";
 
@@ -33,13 +33,25 @@ describe("retrying a failed action from the current-state panel", () => {
     expect(flow.prepareLocalAction.mutate).not.toHaveBeenCalled();
   });
 
+  it("shows what the last attempt reported and keeps a single place to retry", async () => {
+    const overview = failedOverview("isolated");
+    vi.mocked(flow.byTask.query).mockResolvedValue(overview);
+    vi.mocked(flow.options.query).mockResolvedValue(optionsOf());
+    vi.mocked(flow.runs.query).mockResolvedValue(runsOf([runOf({ state: "failed", terminalCode: "usage_limit_exceeded", finishedAt: "2026-10-06T12:05:00.000Z" })]));
+    render(<UnifiedSpecStage target={FLOW_TARGET} initial={overview} canAct />);
+    const lastAttempt = within(await screen.findByRole("group", { name: "O que aconteceu na última tentativa" }));
+    expect(lastAttempt.getByText(/O Codex informou limite de uso/)).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /Tentar .*de novo/ })).toHaveLength(1);
+    expect(screen.getByText("Falhou. Tente de novo em “Agora”, no topo desta etapa.")).toBeTruthy();
+  });
+
   it("lets the operator switch connection before retrying a failed host action", async () => {
     renderFailed(failedOverview("isolated"));
-    await userEvent.click(await screen.findByRole("button", { name: "Trocar runtime e retomar" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Escolher outros modelos" }));
     const agent = within(screen.getByRole("group", { name: "Agente" }));
     await userEvent.selectOptions(agent.getByLabelText("Conexão"), "c2");
     await userEvent.selectOptions(agent.getByLabelText("Modelo"), "gpt-5.6-sol");
-    await userEvent.click(screen.getByRole("button", { name: "Iniciar com estes runtimes" }));
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo com estes modelos" }));
     await waitFor(() => expect(flow.retryAction.mutate).toHaveBeenCalledWith(expect.objectContaining({ runtimeBindings: { main: expect.objectContaining({ connectionId: "c2", providerId: "codex", modelId: "gpt-5.6-sol" }) } })));
   });
 
@@ -47,11 +59,11 @@ describe("retrying a failed action from the current-state panel", () => {
     vi.mocked(flow.prepareLocalAction.mutate).mockResolvedValue({ preparationId: "p1" });
     vi.mocked(flow.localPreparationStatus.query).mockResolvedValue({ preparationId: "p1", state: "ready", safeLabel: "shop", dirty: false, capabilities: [], manifestHash: null, checkoutDigest: null, requiredGates: [], reason: null, detail: null });
     renderFailed(failedOverview("local"), true);
-    await userEvent.click(await screen.findByRole("button", { name: "Trocar runtime e retomar" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Escolher outros modelos" }));
     const agent = within(screen.getByRole("group", { name: "Agente" }));
     await userEvent.selectOptions(agent.getByLabelText("Conexão"), "c2");
     await userEvent.selectOptions(agent.getByLabelText("Modelo"), "gpt-5.6-sol");
-    await userEvent.click(screen.getByRole("button", { name: "Iniciar com estes runtimes" }));
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo com estes modelos" }));
     expect(flow.prepareLocalAction.mutate).toHaveBeenCalledWith(expect.objectContaining({ ...FLOW_TARGET, actionId: "a1", expectedRevision: 1, runtimeBindings: { main: expect.objectContaining({ connectionId: "c2" }) } }));
     expect(flow.retryAction.mutate).not.toHaveBeenCalled();
     await waitFor(() => expect(flow.retryAction.mutate).toHaveBeenCalledWith(expect.objectContaining({ actionId: "a1", expectedRevision: 1, preparationId: "p1", runtimeBindings: { main: expect.objectContaining({ connectionId: "c2" }) } })), { timeout: 4000 });
@@ -85,13 +97,13 @@ describe("retrying a failed action from the current-state panel", () => {
     vi.mocked(flow.options.query).mockResolvedValue(optionsOf({ workspaces: [{ kind: "isolated" }, { kind: "local" }], connections: [connectionOf(), connectionOf({ id: "m1", label: "Codex local", executionTarget: "machine", machineId: "m1" })] }));
     vi.mocked(flow.runs.query).mockResolvedValue(runsOf());
     render(<UnifiedSpecStage target={FLOW_TARGET} initial={overview} canAct />);
-    await userEvent.click(await screen.findByRole("button", { name: "Trocar runtime e retomar" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Escolher outros modelos" }));
     await userEvent.selectOptions(screen.getByLabelText("Onde executar"), "local");
     const agent = within(screen.getByRole("group", { name: "Agente" }));
     expect(agent.queryByRole("option", { name: "Codex principal" })).toBeNull();
     await userEvent.selectOptions(agent.getByLabelText("Conexão"), "m1");
     await userEvent.selectOptions(agent.getByLabelText("Modelo"), "gpt-5.6-sol");
-    await userEvent.click(screen.getByRole("button", { name: "Iniciar com estes runtimes" }));
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo com estes modelos" }));
     await waitFor(() => expect(flow.moveAction.mutate).toHaveBeenCalledWith({ ...FLOW_TARGET, actionId: "a1", expectedRevision: 1, workspace: { kind: "local" }, runtimeBindings: { main: expect.objectContaining({ connectionId: "m1", providerId: "codex" }) } }));
     await waitFor(() => expect(flow.prepareLocalAction.mutate).toHaveBeenCalledWith(expect.objectContaining({ actionId: "a1", expectedRevision: 2 })));
     expect(vi.mocked(flow.prepareLocalAction.mutate).mock.calls[0]?.[0]).not.toHaveProperty("runtimeBindings");

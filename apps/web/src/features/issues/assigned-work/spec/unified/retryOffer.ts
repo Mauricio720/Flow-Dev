@@ -1,4 +1,5 @@
 import type { FlowCommands } from "./flowView";
+import { orderedRoles } from "./loopCatalogCopy";
 import type { RetryOffer } from "./NowPanel";
 import { connectionsFor, movableKinds } from "./retryWorkspace";
 import type { FlowOptions, FlowPlan, FlowRun, MovableWorkspaceKind, RetryRuntimeBindings } from "./unifiedContract";
@@ -14,6 +15,8 @@ export function retryOffer(plan: FlowPlan | null, options: FlowOptions | null, r
   const latest = runs.find((run) => run.actionId === action.id);
   const ranHere = latest?.bindings.every((binding) => usable.includes(binding.connectionId));
   const currentAction = latest && ranHere ? { ...action, bindings: latest.bindings } : action;
+  const live = options.loops.find((loop) => loop.name === action.loopName);
+  const renewedRoles = live && live.version !== action.loopVersion ? orderedRoles(live.runtimeRoles) : null;
   const onRetry = (runtimeBindings?: RetryRuntimeBindings, moveTo?: MovableWorkspaceKind) => void commands.retryFailedAction({ actionId: action.id, expectedRevision: plan.revision, local: (moveTo ?? origin) === LOCAL_KIND, runtimeBindings, moveTo });
-  return { action: currentAction, connections: options.connections, workspaceKinds: movableKinds(action, options), pending: commands.retryPending, onRetry };
+  return { action: currentAction, renewedRoles, connections: options.connections, workspaceKinds: movableKinds(action, options), pending: commands.retryPending, lastRun: latest ?? null, preparation: commands.preparations[action.id], onRetry };
 }

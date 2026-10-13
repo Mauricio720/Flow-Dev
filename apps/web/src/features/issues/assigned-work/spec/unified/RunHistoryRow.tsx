@@ -1,5 +1,6 @@
 import { ChevronDownIcon } from "@/components/icons";
 import { ACTIVE_RUN_STATES, FAILED_RUN_STATES } from "./flowStages";
+import { runtimeRoleLabel } from "./loopCatalogCopy";
 import { RUN_FEEDBACK, TERMINAL_REASON_LABELS } from "./runFeedback";
 import { elapsedLabel, runLabel, runMoment } from "./runTime";
 import type { FlowRun } from "./unifiedContract";
@@ -7,6 +8,7 @@ import { ACTION_LABELS, RUN_STATE_LABELS } from "./unifiedCopy";
 import { RunActivity } from "./RunActivity";
 
 const FAILURE_ACTIVITY_KIND = "warning";
+const MAIN_ROLE = "main";
 const UNKNOWN_REASON = "O runtime informou um motivo adicional.";
 const ROW = "grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center sm:grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 gap-y-0.5 py-2.5 text-sm [&::-webkit-details-marker]:hidden";
 
@@ -21,7 +23,7 @@ function stateInk(state: string) {
 }
 
 function bindingLine(binding: FlowRun["bindings"][number]) {
-  const role = binding.role !== "main" ? `${binding.role}: ` : "";
+  const role = binding.role !== MAIN_ROLE ? `${runtimeRoleLabel(binding.role)}: ` : "";
   return `${role}${binding.providerId} · ${binding.modelId} · raciocínio ${binding.reasoningEffort ?? "padrão"} · conexão ${binding.connectionLabel ?? binding.connectionId}${binding.connectionAvailable ? "" : " (indisponível hoje)"}`;
 }
 

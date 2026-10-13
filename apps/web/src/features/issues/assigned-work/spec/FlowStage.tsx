@@ -27,13 +27,17 @@ function useResolvedFlow(projectId: string, taskId: string, initial: FlowLoad) {
   return { flow, refresh };
 }
 
+const DIRECT_ROUTE = "direct_execution";
+const PENDING_LABELS = { spec: "Spec", direct: "Execução direta" };
+
 export function FlowStage(props: Props) {
+  const direct = props.decision?.selectedRoute === DIRECT_ROUTE;
   const initial = useSpecInitial().flow ?? { kind: "none" } as const;
   const { flow, refresh } = useResolvedFlow(props.project.id, props.taskId, initial);
   if (flow.kind === "ready" && flow.overview.flow === "legacy") return <SpecStage {...props} />;
   if (flow.kind !== "ready") {
     const panel = <section aria-label="Fluxo CompozyOS da tarefa" className="rounded-xl border border-line bg-raised px-5 py-4"><p role="status" className="text-sm text-ink-2">{flow.kind === "failed" ? "Não foi possível identificar o fluxo desta tarefa." : "Carregando o fluxo desta tarefa…"}</p>{flow.kind === "failed" && <Button type="button" variant="outline" size="sm" className="mt-3" onClick={refresh}>Tentar novamente</Button>}</section>;
-    return <StageTabs tabs={[...(props.lead ? [props.lead] : []), { id: "spec", label: "Spec", state: "pending", panel }]} current="spec" canAct={props.canAct} />;
+    return <StageTabs tabs={[...(props.lead ? [props.lead] : []), { id: "spec", label: direct ? PENDING_LABELS.direct : PENDING_LABELS.spec, state: "pending", panel }]} current="spec" canAct={props.canAct} />;
   }
-  return <UnifiedSpecStage target={{ projectId: props.project.id, taskId: props.taskId }} initial={flow.overview} canAct={props.canAct} lead={props.lead} />;
+  return <UnifiedSpecStage target={{ projectId: props.project.id, taskId: props.taskId }} initial={flow.overview} canAct={props.canAct} lead={props.lead} direct={direct} />;
 }

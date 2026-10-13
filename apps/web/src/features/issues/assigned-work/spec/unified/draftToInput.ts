@@ -1,6 +1,6 @@
 import type { DraftAction, DraftRuntime, DraftWorkspace, FlowLoopOption, PlanActionInput } from "./unifiedContract";
 
-type Provider = "codex" | "claude";
+type Provider = "codex" | "claude" | "opencode";
 export type DraftContext = { providers: Map<string, Provider>; loops: FlowLoopOption[] };
 
 const toRuntime = (runtime: DraftRuntime | null, providers: Map<string, Provider>) => {

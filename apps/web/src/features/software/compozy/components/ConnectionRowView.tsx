@@ -10,12 +10,12 @@ type Props = {
   onDisconnect: (row: ConnectionRow) => void;
 };
 
-const PROVIDER_LABELS: Record<string, string> = { codex: "Codex (ChatGPT)", claude: "Claude Code" };
+const PROVIDER_LABELS: Record<string, string> = { codex: "Codex (ChatGPT)", claude: "Claude Code", opencode: "OpenCode" };
 const CHECK_TIME = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
 export function ConnectionRowView({ row, onReconnect, onRename, onDisconnect }: Props) {
   const reason = row.readiness.reasonCode ? REASON_ACTIONS[row.readiness.reasonCode] : null;
-  const connectable = row.authState !== "unconnected" || !row.disabled;
+  const connectable = row.providerKind !== "opencode" && (row.authState !== "unconnected" || !row.disabled);
   const canDisconnect = row.authState !== "unconnected" && row.authState !== "disconnected";
   return (
     <li className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">

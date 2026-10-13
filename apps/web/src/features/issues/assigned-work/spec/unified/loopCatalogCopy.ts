@@ -16,12 +16,29 @@ const OFFER_REASONS: Record<string, string> = {
 const OFFER_FALLBACK = "indisponível";
 const NONE_OFFERABLE = "Nenhum dos Loops existentes pode ser iniciado por aqui";
 
-const ROLE_LABELS: Record<string, string> = { worker: "agentes do Loop" };
+const MAIN_ROLE = "main";
+const MAIN_ROLE_LABEL = "Agente";
+const ROLE_LABELS: Record<string, string> = {
+  worker: "Agentes do Loop",
+  default_runtime: "Agente padrão",
+  backend_runtime: "Agente de backend",
+  frontend_runtime: "Agente de frontend",
+  orchestrator_runtime: "Agente condutor",
+  reviewer_runtime: "Agente revisor",
+  fixer_runtime: "Agente corretor",
+};
 const NOT_OFFERED = "O CompozyOS em uso não oferece o Loop desta etapa.";
 export const REVIEW_WAITING_NOTICE = "O Review fica disponível quando a implementação das tarefas terminar com sucesso.";
 
+const REVIEW_ROLE_ORDER = ["reviewer_runtime", "fixer_runtime"];
+
+// CompozyOS lists the declared roles alphabetically, which would put the fixer before the reviewer it follows.
+export function orderedRoles(roles: string[]) {
+  return [...roles].sort((first, second) => REVIEW_ROLE_ORDER.indexOf(first) - REVIEW_ROLE_ORDER.indexOf(second));
+}
+
 export function runtimeRoleLabel(role: string) {
-  return ROLE_LABELS[role] ?? role;
+  return role === MAIN_ROLE ? MAIN_ROLE_LABEL : ROLE_LABELS[role] ?? role;
 }
 
 const INPUT_LABELS: Record<string, string> = {
@@ -29,8 +46,8 @@ const INPUT_LABELS: Record<string, string> = {
   mode: "Modo de execução",
   implementer: "Agente implementador",
   orchestrator: "Agente condutor (modo orchestrated)",
-  reviewer: "Agente revisor",
-  fixer: "Agente corretor",
+  reviewer: "Definição do agente revisor",
+  fixer: "Definição do agente corretor",
   reviewed_worktree: "Worktree a revisar",
   slug: "Pasta das tarefas",
   task_name: "Tarefa revisada",
@@ -43,7 +60,7 @@ export function inputLabel(name: string) {
 const LOOP_TITLES: Record<string, string> = { [IMPLEMENT_LOOP]: "Implementação", [REVIEW_LOOP]: "Review" };
 const LOOP_DESCRIPTIONS: Record<string, string> = {
   [IMPLEMENT_LOOP]: "Implementa as tarefas aprovadas em ordem de dependência, uma por vez ou por um agente condutor.",
-  [REVIEW_LOOP]: "Um agente revisa o que foi implementado, registra os achados e outro corrige os válidos, até uma rodada voltar limpa.",
+  [REVIEW_LOOP]: "Um agente revisa o que foi implementado, registra os achados e outro corrige os válidos, cada um com o modelo escolhido, até uma rodada voltar limpa.",
 };
 
 export function loopTitle(name: string) {
