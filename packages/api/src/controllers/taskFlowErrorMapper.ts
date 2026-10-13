@@ -9,7 +9,7 @@ const CODES: Partial<Record<Code, readonly TaskFlowReason[]>> = {
   NOT_FOUND: ["task_unavailable", "run_unavailable", "evidence_unavailable"],
   CONFLICT: ["plan_version_changed", "idempotency_key_reused", "action_active", "capacity_reached", "action_already_started", "package_version_changed", "preparation_changed"],
   BAD_REQUEST: ["invalid_input", "invalid_cursor", "action_unavailable", "package_unavailable"],
-  PRECONDITION_FAILED: ["interaction_unavailable", "claim_required", "claim_unresolved", "issue_ineligible", "board_status_changed", "source_changed", "preparation_required"],
+  PRECONDITION_FAILED: ["interaction_unavailable", "claim_required", "claim_unresolved", "issue_ineligible", "board_status_changed", "source_changed", "preparation_required", "runtime_workspace_mismatch"],
   SERVICE_UNAVAILABLE: ["service_unavailable", "outcome_unknown"],
 };
 
@@ -27,6 +27,7 @@ const MESSAGES: Partial<Record<TaskFlowReason, string>> = {
   legacy_flow_active: "Esta tarefa segue o fluxo anterior de Spec",
   service_unavailable: "Não foi possível concluir a operação do fluxo",
   outcome_unknown: "O resultado ainda está sendo reconciliado",
+  runtime_workspace_mismatch: "A conexão escolhida não pode executar neste checkout",
   interaction_unavailable: "Esta pergunta não está mais aguardando resposta",
 };
 

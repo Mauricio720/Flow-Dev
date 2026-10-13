@@ -1,5 +1,6 @@
 import { MAX_PLAN_ACTIONS, type FlowAction } from "./flowContracts";
 import { reviewFollowsImplementation } from "./loopOrder";
+import { assertPullRequestShape } from "./pullRequestAction";
 import { TaskFlowError } from "./taskFlowErrors";
 
 export function assertPlanShape(actions: FlowAction[]) {
@@ -13,4 +14,5 @@ export function assertPlanShape(actions: FlowAction[]) {
   if (tasksIndex >= 0 && specIndex > tasksIndex) throw new TaskFlowError("invalid_input");
   if (tasksIndex >= 0 && kinds.slice(0, tasksIndex).includes("loop")) throw new TaskFlowError("invalid_input");
   if (!reviewFollowsImplementation(actions)) throw new TaskFlowError("stage_prerequisite");
+  assertPullRequestShape(actions);
 }

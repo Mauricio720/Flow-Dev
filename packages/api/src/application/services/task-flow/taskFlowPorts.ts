@@ -5,7 +5,7 @@ import { TaskFlowError, type TaskFlowReason } from "./taskFlowErrors";
 
 export type TaskScope = { projectId: string; taskId: string; actorId: string; sourceSnapshotId?: string; claimRevision?: number };
 
-export type TaskEligibility = { canPlan: boolean; reason: TaskFlowReason | null };
+export type TaskEligibility = { canPlan: boolean; reason: TaskFlowReason | null; route?: import("./directExecution").FlowRoute };
 
 export interface TaskFlowGate {
   eligibility(scope: TaskScope): Promise<TaskEligibility>;
@@ -26,6 +26,7 @@ export type { LocalProjectAccess };
 
 export interface LoopAdmission {
   admit(input: { taskId: string; action: Extract<FlowAction, { kind: "loop" }> }): Promise<void>;
+  current?(input: { taskId: string; action: Extract<FlowAction, { kind: "loop" }> }): Promise<{ version: string; runtimeRoles: string[] } | null>;
 }
 
 export const ISOLATED_ONLY: WorkspaceAdmission = {

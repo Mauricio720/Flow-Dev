@@ -1,10 +1,10 @@
 export type RuntimeChoice = { connectionId: string; providerId: string; modelId: string; reasoningEffort: string | null };
 
-export type WorkspaceChoice = { kind: "isolated" } | { kind: "local"; target?: { machineId: string; linkId: string; linkRevision: number; checkoutHandle: string } } | { kind: "existing"; worktreeId: string } | { kind: "new"; name: string };
+export type WorkspaceChoice = { kind: "isolated" } | { kind: "local"; target?: import("./localProjectAccess").LocalExecutionTarget } | { kind: "existing"; worktreeId: string } | { kind: "new"; name: string };
 
 export type DocumentLanguage = "pt-BR" | "en";
 
-export type SkillFlowAction = { kind: "create_spec" | "create_tasks"; language: DocumentLanguage; runtime: RuntimeChoice; workspace: WorkspaceChoice };
+export type SkillFlowAction = { kind: "create_spec" | "create_tasks" | "direct_execute" | "open_pull_request"; language: DocumentLanguage; runtime: RuntimeChoice; workspace: WorkspaceChoice };
 
 export type LoopFlowAction = {
   kind: "loop";

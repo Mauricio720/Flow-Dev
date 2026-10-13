@@ -1,4 +1,6 @@
-import type { FlowAction } from "../../../application/services/task-flow/flowContracts";
+import type { FlowAction, SkillFlowAction } from "../../../application/services/task-flow/flowContracts";
+import { buildDirectPrompt } from "./directPrompt";
+import { buildPullRequestPrompt } from "./pullRequestPrompt";
 
 export type PromptTask = { title: string; bodyMarkdown: string; issueNumber: number };
 
@@ -10,7 +12,7 @@ const OUTPUT_BY_KIND: Record<string, string> = {
 
 const LANGUAGE_NAMES = { "pt-BR": "Brazilian Portuguese (pt-BR)", en: "English" } as const;
 
-function editorialInstructions(action: Extract<FlowAction, { kind: "create_spec" | "create_tasks" }>) {
+function editorialInstructions(action: SkillFlowAction) {
   const language = LANGUAGE_NAMES[action.language];
   const common = `Write all human-facing artifact content in ${language}. Keep literal code identifiers, paths, API names and required schema keys unchanged.`;
   if (action.kind === "create_tasks") return common;
@@ -19,6 +21,8 @@ function editorialInstructions(action: Extract<FlowAction, { kind: "create_spec"
 }
 
 export function buildUnifiedPrompt(input: { action: FlowAction; task: PromptTask; workspaceRoot?: string }) {
+  if (input.action.kind === "direct_execute") return buildDirectPrompt({ language: input.action.language, task: input.task, workspaceRoot: input.workspaceRoot });
+  if (input.action.kind === "open_pull_request") return buildPullRequestPrompt({ language: input.action.language, task: input.task, workspaceRoot: input.workspaceRoot });
   const skill = SKILL_BY_KIND[input.action.kind];
   const output = OUTPUT_BY_KIND[input.action.kind];
   if (!skill || !output) throw new Error("unsupported_action_kind");

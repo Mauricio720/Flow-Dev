@@ -25,6 +25,8 @@ describe("Compozy runtime state in a local checkout", () => {
     expect(isCompozyRuntimeState(".compozy/compozy.db")).toBe(true);
     expect(isCompozyRuntimeState(".compozy/compozy.db-wal")).toBe(true);
     expect(isCompozyRuntimeState(".compozy/workspace.toml")).toBe(true);
+    expect(isCompozyRuntimeState(".compozy/loops/review-and-fix/loop.yaml")).toBe(true);
+    expect(isCompozyRuntimeState(".compozy/loops/custom/loop.yaml")).toBe(false);
     expect(isCompozyRuntimeState(".compozy/tasks/task_01.md")).toBe(false);
     expect(isCompozyRuntimeState("packages/.compozy/compozy.db")).toBe(false);
   });

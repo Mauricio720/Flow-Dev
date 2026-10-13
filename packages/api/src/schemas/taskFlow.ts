@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isValidCursor } from "../application/pagination/cursor";
 import { MAX_PLAN_ACTIONS } from "../application/services/task-flow/flowContracts";
+import { PROVIDER_KINDS } from "../application/database/dao/softwareDao";
 
 const MODEL_ID_MAX = 200;
 const EFFORT_MAX = 50;
@@ -16,7 +17,7 @@ export const TASK_FLOW_MAX_PAGE_SIZE = 50;
 
 const runtimeChoice = z.object({
   connectionId: z.string().uuid(),
-  providerId: z.enum(["codex", "claude"]),
+  providerId: z.enum(PROVIDER_KINDS),
   modelId: z.string().min(1).max(MODEL_ID_MAX),
   reasoningEffort: z.string().min(1).max(EFFORT_MAX).nullable(),
 }).strict();
@@ -30,7 +31,7 @@ const workspace = z.discriminatedUnion("kind", [
 
 const loopInputs = z.record(z.string(), z.unknown()).refine((value) => JSON.stringify(value).length <= LOOP_INPUT_MAX_BYTES, "inputs_too_large");
 
-const skillAction = z.object({ kind: z.enum(["create_spec", "create_tasks"]), language: documentLanguage, runtime: runtimeChoice, workspace }).strict();
+const skillAction = z.object({ kind: z.enum(["create_spec", "create_tasks", "direct_execute", "open_pull_request"]), language: documentLanguage, runtime: runtimeChoice, workspace }).strict();
 const loopAction = z.object({
   kind: z.literal("loop"),
   loopName: z.string().min(1).max(LOOP_NAME_MAX),
@@ -48,16 +49,19 @@ export const taskFlowScopeSchema = z.object(scope).strict();
 export const taskFlowRunsSchema = z.object({ ...scope, cursor: cursor.optional(), limit: z.number().int().min(1).max(TASK_FLOW_MAX_PAGE_SIZE).optional() }).strict();
 export const savePlanSchema = z.object({
   ...scope,
-  actions: z.array(z.discriminatedUnion("kind", [skillAction.extend({ kind: z.literal("create_spec") }), skillAction.extend({ kind: z.literal("create_tasks") }), loopAction])).min(1).max(MAX_PLAN_ACTIONS),
+  actions: z.array(z.discriminatedUnion("kind", [skillAction.extend({ kind: z.literal("create_spec") }), skillAction.extend({ kind: z.literal("create_tasks") }), skillAction.extend({ kind: z.literal("direct_execute") }), skillAction.extend({ kind: z.literal("open_pull_request") }), loopAction])).min(1).max(MAX_PLAN_ACTIONS),
   expectedRevision: revision,
   idempotencyKey: z.string().uuid(),
 }).strict();
 export const startActionSchema = z.object({ ...scope, actionId: z.string().uuid(), expectedRevision: revision, idempotencyKey: z.string().uuid(), preparationId: z.string().uuid().optional() }).strict();
 export const prepareLocalActionSchema = z.object({ ...scope, actionId: z.string().uuid(), expectedRevision: revision, requestKey: z.string().uuid(), runtimeBindings: z.record(z.string().regex(ROLE_PATTERN), runtimeChoice).optional() }).strict();
 export const localPreparationStatusSchema = z.object({ ...scope, preparationId: z.string().uuid() }).strict();
+export const openLocalWorktreeSchema = z.object({ ...scope, requestKey: z.string().uuid() }).strict();
+export const openLocalWorktreeStatusSchema = z.object({ ...scope, commandId: z.string().uuid() }).strict();
 export const packageScopeSchema = z.object({ ...scope, packageId: z.string().uuid() }).strict();
 export const approvePackageSchema = z.object({ ...scope, packageId: z.string().uuid(), version: z.number().int().min(1), idempotencyKey: z.string().uuid() }).strict();
 export const cancelRunSchema = z.object({ ...scope, runId: z.string().uuid(), idempotencyKey: z.string().uuid() }).strict();
+export const concludeReviewSchema = z.object({ ...scope, actionId: z.string().uuid(), expectedRevision: revision }).strict();
 export const retryActionSchema = startActionSchema.extend({ runtimeBindings: z.record(z.string().regex(ROLE_PATTERN), runtimeChoice).optional() }).strict();
 const movableWorkspace = z.discriminatedUnion("kind", [z.object({ kind: z.literal("isolated") }).strict(), z.object({ kind: z.literal("local") }).strict()]);
 export const moveActionSchema = z.object({ ...scope, actionId: z.string().uuid(), expectedRevision: revision, workspace: movableWorkspace, runtimeBindings: z.record(z.string().regex(ROLE_PATTERN), runtimeChoice) }).strict();

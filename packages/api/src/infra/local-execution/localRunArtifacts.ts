@@ -1,6 +1,10 @@
 import { copyFile, lstat, mkdir, readdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { DIRECT_OUTCOME_FILE } from "../../application/services/local-execution/directOutcome";
 import { LocalExecutionError } from "../../application/services/local-execution/localExecutionErrors";
+import { PULL_REQUEST_OUTCOME_FILE } from "../../application/services/local-execution/pullRequestOutcome";
+import { DIRECT_ACTION_KIND } from "../../application/services/task-flow/directExecution";
+import { PULL_REQUEST_ACTION_KIND } from "../../application/services/task-flow/pullRequestAction";
 
 const ARTIFACT_DIRECTORY = ".flow-spec";
 const SPEC_ACTION_KIND = "create_spec";
@@ -8,14 +12,17 @@ const TASKS_ACTION_KIND = "create_tasks";
 const SPEC_ARTIFACT_NAMES = ["_spec.md", "_user_stories.md", "_dx.md", "_tests.md", "_uiux.md"];
 const TASKS_MANIFEST = "_tasks.md";
 const TASK_FILE = /^task_\d+\.md$/;
+const OUTCOME_FILES: Record<string, string> = { [DIRECT_ACTION_KIND]: DIRECT_OUTCOME_FILE, [PULL_REQUEST_ACTION_KIND]: PULL_REQUEST_OUTCOME_FILE };
 const DISCARDED_DIRECTORY = "discarded-artifacts";
 const LEFTOVER_CAUSE = "A pasta .flow-spec do projeto já tem documentos que esta ação vai gerar, deixados por outra execução. Mova ou remova esses arquivos e tente de novo.";
 
 type DiscardInput = { root: string; kind: string; runtimeRoot: string; runId: string; collectedPaths?: string[] };
 
 async function presentArtifactNames(root: string, kind: string) {
-  if (kind !== SPEC_ACTION_KIND && kind !== TASKS_ACTION_KIND) return [];
+  const outcomeFile = OUTCOME_FILES[kind];
+  if (kind !== SPEC_ACTION_KIND && kind !== TASKS_ACTION_KIND && !outcomeFile) return [];
   const names = await readdir(join(root, ARTIFACT_DIRECTORY)).catch(() => [] as string[]);
+  if (outcomeFile) return names.filter((name) => name === outcomeFile);
   if (kind === SPEC_ACTION_KIND) return names.filter((name) => SPEC_ARTIFACT_NAMES.includes(name));
   return names.filter((name) => name === TASKS_MANIFEST || TASK_FILE.test(name));
 }

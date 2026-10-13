@@ -1,11 +1,14 @@
 import type { FlowTransaction, FlowUnitOfWork } from "../../database/dao/flowUnitOfWork";
 import type { CompozyControlGateway } from "../../software/compozyControlGateway";
 import { findStartableAction } from "./admissionChecks";
+import { isDirectAction } from "./directExecution";
+import { isPullRequestAction } from "./pullRequestAction";
 import type { FlowAction, WorkspaceChoice } from "./flowContracts";
 import type { LocalProjectAccess } from "./localProjectAccess";
 import { bindingChoices, toPlannedAction } from "./planProposal";
-import { actionWithRetryBindings, type RetryRuntimeBindings } from "./retryRuntimeBindings";
+import { retriedAction, type RetryRuntimeBindings } from "./retryRuntimeBindings";
 import { RuntimeChoiceValidator, type ValidatedChoice } from "./runtimeChoiceValidator";
+import { assertRuntimeWorkspaceCompatibility } from "./runtimeWorkspaceCompatibility";
 import { assertLocalProviderOwnership } from "./taskFlowAdmission";
 import { TaskFlowError } from "./taskFlowErrors";
 import type { LoopAdmission, TaskFlowGate, TaskScope } from "./taskFlowPorts";
@@ -16,7 +19,6 @@ type BoundMove = Omit<MoveActionInput, "workspace"> & { workspace: WorkspaceChoi
 export type RelocationDependencies = { unit: FlowUnitOfWork; gateway: CompozyControlGateway; gate: TaskFlowGate; loops?: LoopAdmission; localProjects?: LocalProjectAccess };
 
 const LOCAL_KIND = "local";
-const HOST_TARGET = "host";
 const MOVABLE_KINDS = ["isolated", LOCAL_KIND];
 const LOCAL_UNAVAILABLE = "local_unavailable";
 
@@ -44,23 +46,24 @@ export class TaskFlowRelocation {
     if (!plan) throw new TaskFlowError("action_unavailable");
     if (plan.revision !== input.expectedRevision) throw new TaskFlowError("plan_version_changed", { revision: plan.revision });
     const action = findStartableAction(plan, input.actionId, "retry");
-    if (!MOVABLE_KINDS.includes(action.workspace.kind) || action.workspace.kind === input.workspace.kind) throw new TaskFlowError("invalid_input");
+    const canMoveToLocal = input.workspace.kind === LOCAL_KIND && ["existing", "new"].includes(action.workspace.kind);
+    if (isDirectAction(action) || isPullRequestAction(action) || (!MOVABLE_KINDS.includes(action.workspace.kind) && !canMoveToLocal) || action.workspace.kind === input.workspace.kind) throw new TaskFlowError("invalid_input");
     if (await flow.runs.activeWrite(scope.taskId)) throw new TaskFlowError("action_active");
-    const moved: FlowAction = { ...actionWithRetryBindings(action, input.runtimeBindings), workspace: input.workspace };
+    const moved: FlowAction = { ...(await retriedAction({ loops: this.deps.loops, taskId: scope.taskId, action, bindings: input.runtimeBindings, workspace: input.workspace })), workspace: input.workspace };
     await this.assertRuntimes(new RuntimeChoiceValidator(software.connections, this.deps.gateway), scope, moved);
     if (moved.kind === "loop") await this.admitLoop(scope.taskId, moved);
     const revision = plan.revision + 1;
-    await flow.plans.relocateAction({ planId: plan.id, actionId: action.id, revision, workspace: moved.workspace, bindings: toPlannedAction(moved, action.position).bindings });
+    const { bindings, loopVersion } = toPlannedAction(moved, action.position);
+    await flow.plans.relocateAction({ planId: plan.id, actionId: action.id, revision, workspace: moved.workspace, bindings, loopVersion });
     return { revision };
   }
 
   private async assertRuntimes(validator: RuntimeChoiceValidator, scope: TaskScope, action: FlowAction) {
     const validated = new Map<string, ValidatedChoice>();
     for (const [role, choice] of bindingChoices(action)) validated.set(role, await validator.validate(choice, { lock: false }));
+    for (const { connection } of validated.values()) assertRuntimeWorkspaceCompatibility(connection, action.workspace.kind);
     const target = action.workspace.kind === LOCAL_KIND ? action.workspace.target : undefined;
-    if (target) return assertLocalProviderOwnership(validated, target.machineId, scope.actorId);
-    const onHost = [...validated.values()].every(({ connection }) => (connection.executionTarget ?? HOST_TARGET) === HOST_TARGET);
-    if (!onHost) throw new TaskFlowError("connection_unavailable");
+    if (target) assertLocalProviderOwnership(validated, target.machineId, scope.actorId);
   }
 
   private async admitLoop(taskId: string, action: Extract<FlowAction, { kind: "loop" }>) {

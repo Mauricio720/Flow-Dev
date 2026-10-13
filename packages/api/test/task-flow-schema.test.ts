@@ -39,6 +39,9 @@ describe("unified flow persistence", () => {
     await seedReviewPackage(setup, started);
     const before = await dumpLegacy(setup);
     expect(before).toContain(started.workflowId);
+    await runMigrationFile(setup.database, "0034_pull_request_action_rollback");
+    await runMigrationFile(setup.database, "0032_action_operator_conclusion_rollback");
+    await runMigrationFile(setup.database, "0031_direct_execution_action_rollback");
     await runMigrationFile(setup.database, "0030_local_loop_catalog_rollback");
     await runMigrationFile(setup.database, "0029_local_link_requests_rollback");
     await runMigrationFile(setup.database, "0028_ordinary_ego_rollback");
@@ -56,6 +59,9 @@ describe("unified flow persistence", () => {
     await runMigrationFile(setup.database, "0028_ordinary_ego");
     await runMigrationFile(setup.database, "0029_local_link_requests");
     await runMigrationFile(setup.database, "0030_local_loop_catalog");
+    await runMigrationFile(setup.database, "0031_direct_execution_action");
+    await runMigrationFile(setup.database, "0032_action_operator_conclusion");
+    await runMigrationFile(setup.database, "0034_pull_request_action");
     expect(await dumpLegacy(setup)).toBe(before);
   });
 

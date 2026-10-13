@@ -11,12 +11,17 @@ export function bindingView(binding: ActionRecord["bindings"][number], connectio
   return { role: binding.role, connectionId: binding.connectionId, connectionLabel: connection?.label ?? null, providerId: binding.providerId, modelId: binding.modelId, reasoningEffort: binding.reasoningEffort, connectionAvailable: available };
 }
 
-export function planView(plan: PlanRecord, connections: ConnectionLookup) {
-  const actions = plan.actions.map((action) => ({
-    id: action.id, position: action.position, kind: action.kind, loopName: action.loopName, loopVersion: action.loopVersion,
-    inputs: action.inputs, workspace: publicWorkspace(action.workspace), state: action.state,
-    bindings: action.bindings.map((binding) => bindingView(binding, connections)),
-  }));
+export function planView(plan: PlanRecord, connections: ConnectionLookup, activeRun: RunRecord | null = null) {
+  const live = activeRun ? runView(activeRun, connections) : null;
+  const actions = plan.actions.map((action) => {
+    const current = live?.actionId === action.id ? live : null;
+    return {
+      id: action.id, position: action.position, kind: action.kind, loopName: action.loopName, loopVersion: action.loopVersion,
+      inputs: action.inputs, workspace: publicWorkspace(action.workspace), state: action.state, concludedAt: action.concludedAt ?? null,
+      bindings: action.bindings.map((binding) => bindingView(binding, connections)),
+      activeRun: current ? { state: current.state, bindings: current.bindings } : null,
+    };
+  });
   return { id: plan.id, revision: plan.revision, status: plan.status, actions };
 }
 

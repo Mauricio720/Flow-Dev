@@ -21,7 +21,7 @@ export type ProviderProbe = { providerId: string; authenticated: boolean };
 export type ModelChoiceCheck = { modelId: string; reasoningEffort: string | null };
 
 export type RuntimeIdentity = { release: string };
-export type ProviderOverlayInput = { providerId: string; providerKind: "codex" | "claude"; label: string; homePath: string };
+export type ProviderOverlayInput = { providerId: string; providerKind: "codex" | "claude" | "opencode"; label: string; homePath: string };
 
 export type WorktreeInfo = { id: string; name: string; state: string; workspaceId: string; path: string | null; dirty: boolean; branch: string | null };
 export type CreateWorktreeInput = { workspaceId: string; name: string; requestId: string };
@@ -60,6 +60,7 @@ export interface CompozyControlGateway {
   createWorktree(input: CreateWorktreeInput): Promise<ControlResult<WorktreeInfo>>;
   listLoops(workspaceId: string): Promise<ControlResult<LoopDefinition[]>>;
   inspectLoop(workspaceId: string, name: string): Promise<ControlResult<LoopDefinition>>;
+  prepareReviewLoop?(workspaceId: string): Promise<ControlResult<void>>;
   startLoop(input: StartLoopInput): Promise<ControlResult<LoopRunStatus>>;
   getLoopRun(input: LoopRunRef): Promise<ControlResult<LoopRunStatus>>;
   listLoopRuns(input: ListLoopRunsInput): Promise<ControlResult<LoopRunStatus[]>>;

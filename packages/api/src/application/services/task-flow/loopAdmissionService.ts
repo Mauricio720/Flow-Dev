@@ -26,10 +26,19 @@ export class LoopAdmissionService implements LoopAdmission {
     const projectId = await this.deps.projectOf(input.taskId);
     if (!projectId) throw new TaskFlowError("loop_unavailable");
     const target = { ...input, projectId };
-    const definition = input.action.workspace.kind === LOCAL_WORKSPACE ? await this.localDefinition(target) : await this.hostDefinition(target);
+    const definition = await this.definitionOf(target);
     const targetField = TASK_TARGET_FIELDS[input.action.loopName];
     if (targetField && definition.inputs.some((item) => item.name === targetField) && input.action.inputs[targetField] !== input.taskId) throw new TaskFlowError("loop_input_invalid");
     this.validator.validate(input.action, definition);
+  }
+
+  async current(input: Parameters<LoopAdmission["admit"]>[0]) {
+    const projectId = await this.deps.projectOf(input.taskId);
+    return projectId ? this.definitionOf({ ...input, projectId }).catch(() => null) : null;
+  }
+
+  private definitionOf(target: LoopTarget) {
+    return target.action.workspace.kind === LOCAL_WORKSPACE ? this.localDefinition(target) : this.hostDefinition(target);
   }
 
   private async localDefinition(target: LoopTarget): Promise<LoopDefinition> {

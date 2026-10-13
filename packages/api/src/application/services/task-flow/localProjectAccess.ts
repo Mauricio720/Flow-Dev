@@ -1,8 +1,10 @@
-export type LocalExecutionTarget = { machineId: string; linkId: string; linkRevision: number; checkoutHandle: string };
+export type LocalExecutionTarget = { machineId: string; linkId: string; linkRevision: number; checkoutHandle: string; worktreeTaskId?: string };
 export type LocalRequiredGate = { id: string; label: string; commandDigest: string; kind: "command" | "playwright" };
 export type LocalProjectInfo = { key: string; workspaceId: string | null; safeLabel: string; target: LocalExecutionTarget; loops?: import("../../software/compozyControlGateway").LoopDefinition[] };
 
 export interface LocalProjectAccess {
+  openWorktree?(input: { taskId: string; projectId: string; actorId: string; requestKey: string }): Promise<{ commandId: string }>;
+  openWorktreeStatus?(input: { taskId: string; projectId: string; actorId: string; commandId: string }): Promise<{ state: string; reason: string | null } | null>;
   inspect(input: { taskId: string; projectId: string; actorId?: string }): Promise<LocalProjectInfo | null>;
   resolveTarget(input: { taskId: string; projectId: string; actorId: string }): Promise<LocalProjectInfo | null>;
   prepare(input: { taskId: string; projectId: string; actorId: string; actionId: string; sourceSnapshotId: string; action: import("./flowContracts").FlowAction; requestKey: string }): Promise<{ preparationId: string }>;

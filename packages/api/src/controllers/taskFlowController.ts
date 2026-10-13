@@ -57,6 +57,11 @@ export class TaskFlowController {
     return this.service.cancelRun(await this.requireOperator(actor, { projectId, taskId }), cancel);
   }
 
+  async concludeReview(actor: SessionPrincipal, input: Scope & Parameters<TaskFlowService["concludeReview"]>[1]) {
+    const { projectId, taskId, ...conclusion } = input;
+    return this.service.concludeReview(await this.requireOperator(actor, { projectId, taskId }), conclusion);
+  }
+
   async retryAction(actor: SessionPrincipal, input: Scope & Parameters<TaskFlowService["retryAction"]>[1]) {
     const { projectId, taskId, ...retry } = input;
     try { return await this.service.retryAction(await this.requireOperator(actor, { projectId, taskId }), retry); }
@@ -88,6 +93,16 @@ export class TaskFlowController {
   async localPreparationStatus(actor: SessionPrincipal, input: Scope & { preparationId: string }) {
     await this.requireRead(actor, input);
     return this.service.localPreparationStatus(actor.userId, input.projectId, input.preparationId);
+  }
+
+  async openLocalWorktree(actor: SessionPrincipal, input: Scope & { requestKey: string }) {
+    const { projectId, taskId, ...request } = input;
+    try { return await this.service.openLocalWorktree(await this.requireOperator(actor, { projectId, taskId }), request); }
+    catch (error) { if (error instanceof LocalExecutionError) mapLocalExecutionError(error); throw error; }
+  }
+
+  async openLocalWorktreeStatus(actor: SessionPrincipal, input: Scope & { commandId: string }) {
+    return this.service.openLocalWorktreeStatus(await this.requireOperator(actor, input), input.commandId);
   }
 
   async gates(actor: SessionPrincipal, input: Scope & { runId: string; cursor?: string; limit: number }) {

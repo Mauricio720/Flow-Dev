@@ -2,6 +2,7 @@ import type { ConnectionRecord, SoftwareDao } from "../../database/dao/softwareD
 import type { TaskFlowDao } from "../../database/dao/taskFlowDao";
 import type { CompozyControlGateway, LoopDefinition, WorktreeInfo } from "../../software/compozyControlGateway";
 import { blockedLayer, type ExecutionTarget } from "./readinessGate";
+import { actionOffers } from "./actionOffers";
 import type { ControlWorkspaceResolver } from "./controlWorkspace";
 import { localLoopCatalog, NO_LOOPS, toLoopOption, type LoopOption } from "./loopOptions";
 import type { LocalProjectAccess } from "./localProjectAccess";
@@ -34,7 +35,7 @@ function toWorktreeOption(item: WorktreeInfo, workspaceId: string): WorktreeOpti
 }
 
 function startBlock(choices: ConnectionChoice[], target: ExecutionTarget, blocked: string | null) {
-  const candidates = target === "machine" ? choices.filter((choice) => choice.executionTarget === "machine") : choices;
+  const candidates = choices.filter((choice) => choice.executionTarget === target);
   if (!candidates.some((choice) => choice.ready)) return NO_READY_CONNECTION;
   return blocked ? `${blocked}_not_ready` : null;
 }
@@ -53,7 +54,7 @@ export class TaskFlowOptions {
     const localCatalog = plan?.actions.at(-1)?.workspace.kind === LOCAL_WORKSPACE ? { loops: localProject ? localProject.loops ?? [] : null } : null;
     return {
       taskId: scope.taskId, flow, planningAvailable: planningReason === null, planningReason, startReason, localStartReason: startReasonFor("machine"),
-      actions: [{ kind: "create_spec", available: planningReason === null }, { kind: "create_tasks", available: planningReason === null && (await this.deps.gate.approvedSpec(scope.taskId)) }],
+      route: eligibility.route ?? "spec", actions: await actionOffers({ gate: this.deps.gate, taskId: scope.taskId, plannable: planningReason === null, route: eligibility.route }),
       connections: choices, workspaces: [{ kind: "isolated" as const }, ...(localProject ? [{ kind: "local" as const }] : [])], ...(await this.catalog(scope, localCatalog)),
     };
   }
@@ -63,6 +64,7 @@ export class TaskFlowOptions {
     if (local) return { ...empty, ...localLoopCatalog(local.loops) };
     const context = await this.deps.resolver?.resolve({ taskId: scope.taskId, projectId: scope.projectId });
     if (!context) return { ...empty, loopsReason: WORKSPACE_UNREGISTERED };
+    await this.deps.gateway.prepareReviewLoop?.(context.workspaceId);
     const [worktrees, loops] = await Promise.all([this.deps.gateway.listWorktrees(context.workspaceId), this.deps.gateway.listLoops(context.workspaceId)]);
     return {
       worktrees: worktrees.ok ? worktrees.value.map((item) => toWorktreeOption(item, context.workspaceId)) : empty.worktrees,

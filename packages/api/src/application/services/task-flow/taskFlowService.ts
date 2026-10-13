@@ -4,17 +4,17 @@ import { TaskFlowRelocation, type MoveActionInput } from "./taskFlowRelocation";
 import { assertPrerequisites, findPreparableAction } from "./admissionChecks";
 import { TaskFlowOptions } from "./taskFlowOptions";
 import { TaskFlowPlanService, type SavePlanInput } from "./taskFlowPlanService";
-import type { TaskScope } from "./taskFlowPorts";
-import { ISOLATED_ONLY } from "./taskFlowPorts";
+import { ISOLATED_ONLY, type TaskScope } from "./taskFlowPorts";
+import { TaskFlowConclusion, type ConcludeReviewInput } from "./taskFlowConclusion";
 import { TaskFlowPackageService, type ApprovePackageInput } from "./taskFlowPackageService";
 import { TaskFlowReader, type RunsInput } from "./taskFlowReader";
 import { TaskFlowRunControl, type CancelRunInput } from "./taskFlowRunControl";
 import { RuntimeChoiceValidator } from "./runtimeChoiceValidator";
 import { TaskFlowError } from "./taskFlowErrors";
-import { actionWithRetryBindings, type RetryRuntimeBindings } from "./retryRuntimeBindings";
+import { retriedAction, type RetryRuntimeBindings } from "./retryRuntimeBindings";
 import { TaskFlowInteractionService, type AnswerRunQuestion } from "./taskFlowInteractionService";
 import type { TaskFlowDependencies } from "./taskFlowDependencies";
-import { LocalExecutionError } from "../local-execution/localExecutionErrors";
+import { TaskFlowEvidence } from "./taskFlowEvidence";
 
 export type { TaskFlowDependencies } from "./taskFlowDependencies";
 
@@ -26,6 +26,7 @@ export class TaskFlowService {
   private readonly packageService: TaskFlowPackageService;
   private readonly runControl: TaskFlowRunControl;
   private readonly interactions: TaskFlowInteractionService | null;
+  private readonly localEvidence: TaskFlowEvidence;
 
   constructor(private readonly deps: TaskFlowDependencies) {
     const validator = new RuntimeChoiceValidator(deps.software.connections, deps.gateway);
@@ -36,6 +37,7 @@ export class TaskFlowService {
     this.packageService = new TaskFlowPackageService(deps.unit);
     this.runControl = new TaskFlowRunControl({ unit: deps.unit, executor: deps.control?.executor, releaseGrant: deps.control?.releaseGrant, owner: deps.control?.owner ?? "taskflow-api", clock: deps.control?.clock ?? (() => new Date()), leaseMs: deps.control?.leaseMs ?? 60_000 });
     this.interactions = deps.interactions ? new TaskFlowInteractionService(deps.flow, deps.interactions.gateway, deps.interactions.socketPathFor, deps.interactions.local) : null;
+    this.localEvidence = new TaskFlowEvidence(deps.localEvidence);
   }
 
   options = (scope: TaskScope) => this.optionsReader.options(scope);
@@ -63,27 +65,26 @@ export class TaskFlowService {
     if (action.workspace.kind !== "local") throw new TaskFlowError("action_unavailable");
     if (input.runtimeBindings && action.state === "planned") throw new TaskFlowError("invalid_input");
     await assertPrerequisites({ plan, action, taskId: scope.taskId, gate: this.deps.gate });
-    return this.deps.localProjects.prepare({ ...scope, actionId: action.id, sourceSnapshotId: scope.sourceSnapshotId, action: actionWithRetryBindings(action, input.runtimeBindings), requestKey: input.requestKey });
+    return this.deps.localProjects.prepare({ ...scope, actionId: action.id, sourceSnapshotId: scope.sourceSnapshotId, action: await retriedAction({ loops: this.deps.loops, taskId: scope.taskId, action, bindings: input.runtimeBindings }), requestKey: input.requestKey });
   }
 
   localPreparationStatus = (actorId: string, projectId: string, preparationId: string) => this.deps.localProjects?.preparationStatus({ actorId, projectId, preparationId }) ?? Promise.resolve(null);
 
-  async gates(input: { taskId: string; runId: string; cursor?: string; limit: number }) {
-    let result;
-    try { result = await this.deps.localEvidence?.gates(input); }
-    catch (error) { if (error instanceof LocalExecutionError && error.reason === "invalid_cursor") throw new TaskFlowError("invalid_cursor"); throw error; }
-    if (!result) throw new TaskFlowError("run_unavailable");
-    return result;
+  async openLocalWorktree(scope: TaskScope, input: { requestKey: string }) {
+    if (!this.deps.localProjects?.openWorktree) throw new TaskFlowError("worktree_not_ready");
+    return this.deps.localProjects.openWorktree({ ...scope, requestKey: input.requestKey });
   }
 
-  async evidence(input: { taskId: string; runId: string; evidenceId: string }) {
-    const result = await this.deps.localEvidence?.evidence(input);
-    if (!result) throw new TaskFlowError("evidence_unavailable");
-    return result;
+  openLocalWorktreeStatus(scope: TaskScope, commandId: string) {
+    return this.deps.localProjects?.openWorktreeStatus?.({ ...scope, commandId }) ?? Promise.resolve(null);
   }
+
+  gates = (input: { taskId: string; runId: string; cursor?: string; limit: number }) => this.localEvidence.gates(input);
+  evidence = (input: { taskId: string; runId: string; evidenceId: string }) => this.localEvidence.evidence(input);
 
   startAction = (scope: TaskScope, input: StartInput) => this.admit(scope, input, "start");
   retryAction = (scope: TaskScope, input: StartInput) => this.admit(scope, input, "retry");
+  concludeReview = (scope: TaskScope, input: ConcludeReviewInput) => new TaskFlowConclusion(this.deps.unit, this.deps.control?.clock).conclude(scope, input);
   moveAction = (scope: TaskScope, input: MoveActionInput) => new TaskFlowRelocation(this.deps).move(scope, input);
 
   private async admit(scope: TaskScope, input: StartInput, mode: "start" | "retry") {

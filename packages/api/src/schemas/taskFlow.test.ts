@@ -14,6 +14,11 @@ describe("task flow language input", () => {
     expect(savePlanSchema.parse({ ...input, actions: [{ ...action, language: "en" }] }).actions[0]).toMatchObject({ language: "en" });
     expect(savePlanSchema.safeParse({ ...input, actions: [{ ...action, language: "fr" }] }).success).toBe(false);
   });
+
+  it("accepts an OpenCode model from a local connection", () => {
+    const runtime = { ...action.runtime, providerId: "opencode", modelId: "anthropic/claude-sonnet-4-5" };
+    expect(savePlanSchema.safeParse({ ...input, actions: [{ ...action, runtime, workspace: { kind: "local" } }] }).success).toBe(true);
+  });
 });
 
 describe("run question answers", () => {

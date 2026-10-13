@@ -4,11 +4,13 @@ import type { TaskFlowDao } from "../../database/dao/taskFlowDao";
 import { bindingChoices, toPlannedAction } from "./planProposal";
 import { assertStartedActionsUnchanged, startedActions } from "./planLocks";
 import { assertPlanShape } from "./planShape";
+import { assertRouteShape } from "./directExecution";
 import { bindLocalTargets } from "./localTargetBinding";
 import type { LocalProjectAccess } from "./localProjectAccess";
 import type { FlowAction } from "./flowContracts";
 import { stableJson } from "./stableJson";
 import { RuntimeChoiceValidator } from "./runtimeChoiceValidator";
+import { assertRuntimeWorkspaceCompatibility } from "./runtimeWorkspaceCompatibility";
 import { TaskFlowError } from "./taskFlowErrors";
 import type { LoopAdmission, TaskFlowGate, TaskScope } from "./taskFlowPorts";
 
@@ -26,6 +28,7 @@ export class TaskFlowPlanService {
     assertPlanShape(input.actions);
     const eligibility = await this.deps.gate.eligibility(scope);
     if (!eligibility.canPlan) throw new TaskFlowError(eligibility.reason ?? "flow_not_eligible");
+    assertRouteShape(input.actions, eligibility.route);
     await this.validateRuntime(scope, input.actions);
     const bound = await bindLocalTargets(input.actions, scope, this.deps.localProjects);
     return this.deps.unit.run(({ flow }) => this.saveLocked(flow, scope, { ...input, bound }));
@@ -34,7 +37,10 @@ export class TaskFlowPlanService {
   private async validateRuntime(scope: TaskScope, actions: FlowAction[]) {
     for (const action of actions) {
       if (action.kind === "loop") await this.admitLoop(scope.taskId, action);
-      for (const [, choice] of bindingChoices(action)) await this.deps.validator.validate(choice, { lock: false });
+      for (const [, choice] of bindingChoices(action)) {
+        const { connection } = await this.deps.validator.validate(choice, { lock: false });
+        assertRuntimeWorkspaceCompatibility(connection, action.workspace.kind);
+      }
     }
   }
 

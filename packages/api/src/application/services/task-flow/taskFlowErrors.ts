@@ -27,6 +27,7 @@ export type TaskFlowReason =
   | "model_unavailable"
   | "reasoning_effort_unsupported"
   | "connection_unavailable"
+  | "runtime_workspace_mismatch"
   | "worktree_not_ready"
   | "preparation_required"
   | "preparation_changed"

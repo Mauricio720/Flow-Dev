@@ -47,7 +47,7 @@ describe("moving a failed action to another checkout", () => {
     current = await flowFixture({ localProject: project });
     const failed = await failedHostAction(current);
     const move = { ...current.scope, actionId: failed.actionId, expectedRevision: failed.expectedRevision, workspace: LOCAL_WORKSPACE, runtimeBindings: runtimeOf(failed.hostConnectionId) };
-    expect(await failureOf(current.author.moveAction(move))).toMatchObject({ reason: "connection_unavailable" });
+    expect(await failureOf(current.author.moveAction(move))).toMatchObject({ reason: "runtime_workspace_mismatch" });
     expect((await current.flow.plans.find(current.scope.taskId))?.actions[0]?.workspace).toEqual({ kind: "isolated" });
   });
 

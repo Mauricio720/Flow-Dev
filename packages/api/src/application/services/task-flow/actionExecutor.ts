@@ -12,7 +12,7 @@ export type ExecutionResult =
   | { kind: "unknown"; runtime?: Partial<RunRuntime> };
 
 export type ReconcileState = "running" | "succeeded" | "failed" | "canceled" | "stalled" | "exhausted" | "blocked" | "unknown";
-export type ReconcileResult = { state: ReconcileState; code: string | null; runtime?: Partial<RunRuntime>; runtimeEventSequence?: number; activity?: RunActivity | null };
+export type ReconcileResult = { state: ReconcileState; code: string | null; detail?: string | null; runtime?: Partial<RunRuntime>; runtimeEventSequence?: number; activity?: RunActivity | null };
 
 export interface ActionExecutor {
   execute(request: ExecutionRequest): Promise<ExecutionResult>;

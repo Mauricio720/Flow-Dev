@@ -3,9 +3,10 @@ import type { CompozyControlGateway } from "../../software/compozyControlGateway
 import { assertPrerequisites, findStartableAction, type StartMode } from "./admissionChecks";
 import { buildSnapshot } from "./admissionSnapshot";
 import { bindingChoices } from "./planProposal";
-import { actionWithRetryBindings, sameRetryBindings, type RetryRuntimeBindings } from "./retryRuntimeBindings";
+import { retriedAction, sameRetryBindings, type RetryRuntimeBindings } from "./retryRuntimeBindings";
 import { assertReadyForStart } from "./readinessGate";
 import { RuntimeChoiceValidator, type ValidatedChoice } from "./runtimeChoiceValidator";
+import { assertRuntimeWorkspaceCompatibility } from "./runtimeWorkspaceCompatibility";
 import type { ActionSnapshot, FlowAction } from "./flowContracts";
 import { TaskFlowError } from "./taskFlowErrors";
 import type { FreshReadiness, LoopAdmission, TaskFlowGate, TaskScope, WorkspaceAdmission } from "./taskFlowPorts";
@@ -58,8 +59,9 @@ export class TaskFlowAdmission {
   private async admit(dao: TaskFlowDao, scope: TaskScope, action: ActionRecord, input: StartInput, mode: StartMode) {
     assertReadyForStart(await this.deps.readiness.fresh(), action.workspace.kind === "local" ? "machine" : "host");
     if (mode !== "retry" && input.runtimeBindings) throw new TaskFlowError("invalid_input");
-    const flowAction = actionWithRetryBindings(action, input.runtimeBindings);
+    const flowAction = await retriedAction({ loops: this.deps.loops, taskId: scope.taskId, action, bindings: input.runtimeBindings });
     const validated = await this.validateBindings(flowAction);
+    for (const { connection } of validated.values()) assertRuntimeWorkspaceCompatibility(connection, flowAction.workspace.kind);
     const release = [...validated.values()][0]?.release ?? "";
     if (flowAction.kind === "loop") await this.admitLoop(scope.taskId, flowAction);
     const { worktreeId, localTarget } = await this.deps.workspaces.resolve({ taskId: scope.taskId, projectId: scope.projectId, actorId: scope.actorId, workspace: action.workspace });

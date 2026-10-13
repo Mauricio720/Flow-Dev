@@ -19,7 +19,7 @@ export type ResolveRuntimeInteraction = RuntimeIdentity & (
 export type RuntimeOutcome = "applied" | "answered" | "already_resolved" | "resolved_after_restart" | "queue_full" | "unknown" | "rejected";
 export type RuntimeResolution = { outcome: RuntimeOutcome; delivered: boolean; liveDeliveryProven: boolean; orphaned: boolean; winningValue: string | null; reason: SpecReason | null };
 export type RuntimeStop = { state: "starting" | "active" | "stopping" | "stopped"; verified: boolean; cause: string | null; attention: string | null; settled: boolean; canceled: boolean };
-export type RuntimeSnapshot = { state: RuntimeStop["state"]; verified: boolean; stopReason: string | null; stopCause: string | null; turnId: string | null; attention: string | null; pendingInteractions: RuntimeInteraction[] };
+export type RuntimeSnapshot = { state: RuntimeStop["state"]; verified: boolean; stopReason: string | null; stopCause: string | null; turnId: string | null; attention: string | null; pendingInteractions: RuntimeInteraction[]; startFailure?: string | null };
 
 export interface SpecRuntimeGateway {
   preflight(input: RuntimeConfiguration): Promise<RuntimeCapabilities>;

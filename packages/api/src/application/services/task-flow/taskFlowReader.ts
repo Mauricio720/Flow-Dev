@@ -21,9 +21,10 @@ export class TaskFlowReader {
     if (kind === "legacy") return { flow: kind, plan: null, legacy: await this.legacy.read(taskId), activeRunId: null, packages: [] };
     const plan = await this.flow.plans.find(taskId);
     if (!plan) return { flow: kind, plan: null, legacy: null, activeRunId: null, packages: [] };
-    const connections = await lookup(this.software.connections, plan.actions.flatMap((action) => action.bindings.map((binding) => binding.connectionId)));
     const active = await this.flow.runs.activeWrite(taskId);
-    return { flow: kind, plan: planView(plan, connections), legacy: null, activeRunId: active?.id ?? null, packages: await this.packages(taskId) };
+    const plannedIds = plan.actions.flatMap((action) => action.bindings.map((binding) => binding.connectionId));
+    const connections = await lookup(this.software.connections, [...plannedIds, ...(active?.connectionIds ?? [])]);
+    return { flow: kind, plan: planView(plan, connections, active), legacy: null, activeRunId: active?.id ?? null, packages: await this.packages(taskId) };
   }
 
   async packages(taskId: string) {
