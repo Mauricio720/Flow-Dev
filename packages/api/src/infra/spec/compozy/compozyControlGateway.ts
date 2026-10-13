@@ -15,6 +15,7 @@ import { controlFailure, controlOk, type ControlResult } from "../../../applicat
 import { modelListSchema, providerOverlaySchema, providerProbeSchema } from "./compozyControlSchemas";
 import { workspaceSchema, workspacesSchema } from "./compozySchemas";
 import { CompozyLoops } from "./compozyLoops";
+import { CompozyReviewLoop } from "./compozyReviewLoop";
 import { CompozyWorktrees } from "./compozyWorktrees";
 import { ControlCaller, type ControlCallerConfig } from "./controlCaller";
 import { projectModel, reasoningSupported } from "./modelProjection";
@@ -30,11 +31,13 @@ export class PinnedCompozyControlGateway implements CompozyControlGateway {
   private readonly caller: ControlCaller;
   private readonly worktrees: CompozyWorktrees;
   private readonly loops: CompozyLoops;
+  private readonly reviewLoop: CompozyReviewLoop;
 
   constructor(config: ControlGatewayConfig) {
     this.caller = new ControlCaller(config);
     this.worktrees = new CompozyWorktrees(this.caller);
     this.loops = new CompozyLoops(this.caller);
+    this.reviewLoop = new CompozyReviewLoop(this.caller);
   }
 
   findWorkspace = (rootDir: string) => this.caller.guarded({ method: "GET", path: "/api/workspaces" }, workspacesSchema, (body) => body.workspaces.find((workspace) => workspace.root_dir === rootDir)?.id ?? null);
@@ -49,6 +52,7 @@ export class PinnedCompozyControlGateway implements CompozyControlGateway {
   createWorktree = (input: CreateWorktreeInput) => this.worktrees.create(input);
   listLoops = (workspaceId: string) => this.loops.list(workspaceId);
   inspectLoop = (workspaceId: string, name: string) => this.loops.inspect(workspaceId, name);
+  prepareReviewLoop = (workspaceId: string) => this.reviewLoop.prepare(workspaceId);
   startLoop = (input: StartLoopInput) => this.loops.start(input);
   getLoopRun = (ref: LoopRunRef) => this.loops.get(ref);
   listLoopRuns = (input: ListLoopRunsInput) => this.loops.listRuns(input);

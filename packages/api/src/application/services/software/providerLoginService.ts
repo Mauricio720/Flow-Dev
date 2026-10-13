@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { SessionPrincipal } from "../../../context";
-import type { ConnectionRecord, ProviderKind, SoftwareDao } from "../../database/dao/softwareDao";
+import type { ConnectionRecord, SoftwareDao } from "../../database/dao/softwareDao";
 import type { CredentialBroker } from "../../software/credentialBroker";
 import { normalizeLabel } from "./connectionRules";
 import { requireAdmin, systemClock, type Clock } from "./softwareAccess";
@@ -21,7 +21,7 @@ const SETUP_REQUIRED = "setup_required";
 const LOGIN_LOST = "login_lost";
 
 export class ProviderLoginService {
-  constructor(private readonly dao: SoftwareDao, private readonly broker: CredentialBroker, private readonly provider: ProviderKind = "codex", private readonly clock: Clock = systemClock) {}
+  constructor(private readonly dao: SoftwareDao, private readonly broker: CredentialBroker, private readonly provider: "codex" | "claude" = "codex", private readonly clock: Clock = systemClock) {}
 
   async begin(actor: SessionPrincipal, input: BeginLoginRequest): Promise<LoginStartView> {
     await requireAdmin(this.dao, actor);

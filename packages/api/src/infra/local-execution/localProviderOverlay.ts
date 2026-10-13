@@ -13,10 +13,10 @@ const MODEL_FILTER_WARM_TIMEOUT_MS = 30_000;
 // CompozyOS switches to every advertised Claude model during inspection, which takes longer than its default budget.
 const CLAUDE_DISCOVERY_TIMEOUT = "90s";
 
-export type LocalProviderKind = "codex" | "claude";
+export type LocalProviderKind = "codex" | "claude" | "opencode";
 export type LocalProvider = { id: string; kind: LocalProviderKind; runtimeRoot: string };
 
-export const localProviderHome = (kind: LocalProviderKind) => resolve(homedir(), kind === "codex" ? ".codex" : ".claude");
+export const localProviderHome = (kind: LocalProviderKind) => kind === "opencode" ? homedir() : resolve(homedir(), kind === "codex" ? ".codex" : ".claude");
 const modelFilterCache = (runtimeRoot: string) => join(runtimeRoot, MODEL_FILTER_CACHE_FILE);
 const toml = (value: string) => JSON.stringify(value);
 
@@ -24,6 +24,7 @@ export function localProviderLines(provider: LocalProvider): string[] {
   const claudeAgentWrapper = `node ${shellQuote(MODEL_FILTER_SCRIPT)} ${shellQuote(modelFilterCache(provider.runtimeRoot))}`;
   const settings = overlaySettings({ providerId: provider.id, providerKind: provider.kind, label: provider.id, homePath: localProviderHome(provider.kind) }, { claudeAgentWrapper });
   const lines = ["", `[providers.${provider.id}]`, ...Object.entries(settings).map(([key, value]) => `${key} = ${toml(value)}`)];
+  if (provider.kind === "opencode") return [...lines, "", `[providers.${provider.id}.models.discovery]`, "enabled = true", `command = ${toml(`env HOME=${shellQuote(localProviderHome("opencode"))} opencode models --verbose`)}`];
   if (provider.kind !== "claude") return lines;
   return [...lines, "", `[providers.${provider.id}.models.discovery]`, `timeout = ${toml(CLAUDE_DISCOVERY_TIMEOUT)}`];
 }

@@ -6,6 +6,7 @@ import { sanitizeEvidence } from "../../../../application/services/local-executi
 import type { LocalConnectorDao, MachineRecord, NewLocalCommand, NewPairing, PairingRecord } from "../../../../application/database/dao/localConnectorDao";
 import { localCheckoutLocks, localCommandEvents, localCommands, localMachines, localPairings, localProjectLinks, projects, rateLimit, softwareConnections, taskExecutionRuns, taskRunEvidence, taskRunGates } from "../../schema";
 import type { Database } from "../../client";
+import { localCheckoutScope } from "../../../../application/services/local-execution/localCheckoutScope";
 import { confirmPairingRecord, exchangePairingRecord } from "./pairingWrites";
 
 export class DrizzleLocalConnectorDao implements LocalConnectorDao {
@@ -228,14 +229,14 @@ export class DrizzleLocalConnectorDao implements LocalConnectorDao {
         if (input.event.payload.outcome === "unknown") {
           await tx.update(localCheckoutLocks).set({ state: "reconciling", updatedAt: input.now }).where(and(
             eq(localCheckoutLocks.machineId, command.machineId),
-            eq(localCheckoutLocks.checkoutHandle, command.target.checkoutHandle),
+            eq(localCheckoutLocks.checkoutHandle, localCheckoutScope(command.target)),
             eq(localCheckoutLocks.runId, command.runId),
             eq(localCheckoutLocks.fence, command.fence),
           ));
         } else {
           await tx.delete(localCheckoutLocks).where(and(
             eq(localCheckoutLocks.machineId, command.machineId),
-            eq(localCheckoutLocks.checkoutHandle, command.target.checkoutHandle),
+            eq(localCheckoutLocks.checkoutHandle, localCheckoutScope(command.target)),
             eq(localCheckoutLocks.runId, command.runId),
             eq(localCheckoutLocks.fence, command.fence),
           ));
@@ -263,15 +264,16 @@ export class DrizzleLocalConnectorDao implements LocalConnectorDao {
       if (!machine.lastHeartbeatAt || input.now.getTime() - machine.lastHeartbeatAt.getTime() >= 30_000) throw new LocalExecutionError("machine_unavailable");
       if (input.kind === "start") {
         if (!input.runId) throw new LocalExecutionError("command_unavailable");
-        const lockKey = `${input.machineId}:${input.target.checkoutHandle}`;
+        const checkoutScope = localCheckoutScope(input.target);
+        const lockKey = `${input.machineId}:${checkoutScope}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`);
         const [currentLock] = await tx.select().from(localCheckoutLocks).where(and(
           eq(localCheckoutLocks.machineId, input.machineId),
-          eq(localCheckoutLocks.checkoutHandle, input.target.checkoutHandle),
+          eq(localCheckoutLocks.checkoutHandle, checkoutScope),
         )).for("update").limit(1);
         if (currentLock && (currentLock.runId !== input.runId || currentLock.fence !== input.fence)) throw new LocalExecutionError("checkout_busy");
         if (!currentLock) {
-          await tx.insert(localCheckoutLocks).values({ machineId: input.machineId, checkoutHandle: input.target.checkoutHandle, runId: input.runId, fence: input.fence, state: "active", createdAt: input.now, updatedAt: input.now });
+          await tx.insert(localCheckoutLocks).values({ machineId: input.machineId, checkoutHandle: checkoutScope, runId: input.runId, fence: input.fence, state: "active", createdAt: input.now, updatedAt: input.now });
         }
       }
       const { expectedLinkRevision: _expectedLinkRevision, now: _now, ...values } = input;

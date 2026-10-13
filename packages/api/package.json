@@ -10,7 +10,7 @@
     "./spec": "./src/spec.ts"
   },
   "scripts": {
-    "dev": "env -u LD_PRELOAD sh -c 'tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts & tsx src/cli/localConnector.ts dev --server http://localhost:3000 & trap \"kill 0\" EXIT INT TERM; wait'",
+    "dev": "env -u LD_PRELOAD sh -c 'tsx --env-file=../../apps/web/.env.local src/cli/managedRuntimeDev.ts || exit $?; tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts & tsx watch src/cli/localConnector.ts dev --server http://localhost:3000 & trap \"kill 0\" EXIT INT TERM; wait'",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

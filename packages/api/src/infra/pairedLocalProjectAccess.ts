@@ -4,6 +4,8 @@ import type { RepositoryAccessService } from "../application/services/projects/r
 import type { LocalConnectorDao } from "../application/database/dao/localConnectorDao";
 import { localPayloadHash } from "../application/services/local-execution/localHash";
 import { LocalExecutionError } from "../application/services/local-execution/localExecutionErrors";
+import { localCheckoutScope } from "../application/services/local-execution/localCheckoutScope";
+import { queueLocalWorktreeOpen, readLocalWorktreeOpen } from "./pairedLocalWorktree";
 
 const HEARTBEAT_MAX_AGE_MS = 30_000;
 const PREPARATION_LIFETIME_MS = 5 * 60_000;
@@ -24,7 +26,8 @@ export class PairedLocalProjectAccess implements LocalProjectAccess {
     const machine = await this.deps.local.machineById({ ownerUserId: context.operatorUserId, machineId: link.machineId });
     const now = (this.deps.now ?? (() => new Date()))().getTime();
     if (!machine || machine.revokedAt || machine.credentialExpiresAt.getTime() <= now || !machine.lastHeartbeatAt || now - machine.lastHeartbeatAt.getTime() >= HEARTBEAT_MAX_AGE_MS) return null;
-    return { key: `local:${link.id}`, workspaceId: null, safeLabel: link.safeLabel, target: { machineId: machine.id, linkId: link.id, linkRevision: link.revision, checkoutHandle: link.checkoutHandle }, loops: machine.loopCatalog ?? [] };
+    const target = { machineId: machine.id, linkId: link.id, linkRevision: link.revision, checkoutHandle: link.checkoutHandle, worktreeTaskId: input.taskId };
+    return { key: `local:${localCheckoutScope(target)}`, workspaceId: null, safeLabel: link.safeLabel, target, loops: machine.loopCatalog ?? [] };
   }
 
   async prepare(input: { taskId: string; projectId: string; actorId: string; actionId: string; sourceSnapshotId: string; action: import("../application/services/task-flow/flowContracts").FlowAction; requestKey: string }) {
@@ -42,6 +45,14 @@ export class PairedLocalProjectAccess implements LocalProjectAccess {
       payloadHash: localPayloadHash(payload), fence: 1, leaseExpiresAt: new Date(now.getTime() + 60_000), expectedLinkRevision: project.target.linkRevision, now,
     });
     return { preparationId };
+  }
+
+  async openWorktree(input: { taskId: string; projectId: string; actorId: string; requestKey: string }) {
+    return queueLocalWorktreeOpen({ local: this.deps.local, resolveTarget: (scope) => this.resolveTarget(scope), now: this.deps.now ?? (() => new Date()) }, input);
+  }
+
+  async openWorktreeStatus(input: { taskId: string; projectId: string; actorId: string; commandId: string }) {
+    return readLocalWorktreeOpen({ local: this.deps.local }, input);
   }
 
   async preparationStatus(input: { actorId: string; projectId: string; preparationId: string }) {
@@ -71,6 +82,7 @@ export class PairedLocalProjectAccess implements LocalProjectAccess {
     if (!current) return null;
     const result = await this.deps.local.commandForActor({ actorId: input.actorId, projectId: input.projectId, commandId: input.preparationId });
     if (!result || result.command.kind !== "prepare" || result.command.preparationId !== input.preparationId || result.command.target.linkId !== current.target.linkId || result.command.target.linkRevision !== current.target.linkRevision) return null;
+    if (result.command.target.checkoutHandle !== current.target.checkoutHandle || result.command.target.worktreeTaskId !== input.taskId) return null;
     if ((this.deps.now ?? (() => new Date()))().getTime() - result.command.createdAt.getTime() >= PREPARATION_LIFETIME_MS) throw new LocalExecutionError("preparation_expired");
     const payload = result.command.payload;
     if (payload.actionId !== input.actionId || payload.sourceSnapshotId !== input.sourceSnapshotId) return null;

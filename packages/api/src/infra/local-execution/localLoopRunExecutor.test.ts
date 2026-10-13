@@ -17,11 +17,12 @@ function requestOf(runtime: Partial<ExecutionRequest["run"]["runtime"]> = {}) {
 function harness(state = "running") {
   const gateway = {
     registerWorkspace: vi.fn(async () => controlOk("ws-1", "0.3.0")),
+    prepareReviewLoop: vi.fn(async () => controlOk(undefined, "0.3.0")),
     startLoop: vi.fn(async () => controlOk(runStatus("running"), "0.3.0")),
     getLoopRun: vi.fn(async () => controlOk(runStatus(state), "0.3.0")),
     cancelLoopRun: vi.fn(async () => controlOk(runStatus("canceled"), "0.3.0")),
   };
-  const launcher = { start: vi.fn(async () => ({ socketPath: "/run/daemon.sock" })), stop: vi.fn(async () => undefined) };
+  const launcher = { start: vi.fn(async () => ({ socketPath: "/run/daemon.sock" })), stop: vi.fn(async () => undefined), failureDetail: vi.fn(async (): Promise<string | null> => null) };
   const prepare = vi.fn(async () => undefined);
   const executor = new LocalLoopRunExecutor({ launcher, root: ROOT, prepare, gatewayFor: () => gateway as unknown as CompozyControlGateway });
   return { executor, gateway, launcher, prepare };
@@ -45,6 +46,17 @@ describe("local loop run executor", () => {
     expect(gateway.startLoop).toHaveBeenCalledWith(expect.objectContaining({ name: "review-and-fix", inputs: { task_name: "task-1" }, workerRuntime: { provider: "codex", model: "gpt-5.6-sol", reasoning: "high" } }));
   });
 
+  it("gives the review Loop one runtime per agent on the run's daemon before starting it", async () => {
+    const { executor, gateway } = harness();
+    const request = requestOf();
+    Object.assign(request.snapshot, { loopName: "review-and-fix", inputs: { task_name: "task-1" }, runtimeBindings: { reviewer_runtime: CHOICE, fixer_runtime: { ...CHOICE, modelId: "gpt-5.6-terra", reasoningEffort: null } } });
+    await executor.execute(request);
+    expect(gateway.prepareReviewLoop).toHaveBeenCalledWith("ws-1");
+    expect(gateway.prepareReviewLoop.mock.invocationCallOrder[0]).toBeLessThan(gateway.startLoop.mock.invocationCallOrder[0]!);
+    const inputs = { task_name: "task-1", reviewer_runtime: { provider: "codex", model: "gpt-5.6-sol", reasoning: "high" }, fixer_runtime: { provider: "codex", model: "gpt-5.6-terra" } };
+    expect(gateway.startLoop).toHaveBeenCalledWith(expect.objectContaining({ name: "review-and-fix", inputs, workerRuntime: null }));
+  });
+
   it("follows the Loop run by its session and stops the daemon only when it settles", async () => {
     const running = harness("running");
     expect(await running.executor.reconcile(requestOf({ workspaceId: "ws-1", sessionId: "looprun-1" }))).toEqual({ state: "running", code: null });
@@ -53,6 +65,25 @@ describe("local loop run executor", () => {
     const done = harness("done");
     expect(await done.executor.reconcile(requestOf({ workspaceId: "ws-1", sessionId: "looprun-1" }))).toEqual({ state: "succeeded", code: null });
     expect(done.launcher.stop).toHaveBeenCalledWith("run-1");
+  });
+
+  it("preserves the daemon error before cleaning up a failed Loop", async () => {
+    const { executor, launcher } = harness("failed");
+    launcher.failureDetail = vi.fn(async () => "ERROR fan-out collection unavailable");
+    const result = await executor.reconcile(requestOf({ workspaceId: "ws-1", sessionId: "looprun-1" }));
+    expect(result).toMatchObject({ state: "failed", detail: "ERROR fan-out collection unavailable" });
+    expect(launcher.failureDetail.mock.invocationCallOrder[0]).toBeLessThan(launcher.stop.mock.invocationCallOrder[0]!);
+  });
+
+  it("keeps the reason the runtime reported instead of a later daemon log line", async () => {
+    const { executor, gateway, launcher } = harness("failed");
+    const activity = { sequence: 9, kind: "warning", at: "2026-10-12T17:14:25Z", preview: "You’ve hit your usage limit.", tool: null, source: null, status: "usage_limit_exceeded" };
+    gateway.getLoopRun.mockResolvedValue(controlOk({ ...runStatus("failed"), activity }, "0.3.0") as never);
+    launcher.failureDetail = vi.fn(async () => "WARN stop session: context deadline exceeded");
+    const result = await executor.reconcile(requestOf({ workspaceId: "ws-1", sessionId: "looprun-1" }));
+    expect(result).toMatchObject({ state: "failed", activity: { preview: "You’ve hit your usage limit." } });
+    expect(result.detail).toBeUndefined();
+    expect(launcher.failureDetail).not.toHaveBeenCalled();
   });
 
   it("never starts a second Loop while reconciling a run without a known session", async () => {

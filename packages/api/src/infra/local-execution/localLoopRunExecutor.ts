@@ -11,6 +11,7 @@ import { boundedRuntimeTransport } from "./boundedRuntimeTransport";
 const WORKSPACE_NAME = "flow-local";
 const ACTIVE_STATES = ["running", "unknown"];
 const START_FAILED = "runtime_failed";
+const REPORTED_REASON_KIND = "warning";
 
 export type LocalRunExecutor = {
   execute(request: ExecutionRequest): Promise<ExecutionResult>;
@@ -19,7 +20,7 @@ export type LocalRunExecutor = {
   answerQuestion(request: ExecutionRequest, input: { interactionId: string; answer: string }): Promise<boolean>;
 };
 
-export type LocalLoopDependencies = { launcher: RunLauncher; root: string; prepare?: () => Promise<void>; gatewayFor?: (socketPath: string) => CompozyControlGateway };
+export type LocalLoopDependencies = { launcher: RunLauncher & { failureDetail?: (runId: string) => Promise<string | null> }; root: string; prepare?: () => Promise<void>; gatewayFor?: (socketPath: string) => CompozyControlGateway };
 
 const pinnedGateway = (socketPath: string) => new PinnedCompozyControlGateway({ transport: boundedRuntimeTransport(socketPath), declaredOpenApiSha256: COMPOZY_PIN.openApiSha256 });
 
@@ -71,8 +72,10 @@ export class LocalLoopRunExecutor implements LocalRunExecutor {
 
   private async settle(request: ExecutionRequest, result: ReconcileResult): Promise<ReconcileResult> {
     if (ACTIVE_STATES.includes(result.state)) return result;
+    const needsDaemonDetail = result.state === "failed" && result.activity?.kind !== REPORTED_REASON_KIND;
+    const detail = needsDaemonDetail ? await this.deps.launcher.failureDetail?.(request.run.id).catch(() => null) : null;
     try { await this.deps.launcher.stop(request.run.id); } catch { return { state: "unknown", code: null }; }
-    return result;
+    return detail ? { ...result, detail } : result;
   }
 
   private async loops(request: ExecutionRequest) {
@@ -83,6 +86,8 @@ export class LocalLoopRunExecutor implements LocalRunExecutor {
 
   private async workspace(gateway: CompozyControlGateway) {
     const registered = await gateway.registerWorkspace?.({ rootDir: this.deps.root, name: WORKSPACE_NAME });
-    return registered?.ok ? { workspaceId: registered.value, repositoryId: "", worktreePath: this.deps.root } : null;
+    if (!registered?.ok) return null;
+    await gateway.prepareReviewLoop?.(registered.value);
+    return { workspaceId: registered.value, repositoryId: "", worktreePath: this.deps.root };
   }
 }

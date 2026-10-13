@@ -43,10 +43,16 @@ describe("NativeCompozyRunLauncher", () => {
 
     await expect(launcher.start(request)).resolves.toEqual({ socketPath: join(runtimeRoot, "runs", "run-1", "socket", "daemon.sock") });
     expect(spawnProcess).toHaveBeenCalledWith("compozy", ["daemon", "start", "--foreground"], expect.objectContaining({ cwd: checkout, detached: true }));
+    expect(spawnProcess).toHaveBeenCalledWith("compozy", ["daemon", "start", "--foreground"], expect.objectContaining({ stdio: ["ignore", "ignore", expect.any(Number)] }));
     const config = await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "config.toml"), "utf8");
     expect(config).toContain('[providers.codex-local]');
     expect(config).toContain("socket =");
     expect(await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "agents/flow-spec/AGENT.md"), "utf8")).toContain("Load the skill");
     expect((await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "skills/flow-spec-prd/SKILL.md"), "utf8")).length).toBeGreaterThan(0);
+    expect(await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "agents/flow-direct/AGENT.md"), "utf8")).toContain("direct execution");
+    expect(await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "skills/flow-direct-executor/SKILL.md"), "utf8")).toContain("name: flow-direct-executor");
+    expect(await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "agents/flow-publish/AGENT.md"), "utf8")).toContain("open the pull request");
+    expect(await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "agents/flow-publish/AGENT.md"), "utf8")).toContain("agent-full-access");
+    expect(await readFile(join(runtimeRoot, "runs", "run-1", "home", ".compozy", "skills/flow-pull-request/SKILL.md"), "utf8")).toContain("name: flow-pull-request");
   });
 });

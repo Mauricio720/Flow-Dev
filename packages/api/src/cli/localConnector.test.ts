@@ -328,6 +328,25 @@ describe("LocalConnectorClient pairing", () => {
     await expect(new LocalConnectorClient(fetcher, unreadable).heartbeat(store)).rejects.toThrow("catalog_changed");
   });
 
+  it("keeps reporting the last live models when a catalog refresh confirms none of them", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "flow-cli-continuity-"));
+    roots.push(directory);
+    const store = new PrivateRegistryStore(join(directory, "registry.json"));
+    await store.write({ version: 1, entries: [], machine: { server: "https://flow.test", machineId: "machine-1", label: "Laptop", token: "opaque-token", expiresAt: "2026-11-01T00:00:00.000Z", credentialGeneration: 1 } });
+    const fetcher = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response(JSON.stringify({ credentialGeneration: 1, credentialExpiresAt: "2026-11-01T00:00:00.000Z" }), { status: 200 }));
+    const live = { modelId: "claude-sonnet-5", displayName: "Sonnet 5", selectable: true, unselectableReason: null, reasoningChoices: [null, "high"] };
+    const unconfirmed = { modelId: "claude-sonnet-5", displayName: "Claude Sonnet 5", selectable: false, unselectableReason: "catalog_stale" as const, reasoningChoices: [] };
+    const discover = vi.fn()
+      .mockResolvedValueOnce({ providers: [{ providerId: "claude", providerKind: "claude", label: "Claude local", models: [live] }], loops: [] })
+      .mockResolvedValueOnce({ providers: [{ providerId: "claude", providerKind: "claude", label: "Claude local", models: [unconfirmed] }], loops: [] });
+    const client = new LocalConnectorClient(fetcher, discover);
+    await client.heartbeat(store);
+    await store.write({ ...(await store.read()), providerCatalogCheckedAt: undefined });
+    await client.heartbeat(store);
+    expect(discover).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetcher.mock.calls[1]?.[1]?.body)).providerCatalog[0].models).toEqual([live]);
+  });
+
   it("accepts plain HTTP only for a loopback pairing server", async () => {
     const fetcher = vi.fn(async (_input: string | URL | Request) => new Response(JSON.stringify({ error: { reason: "rate_limited" } }), { status: 429 }));
     await expect(new LocalConnectorClient(fetcher).pair("http://localhost:3000", "Laptop", () => {}, new PrivateRegistryStore(join(await mkdtemp(join(tmpdir(), "flow-loopback-")), "registry.json")))).rejects.toThrow("rate_limited");

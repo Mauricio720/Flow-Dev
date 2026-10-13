@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PROVIDER_KINDS } from "../../database/dao/softwareDao";
 import { LocalExecutionError } from "./localExecutionErrors";
 import { localPayloadHash } from "./localHash";
 import { FAILURE_DETAIL_MAX } from "./localFailureDetail";
@@ -7,15 +8,15 @@ import { ARTIFACT_BASE64_PATTERN, ARTIFACT_MAX_BASE64_LENGTH, ARTIFACT_MAX_BYTES
 
 const UUID = z.string().uuid();
 const SAFE_ID = z.string().min(1).max(128);
-const TARGET = z.object({ machineId: UUID, linkId: UUID, linkRevision: z.number().int().positive(), checkoutHandle: SAFE_ID }).strict();
+const TARGET = z.object({ machineId: UUID, linkId: UUID, linkRevision: z.number().int().positive(), checkoutHandle: SAFE_ID, worktreeTaskId: UUID.optional() }).strict();
 const EMPTY = z.object({}).strict();
 const LOOP_TASK_FILES = z.array(z.object({ path: z.string().regex(ARTIFACT_PATH_PATTERN), content: z.string().min(1).max(ARTIFACT_MAX_BYTES) }).strict()).max(ARTIFACT_MAX_FILES);
 const SHORT_LABEL = z.string().max(100);
 export const ACTIVITY_KINDS = ["agent_message", "tool_call", "tool_result", "interaction", "lifecycle", "warning"] as const;
 const SAFE_CATALOG_TEXT = z.string().trim().min(1).max(128).refine((value) => !/[\u0000-\u001f\u007f]|(?:^|\s)(?:\/home\/|\/Users\/|[A-Z]:\\Users\\)|(?:gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,})/i.test(value));
 export const localProviderCatalogSchema = z.array(z.object({
-  providerId: z.enum(["codex", "claude"]),
-  providerKind: z.enum(["codex", "claude"]),
+  providerId: z.enum(PROVIDER_KINDS),
+  providerKind: z.enum(PROVIDER_KINDS),
   label: SAFE_CATALOG_TEXT,
   models: z.array(z.object({
     modelId: SAFE_CATALOG_TEXT,
@@ -24,7 +25,7 @@ export const localProviderCatalogSchema = z.array(z.object({
     unselectableReason: z.enum(["auth_required", "catalog_stale", "model_unavailable", "runtime_incompatible", "service_unavailable"]).nullable(),
     reasoningChoices: z.array(z.string().max(80).nullable()).max(32),
   }).strict()).max(256),
-}).strict()).max(2).superRefine((catalog, context) => {
+}).strict()).max(PROVIDER_KINDS.length).superRefine((catalog, context) => {
   if (new Set(catalog.map((provider) => provider.providerId)).size !== catalog.length) context.addIssue({ code: "custom", message: "duplicate_provider" });
   for (const provider of catalog) {
     if (provider.providerId !== provider.providerKind) context.addIssue({ code: "custom", message: "provider_kind_mismatch" });
@@ -46,6 +47,7 @@ export const localCommandSchema = z.discriminatedUnion("kind", [
   z.object({ ...COMMAND_DATA, kind: z.literal("prepare"), payload: z.object({ preparationId: UUID, actionId: SAFE_ID, sourceSnapshotId: UUID, checkoutLabel: z.string().trim().min(1).max(80), action: z.record(z.string(), z.unknown()) }).strict() }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("start"), payload: z.object({ preparationId: UUID, actionId: SAFE_ID, taskId: UUID, snapshot: z.record(z.string(), z.unknown()), task: z.object({ issueNumber: z.number().int().positive(), title: z.string().min(1).max(256), bodyMarkdown: z.string().max(65_536) }).strict(), taskFiles: LOOP_TASK_FILES.optional() }).strict() }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("inspect"), payload: z.object({}).strict() }).strict(),
+  z.object({ ...COMMAND_DATA, kind: z.literal("open_worktree"), payload: EMPTY }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("cancel"), payload: z.object({ requestKey: UUID }).strict() }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("answer"), payload: z.object({ interactionId: SAFE_ID, answer: z.string().min(1).max(8000) }).strict() }).strict(),
 ]);
@@ -68,6 +70,7 @@ export function validateLocalCommand(input: unknown): LocalCommand {
   const parsed = localCommandSchema.safeParse(input);
   if (!parsed.success) throw new LocalExecutionError("invalid_input");
   if (parsed.data.machineId !== parsed.data.target.machineId) throw new LocalExecutionError("command_unavailable");
+  if (parsed.data.kind === "start" && parsed.data.target.worktreeTaskId && parsed.data.target.worktreeTaskId !== parsed.data.payload.taskId) throw new LocalExecutionError("command_unavailable");
   if (parsed.data.payloadHash !== localPayloadHash(parsed.data.payload)) throw new LocalExecutionError("invalid_input");
   return parsed.data;
 }

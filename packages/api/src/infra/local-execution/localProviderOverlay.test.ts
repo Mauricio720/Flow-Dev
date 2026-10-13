@@ -61,6 +61,12 @@ describe("local provider overlay", () => {
     const codex = localProviderLines({ id: "codex", kind: "codex", runtimeRoot: "/runtime root" }).join("\n");
     expect(codex).not.toContain("claudeModelFilter");
     expect(codex).not.toContain("models.discovery");
+    const opencode = localProviderLines({ id: "opencode", kind: "opencode", runtimeRoot: "/runtime root" }).join("\n");
+    expect(opencode).toContain("opencode acp");
+    expect(opencode).toContain("openCodeAuthStatus.mjs");
+    expect(opencode).toContain("opencode models --verbose");
+    expect(opencode).toContain("[providers.opencode.models.discovery]");
+    expect(opencode).not.toContain("claudeModelFilter");
   });
 
   it("advertises every model until the account check has run", async () => {

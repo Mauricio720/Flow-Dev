@@ -3,16 +3,20 @@ import { hostname } from "node:os";
 import { stdout } from "node:process";
 import { pathToFileURL } from "node:url";
 import { dirname, join, resolve } from "node:path";
+import { claimConnectorInstance } from "./localConnectorInstance";
 import { ensurePaired } from "./localConnectorPairing";
 import { LocalCheckoutRegistry } from "../infra/local-execution/localCheckoutRegistry";
 import { LocalCommandJournal } from "../infra/local-execution/localCommandJournal";
 import { PrivateRegistryStore } from "../infra/local-execution/privateRegistry";
+import { heartbeatRequestKey } from "../infra/local-execution/heartbeatRequestKey";
+import { localTaskWorktree } from "../infra/local-execution/localTaskWorktree";
 import { validateLocalCommand, type LocalEvent } from "../application/services/local-execution/localProtocol";
 import { localPayloadHash } from "../application/services/local-execution/localHash";
 import { inspectLocalReadiness, LocalNativeCommandAgent } from "../infra/local-execution/localNativeCommandAgent";
 import { openInBrowser } from "../infra/local-execution/browserLauncher";
 import { pickLocalFolder } from "../infra/local-execution/localFolderPicker";
 import { LocalLinkRequestWorker, type LinkRequestClaim, type LinkRequestSettlement } from "../infra/local-execution/localLinkRequestWorker";
+import { withLastLiveCatalog } from "../infra/local-execution/localCatalogContinuity";
 import { discoverLocalCatalog, type LocalCatalog } from "../infra/local-execution/localProviderCatalog";
 
 type Fetcher = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -78,15 +82,13 @@ export class LocalConnectorClient {
     registry = await store.read();
     if (!registry.machine) throw new Error("not_paired");
     const pairedMachine = registry.machine;
-    const requestKey = registry.pendingHeartbeat?.requestKey ?? randomUUID();
-    if (!registry.pendingHeartbeat) {
-      registry = { ...registry, pendingHeartbeat: { requestKey } };
-      await store.write(registry);
-    }
-    const response = await this.request<{ credentialGeneration: number; credentialExpiresAt: string; credentialRotation?: { token: string; generation: number; expiresAt: string } }>(pairedMachine.server, "/api/local-connector/heartbeat", {
-      protocolVersion: 1, capabilities: ["commands", "events", ...providerCatalog.map((provider) => `provider-${provider.providerKind}`)], catalogRevision: 1, providerCatalog, loopCatalog, requestKey,
+    const payload = {
+      protocolVersion: 1, capabilities: ["commands", "events", ...providerCatalog.map((provider) => `provider-${provider.providerKind}`)], catalogRevision: 1, providerCatalog, loopCatalog,
       ...(pairedMachine.credentialGeneration ? { acknowledgedCredentialGeneration: pairedMachine.credentialGeneration } : {}),
-    }, pairedMachine.token);
+    };
+    const pending = heartbeatRequestKey(registry.pendingHeartbeat, localPayloadHash(payload));
+    if (pending !== registry.pendingHeartbeat) await store.write({ ...registry, pendingHeartbeat: pending });
+    const response = await this.request<{ credentialGeneration: number; credentialExpiresAt: string; credentialRotation?: { token: string; generation: number; expiresAt: string } }>(pairedMachine.server, "/api/local-connector/heartbeat", { ...payload, requestKey: pending.requestKey }, pairedMachine.token);
     const latest = await store.read();
     if (!latest.machine) throw new Error("not_paired");
     const providerCatalogHash = localPayloadHash(providerCatalog);
@@ -101,10 +103,12 @@ export class LocalConnectorClient {
     const registry = await store.read();
     const checkedAt = Date.parse(registry.providerCatalogCheckedAt ?? "");
     if (registry.providerCatalog && Number.isFinite(checkedAt) && Date.now() - checkedAt < 60_000) return { providers: registry.providerCatalog, loops: registry.loopCatalog ?? [] };
-    const catalog = await this.discoverCatalog({ runtimeRoot: join(dirname(defaultJournalPath()), "runtime") }).catch(withoutIncompatibleRuntime);
+    const discovered = await this.discoverCatalog({ runtimeRoot: join(dirname(defaultJournalPath()), "runtime") }).catch(withoutIncompatibleRuntime);
     const latest = await store.read();
-    await store.write({ ...latest, providerCatalog: catalog.providers, loopCatalog: catalog.loops, providerCatalogCheckedAt: new Date().toISOString() });
-    return catalog;
+    const now = new Date();
+    const kept = withLastLiveCatalog({ discovered: discovered.providers, previous: latest.providerCatalog ?? [], liveAt: latest.providerCatalogLiveAt ?? {}, now });
+    await store.write({ ...latest, providerCatalog: kept.providers, providerCatalogLiveAt: kept.liveAt, loopCatalog: discovered.loops, providerCatalogCheckedAt: now.toISOString() });
+    return { providers: kept.providers, loops: discovered.loops };
   }
 
   async status(input: { store?: PrivateRegistryStore; runId?: string; details?: boolean; journal?: LocalCommandJournal } = {}) {
@@ -117,7 +121,8 @@ export class LocalConnectorClient {
     const run = await journal.forRun(input.runId).catch(() => { throw new Error("run_unavailable"); });
     const command = await journal.recover(run.commandId);
     const entry = registry.entries.find((candidate) => candidate.handle === command.command.target.checkoutHandle);
-    const localPath = entry ? await new LocalCheckoutRegistry(store, (process.env.FLOW_LOCAL_ALLOWED_ROOTS ?? "").split(process.platform === "win32" ? ";" : ":").filter(Boolean)).rootFor(entry.handle, entry.key) : null;
+    const linkedRoot = entry ? await new LocalCheckoutRegistry(store, (process.env.FLOW_LOCAL_ALLOWED_ROOTS ?? "").split(process.platform === "win32" ? ";" : ":").filter(Boolean)).rootFor(entry.handle, entry.key) : null;
+    const localPath = linkedRoot ? await localTaskWorktree({ root: linkedRoot, runtimeRoot: join(dirname(defaultJournalPath()), "runtime"), target: command.command.target }) : null;
     if (localPath && command.command.kind === "start") {
       const actionKind = String(command.command.payload.snapshot.kind ?? "");
       await inspectLocalReadiness(localPath, actionKind);
@@ -219,6 +224,7 @@ export class LocalConnectorClient {
 const INCOMPATIBLE_RUNTIME_REASON = "runtime_incompatible";
 const DEFAULT_IDLE_POLL_MS = 10_000;
 const LINK_REQUEST_IDLE_POLL_MS = 2_000;
+const CONNECTOR_PID_FILE = "connector.pid";
 const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 function requireTrustedOrigin(value: string) {
   const url = new URL(value);
@@ -288,6 +294,7 @@ async function main(args: string[]) {
 }
 
 async function runConnector(cli: LocalConnectorClient) {
+  await claimConnectorInstance(join(dirname(defaultJournalPath()), CONNECTOR_PID_FILE));
   const abort = new AbortController();
   process.once("SIGINT", () => abort.abort());
   const journal = new LocalCommandJournal(defaultJournalPath());

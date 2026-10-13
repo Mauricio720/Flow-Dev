@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { COMPOZY_VERSION_ARGS, compozyCommand, matchesCompozyPin } from "./pinnedCompozy";
 import { execFile } from "node:child_process";
 import { access, lstat, readFile, realpath, readdir, mkdir, writeFile } from "node:fs/promises";
@@ -25,7 +24,7 @@ import { resolveGateManifest, type GateManifest } from "../../application/servic
 import { GateRunner } from "../../application/services/local-execution/gateRunner";
 import { settleGates } from "../../application/services/local-execution/gateSettlement";
 import { acquireLocalCheckoutRunLock, releaseLocalCheckoutRunLock } from "./localCheckoutRunLock";
-import { isCompozyRuntimeState } from "./compozyRuntimeState";
+import { checkoutState, type CheckoutState } from "./localCheckoutState";
 import { assertNoArtifactConflict } from "./localRunArtifacts";
 import { cleanRunDocuments } from "./localRunCleanup";
 import { collectLocalArtifacts } from "./localArtifactCollector";
@@ -35,15 +34,25 @@ import { splitArtifact } from "../../application/services/local-execution/localA
 import { failureDetailOf, sanitizeFailureDetail } from "../../application/services/local-execution/localFailureDetail";
 import { LocalLoopRunExecutor, type LocalRunExecutor } from "./localLoopRunExecutor";
 import { installApprovedSpecFiles, installLoopTaskFiles } from "./localLoopTaskFiles";
+import { localCheckoutScope } from "../../application/services/local-execution/localCheckoutScope";
+import { localTaskWorktree } from "./localTaskWorktree";
+import { openLocalWorktree } from "./openLocalWorktree";
 import { takeRuntimeActivity } from "./localActivityUpdate";
 import { runtimeActivityPayload } from "./localActivityPayload";
+import { directRunFailure } from "./localDirectOutcome";
+import { pullRequestRunFailure } from "./localPullRequestOutcome";
+import { DIRECT_ACTION_KIND, DIRECT_AGENT_NAME } from "../../application/services/task-flow/directExecution";
+import { PULL_REQUEST_ACTION_KIND, PULL_REQUEST_AGENT_NAME } from "../../application/services/task-flow/pullRequestAction";
+import { hasOpenCodeCredentials } from "./openCodeAuth";
 
 const exec = promisify(execFile);
 const LOOP_KIND = "loop";
-const LOCAL_ACTION_KINDS = new Set(["create_spec", "create_tasks", LOOP_KIND]);
+const LOCAL_ACTION_KINDS = new Set(["create_spec", "create_tasks", DIRECT_ACTION_KIND, PULL_REQUEST_ACTION_KIND, LOOP_KIND]);
+const AGENT_BY_KIND: Record<string, string> = { [DIRECT_ACTION_KIND]: DIRECT_AGENT_NAME, [PULL_REQUEST_ACTION_KIND]: PULL_REQUEST_AGENT_NAME };
 type StartCommand = Extract<LocalCommand, { kind: "start" }>;
-type CheckoutState = { digest: string; dirty: boolean; files: Map<string, string> };
-type ActiveRun = { request: ExecutionRequest; executor: LocalRunExecutor; root: string; command: LocalCommand; sequence: number; initialState: CheckoutState; manifest: GateManifest };
+type ActiveRun = { request: ExecutionRequest; executor: LocalRunExecutor; root: string; command: LocalCommand; sequence: number; initialState: CheckoutState; manifest: GateManifest; cancelCommand?: Extract<LocalCommand, { kind: "cancel" }> };
+
+export { checkoutState };
 
 /** Handles the outbound protocol using only the private local registry and native checkout. */
 export class LocalNativeCommandAgent {
@@ -52,7 +61,7 @@ export class LocalNativeCommandAgent {
   private readonly questions = new Map<string, Map<string, QuestionState>>();
   private recovered = false;
 
-  constructor(private readonly options: { store: PrivateRegistryStore; runtimeRoot: string; environment?: NodeJS.ProcessEnv; verifyCompozyBinary?: (path: string) => Promise<boolean> }) {
+  constructor(private readonly options: { store: PrivateRegistryStore; runtimeRoot: string; environment?: NodeJS.ProcessEnv; verifyCompozyBinary?: (path: string) => Promise<boolean>; openWorktree?: (path: string) => Promise<void> }) {
     this.launcher = new NativeCompozyRunLauncher({ registry: options.store, runtimeRoot: options.runtimeRoot, executable: compozyCommand(options.environment ?? process.env), environment: options.environment });
   }
 
@@ -63,13 +72,17 @@ export class LocalNativeCommandAgent {
       if (command.kind === "start") return await this.start(command, journal);
       if (command.kind === "cancel") return await this.cancel(command, journal);
       if (command.kind === "inspect") return await this.inspect(command, journal);
+      if (command.kind === "open_worktree") {
+        await (this.options.openWorktree ?? openLocalWorktree)(await this.rootFor(command));
+        return [makeEvent(command, 1, "terminal", { outcome: "succeeded", reason: null, checkoutDigest: null, artifactsSafe: true, runtimeSucceeded: true })];
+      }
       if (command.kind === "answer") return await this.answer(command, journal);
     } catch (error) {
       const reason = error instanceof LocalExecutionError ? error.reason : "runtime_failed";
-      if (command.kind === "start" && reason !== "outcome_unknown") await releaseLocalCheckoutRunLock(this.options.runtimeRoot, command.target.checkoutHandle, command.runId);
+      if (command.kind === "start" && reason !== "outcome_unknown") await releaseLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(command.target), command.runId);
       const checkoutDigest = command.kind === "prepare" || command.kind === "start" ? await this.rootFor(command).then(checkoutState).then((state) => state.digest).catch(() => null) : null;
       const outcome = reason === "outcome_unknown" ? "unknown" : reason === "runtime_failed" ? "failed" : "blocked";
-      const detail = await this.detailFor(command, failureDetailOf(error));
+      const detail = command.kind === "open_worktree" ? null : await this.detailFor(command, failureDetailOf(error));
       return [makeEvent(command, 1, "terminal", { outcome, reason, checkoutDigest, artifactsSafe: false, runtimeSucceeded: false, ...(detail ? { detail } : {}) })];
     }
     return [];
@@ -79,23 +92,34 @@ export class LocalNativeCommandAgent {
     if (!this.recovered) {
       this.recovered = true;
       for (const entry of await journal.activeCommands()) {
-        if (entry.command.kind === "start") await this.recoverRun(entry.command.runId, journal);
+        if (entry.command.kind !== "start") continue;
+        const active = await this.recoverRun(entry.command.runId, journal);
+        if (active) active.cancelCommand = await journal.pendingCancellation(entry.command.runId) ?? undefined;
       }
     }
     const events: LocalEvent[] = [];
     for (const [runId, active] of this.active) {
+      if (active.cancelCommand) {
+        const canceled = await active.executor.cancel?.(active.request).catch(() => ({ state: "unknown" as const, code: "outcome_unknown" }));
+        if (canceled?.state === "canceled" || await this.forceStop(active)) {
+          events.push(...await this.finishCancellation(active));
+          continue;
+        }
+      }
       const result: ReconcileResult = await active.executor.reconcile(active.request).catch(() => ({ state: "unknown", code: "outcome_unknown" }));
       const activity = takeRuntimeActivity(active.request.run, result);
       if (activity) {
         const payload = runtimeActivityPayload({ activity, root: active.root, environment: this.options.environment ?? process.env });
         if (payload) events.push(makeEvent(active.command, active.sequence++, "activity", payload));
       }
-      for (const report of await this.questionReports(runId, active)) events.push(makeEvent(active.command, active.sequence++, "question", report));
+      if (result.state === "running") for (const report of await this.questionReports(runId, active)) events.push(makeEvent(active.command, active.sequence++, "question", report));
       if (result.state === "running" || result.state === "unknown") continue;
       const finalState = await checkoutState(active.root).catch(() => null);
       const artifactsSafe = finalState ? await safeArtifacts(active.root, active.request.snapshot.kind, active.root, active.initialState) : false;
       let outcome: "succeeded" | "failed" | "blocked" | "canceled" | "unknown" = result.state === "succeeded" && artifactsSafe ? "succeeded" : result.state === "canceled" ? "canceled" : result.state === "failed" ? "failed" : result.state === "blocked" ? "blocked" : "failed";
       let reason: string | null = result.code ?? (artifactsSafe ? null : "artifact_unsafe");
+      const directFailure = outcome === "succeeded" ? await directRunFailure(active.root, active.request.snapshot.kind) ?? await pullRequestRunFailure(active.root, active.request.snapshot.kind) : null;
+      if (directFailure) { outcome = directFailure.outcome; reason = directFailure.reason; }
       if (outcome === "succeeded" && finalState) {
         const gateResults = [];
         const runner = new GateRunner({
@@ -125,9 +149,10 @@ export class LocalNativeCommandAgent {
       if (!artifacts) { outcome = "failed"; reason = "artifact_unsafe"; }
       for (const part of (artifacts ?? []).flatMap(splitArtifact)) events.push(makeEvent(active.command, active.sequence++, "artifact", part));
       await cleanRunDocuments({ root: active.root, runtimeRoot: this.options.runtimeRoot, command: active.command, collectedPaths: (artifacts ?? []).map((file) => file.path) });
-      const detail = result.activity?.kind === "warning" ? await this.detailFor(active.command, result.activity.preview) : null;
+      const detail = await this.detailFor(active.command, directFailure?.detail ?? result.detail ?? (result.activity?.kind === "warning" ? result.activity.preview : null));
       events.push(makeEvent(active.command, active.sequence++, "terminal", { outcome, reason, checkoutDigest: finalState?.digest ?? null, artifactsSafe: artifactsSafe && artifacts !== null, runtimeSucceeded: result.state === "succeeded", ...(detail ? { detail } : {}) }));
-      await releaseLocalCheckoutRunLock(this.options.runtimeRoot, active.command.target.checkoutHandle, runId);
+      if (active.cancelCommand) events.push(makeEvent(active.cancelCommand, 2, "terminal", { outcome: outcome === "canceled" ? "canceled" : "unknown", reason: outcome === "canceled" ? "user_canceled" : "outcome_unknown", checkoutDigest: finalState?.digest ?? null, artifactsSafe: artifactsSafe && artifacts !== null, runtimeSucceeded: false }));
+      await releaseLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(active.command.target), runId);
       this.active.delete(runId);
       this.questions.delete(runId);
     }
@@ -140,15 +165,16 @@ export class LocalNativeCommandAgent {
     if (!LOCAL_ACTION_KINDS.has(actionKind)) throw new LocalExecutionError("runtime_incompatible", { cause: "Este tipo de ação ainda não roda no projeto local." });
     const action = command.payload.action;
     const runtimes = action.kind === "loop" ? Object.values((action.runtimeBindings ?? {}) as Record<string, { providerId?: unknown }>) : [action.runtime as { providerId?: unknown }];
-    const providerKinds = [...new Set(runtimes.map((runtime) => runtime?.providerId).filter((value): value is string => value === "codex" || value === "claude"))];
-    if (!providerKinds.length) throw new LocalExecutionError("runtime_incompatible", { cause: "A ação não indica um provedor suportado pelo conector local (codex ou claude)." });
+    const providerKinds = [...new Set(runtimes.map((runtime) => runtime?.providerId).filter((value): value is string => value === "codex" || value === "claude" || value === "opencode"))];
+    if (!providerKinds.length) throw new LocalExecutionError("runtime_incompatible", { cause: "A ação não indica um provedor suportado pelo conector local (codex, claude ou opencode)." });
     const compozyBinary = await resolveExecutable(compozyCommand(this.options.environment ?? process.env), this.options.environment?.PATH ?? process.env.PATH ?? "");
     const binaryMatches = compozyBinary ? await (this.options.verifyCompozyBinary?.(compozyBinary) ?? matchesCompozyPin(compozyBinary)) : false;
     const version = compozyBinary ? await runLimited(compozyBinary, COMPOZY_VERSION_ARGS, { PATH: this.options.environment?.PATH }).catch(() => "") : "";
     if (!binaryMatches || !version.includes(COMPOZY_PIN.version)) throw new LocalExecutionError("runtime_incompatible", { cause: `CompozyOS local incompatível: esperado ${COMPOZY_PIN.version}, encontrado ${version || "nenhum binário verificável"}.` });
     for (const kind of providerKinds) {
-      const status = kind === "codex" ? ["login", "status", "-c", "cli_auth_credentials_store=file"] : ["auth", "status"];
-      await runLimited(kind, status, { PATH: this.options.environment?.PATH, HOME: homedir(), ...(kind === "codex" ? { CODEX_HOME: resolve(homedir(), ".codex") } : { CLAUDE_CONFIG_DIR: resolve(homedir(), ".claude") }) }).catch((error) => { throw new LocalExecutionError("runtime_incompatible", { cause: `A verificação de login do ${kind} falhou nesta máquina: ${commandFailure(error)}` }); });
+      const status = kind === "codex" ? ["login", "status", "-c", "cli_auth_credentials_store=file"] : kind === "opencode" ? ["auth", "list"] : ["auth", "status"];
+      const authOutput = await runLimited(kind, status, { PATH: this.options.environment?.PATH, HOME: homedir(), ...(kind === "codex" ? { CODEX_HOME: resolve(homedir(), ".codex") } : kind === "claude" ? { CLAUDE_CONFIG_DIR: resolve(homedir(), ".claude") } : {}) }).catch((error) => { throw new LocalExecutionError("runtime_incompatible", { cause: `A verificação de login do ${kind} falhou nesta máquina: ${commandFailure(error)}` }); });
+      if (kind === "opencode" && !hasOpenCodeCredentials(authOutput)) throw new LocalExecutionError("runtime_incompatible", { cause: "O OpenCode não tem uma conta autenticada nesta máquina." });
     }
     const state = await checkoutState(root);
     const manifest = await resolveLocalGateManifest(root, actionKind);
@@ -169,10 +195,10 @@ export class LocalNativeCommandAgent {
     const manifest = await resolveLocalGateManifest(root, snapshot.kind);
     const pinnedManifest = await this.loadManifest(command.payload.preparationId);
     if (current.digest !== prepared.payload.checkoutDigest || manifest.hash !== prepared.payload.manifestHash || pinnedManifest.hash !== manifest.hash) throw new LocalExecutionError("preparation_changed", { cause: "O checkout ou as verificações obrigatórias mudaram depois da preparação. Prepare novamente." });
-    if (snapshot.workspace.kind !== "local" || snapshot.workspace.target?.machineId !== command.machineId || snapshot.workspace.target.linkId !== command.target.linkId || snapshot.workspace.target.linkRevision !== command.target.linkRevision || snapshot.workspace.target.checkoutHandle !== command.target.checkoutHandle || snapshot.operatorId !== command.actorId || snapshot.localPreparation?.preparationId !== command.payload.preparationId) throw new LocalExecutionError("preparation_changed", { cause: "O vínculo local ou a pessoa operadora mudou depois da preparação. Prepare novamente." });
+    if (snapshot.workspace.kind !== "local" || snapshot.workspace.target?.machineId !== command.machineId || snapshot.workspace.target.linkId !== command.target.linkId || snapshot.workspace.target.linkRevision !== command.target.linkRevision || snapshot.workspace.target.checkoutHandle !== command.target.checkoutHandle || snapshot.workspace.target.worktreeTaskId !== command.target.worktreeTaskId || snapshot.operatorId !== command.actorId || snapshot.localPreparation?.preparationId !== command.payload.preparationId) throw new LocalExecutionError("preparation_changed", { cause: "O vínculo local ou a pessoa operadora mudou depois da preparação. Prepare novamente." });
     if (snapshot.localPreparation?.manifestHash !== manifest.hash || snapshot.localPreparation.requiredGates.length !== manifest.requiredGates.length || manifest.requiredGates.some((gate) => !snapshot.localPreparation?.requiredGates.some((preparedGate) => preparedGate.id === gate.id && preparedGate.commandDigest === gate.commandDigest))) throw new LocalExecutionError("preparation_changed", { cause: "As verificações obrigatórias mudaram depois da preparação. Prepare novamente." });
     await assertNoArtifactConflict(root, snapshot.kind);
-    await acquireLocalCheckoutRunLock(this.options.runtimeRoot, command.target.checkoutHandle, command.runId);
+    await acquireLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(command.target), command.runId);
     const executor = await this.executorFor(command, root);
     const run = { id: command.runId, actionId: command.payload.actionId, taskId: command.payload.taskId, attemptNumber: 1, state: "running", snapshot: snapshot as unknown as Record<string, unknown>, worktreeId: null, connectionIds: Object.keys(snapshot.runtimeProviderIds), isWrite: true, leaseFence: command.fence, idempotencyKey: command.commandId, terminalCode: null, runtime: { workspaceId: null, sessionId: null, turnId: null, runId: null }, leaseOwner: null, requestedBy: command.actorId, createdAt: new Date(), finishedAt: null };
     const request = { run, snapshot, grants: [] } as ExecutionRequest;
@@ -192,22 +218,52 @@ export class LocalNativeCommandAgent {
 
   private async abandonStart(command: Extract<LocalCommand, { kind: "start" }>, root: string) {
     await cleanRunDocuments({ root, runtimeRoot: this.options.runtimeRoot, command });
-    await releaseLocalCheckoutRunLock(this.options.runtimeRoot, command.target.checkoutHandle, command.runId);
+    await releaseLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(command.target), command.runId);
   }
 
   private async cancel(command: Extract<LocalCommand, { kind: "cancel" }>, journal: LocalCommandJournal): Promise<LocalEvent[]> {
     const active = this.active.get(command.runId) ?? await this.recoverRun(command.runId, journal);
-    if (!active) throw new LocalExecutionError("outcome_unknown");
-    const result = await active.executor.cancel?.(active.request);
-    if (!result || result.state !== "canceled") throw new LocalExecutionError("outcome_unknown");
+    if (!active) return this.cancelUnrecovered(command, journal);
+    const result = await active.executor.cancel?.(active.request).catch(() => ({ state: "unknown" as const, code: "outcome_unknown" }));
+    active.cancelCommand = command;
+    if (result?.state === "canceled" || await this.forceStop(active)) return [this.cancelAccepted(command), ...await this.finishCancellation(active)];
+    return [this.cancelAccepted(command)];
+  }
+
+  private async cancelUnrecovered(command: Extract<LocalCommand, { kind: "cancel" }>, journal: LocalCommandJournal): Promise<LocalEvent[]> {
+    const entry = (await journal.activeCommands()).find((candidate) => candidate.command.runId === command.runId);
+    if (!entry || entry.command.kind !== "start") throw new LocalExecutionError("outcome_unknown");
+    if (entry.command.projectId !== command.projectId || entry.command.machineId !== command.machineId || entry.command.target.checkoutHandle !== command.target.checkoutHandle) throw new LocalExecutionError("command_unavailable");
+    await this.launcher.stop(command.runId);
+    const root = await this.rootFor(entry.command).catch(() => null);
+    if (root) await cleanRunDocuments({ root, runtimeRoot: this.options.runtimeRoot, command: entry.command }).catch(() => undefined);
+    const checkoutDigest = root ? await checkoutState(root).then((state) => state.digest).catch(() => null) : null;
+    await releaseLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(command.target), command.runId);
+    const sequence = Math.max(0, ...entry.events.map((event) => event.sequence)) + 1;
+    const payload = { outcome: "canceled" as const, reason: "user_canceled", checkoutDigest, artifactsSafe: false, runtimeSucceeded: false };
+    return [makeEvent(entry.command, sequence, "terminal", payload), makeEvent(command, 1, "terminal", payload)];
+  }
+
+  private async forceStop(active: ActiveRun) {
+    try { await this.launcher.stop(active.request.run.id); return true; }
+    catch { return false; }
+  }
+
+  private cancelAccepted(command: Extract<LocalCommand, { kind: "cancel" }>) {
+    return makeEvent(command, 1, "accepted", { runtimeExecutionId: `cancel-${command.runId}`, runtimeWorkspaceId: command.projectId, runtimeSessionId: command.commandId, runtimeTurnId: null });
+  }
+
+  private async finishCancellation(active: ActiveRun) {
+    const { command, root, request } = active;
+    const cancelCommand = active.cancelCommand;
+    if (!cancelCommand) return [];
+    await cleanRunDocuments({ root, runtimeRoot: this.options.runtimeRoot, command });
+    const checkout = await checkoutState(root);
+    const originalTerminal = makeEvent(command, active.sequence, "terminal", { outcome: "canceled", reason: "user_canceled", checkoutDigest: checkout.digest, artifactsSafe: true, runtimeSucceeded: false });
+    const cancelTerminal = makeEvent(cancelCommand, 2, "terminal", { outcome: "canceled", reason: "user_canceled", checkoutDigest: checkout.digest, artifactsSafe: true, runtimeSucceeded: false });
+    await releaseLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(command.target), request.run.id);
     this.active.delete(command.runId);
-    await cleanRunDocuments({ root: active.root, runtimeRoot: this.options.runtimeRoot, command: active.command });
-    const checkout = await checkoutState(active.root);
-    const cancelAccepted = makeEvent(command, 1, "accepted", { runtimeExecutionId: `cancel-${command.runId}`, runtimeWorkspaceId: command.projectId, runtimeSessionId: command.commandId, runtimeTurnId: null });
-    const originalTerminal = makeEvent(active.command, active.sequence + 1, "terminal", { outcome: "canceled", reason: "user_canceled", checkoutDigest: checkout.digest, artifactsSafe: true, runtimeSucceeded: false });
-    const cancelTerminal = makeEvent(command, 2, "terminal", { outcome: "canceled", reason: "user_canceled", checkoutDigest: checkout.digest, artifactsSafe: true, runtimeSucceeded: false });
-    await releaseLocalCheckoutRunLock(this.options.runtimeRoot, active.command.target.checkoutHandle, command.runId);
-    return [cancelAccepted, originalTerminal, cancelTerminal];
+    return [originalTerminal, cancelTerminal];
   }
 
   private async answer(command: Extract<LocalCommand, { kind: "answer" }>, journal: LocalCommandJournal): Promise<LocalEvent[]> {
@@ -259,7 +315,7 @@ export class LocalNativeCommandAgent {
     if (command.payload.snapshot.kind === LOOP_KIND) return new LocalLoopRunExecutor({ launcher: this.launcher, root, prepare: () => installLoopTaskFiles({ root, taskId: command.payload.taskId, files: command.payload.taskFiles ?? [] }) });
     const bundle = await loadSpecBundle(defaultBundleDirectory());
     const pins = { version: COMPOZY_PIN.version, binarySha256: COMPOZY_PIN.binarySha256, openApiSha256: COMPOZY_PIN.openApiSha256, bundleSha256: bundle.digest };
-    return new SnapshotRunExecutor({ gateway: new CompozyRuntimeGateway(boundedRuntimeTransport), launcher: this.launcher, runtime: { agentName: MANAGED_AGENT_NAME, declared: pins, accepted: pins }, taskFor: async () => command.payload.task, beforeSubmit: () => installApprovedSpecFiles({ root, files: command.payload.taskFiles ?? [] }), workspaceRoot: () => root });
+    return new SnapshotRunExecutor({ gateway: new CompozyRuntimeGateway(boundedRuntimeTransport), launcher: this.launcher, runtime: { agentName: AGENT_BY_KIND[String(command.payload.snapshot.kind)] ?? MANAGED_AGENT_NAME, declared: pins, accepted: pins }, taskFor: async () => command.payload.task, beforeSubmit: () => installApprovedSpecFiles({ root, files: command.payload.taskFiles ?? [] }), workspaceRoot: () => root });
   }
 
   private async questionReports(runId: string, active: ActiveRun) {
@@ -280,13 +336,14 @@ export class LocalNativeCommandAgent {
     const registry = await this.options.store.read();
     const entry = registry.entries.find((candidate) => candidate.handle === command.target.checkoutHandle);
     if (!entry) throw new LocalExecutionError("path_invalid", { cause: "O checkout vinculado não está registrado nesta máquina. Refaça o vínculo em Projeto local." });
-    return new LocalCheckoutRegistry(this.options.store, []).rootFor(entry.handle, entry.key);
+    const root = await new LocalCheckoutRegistry(this.options.store, []).rootFor(entry.handle, entry.key);
+    return localTaskWorktree({ root, runtimeRoot: this.options.runtimeRoot, target: command.target, create: command.kind === "prepare" || command.kind === "open_worktree" });
   }
 
   private async makeActive(command: Extract<LocalCommand, { kind: "start" }>, workspaceId: string, sessionId: string, turnId: string | null, sequence: number) {
     try {
       const root = await this.rootFor(command);
-      await acquireLocalCheckoutRunLock(this.options.runtimeRoot, command.target.checkoutHandle, command.runId);
+      await acquireLocalCheckoutRunLock(this.options.runtimeRoot, localCheckoutScope(command.target), command.runId);
       const snapshot = withNativeProviderIds(command.payload.snapshot as unknown as ActionSnapshot);
       const executor = await this.executorFor(command, root);
       const acceptedRun = { id: command.runId, actionId: command.payload.actionId, taskId: command.payload.taskId, attemptNumber: 1, state: "running", snapshot: snapshot as unknown as Record<string, unknown>, worktreeId: null, connectionIds: Object.keys(snapshot.runtimeProviderIds), isWrite: true, leaseFence: command.fence, idempotencyKey: command.commandId, terminalCode: null, runtime: { workspaceId, sessionId, turnId, runId: command.runId }, leaseOwner: null, requestedBy: command.actorId, createdAt: new Date(), finishedAt: null };
@@ -302,25 +359,6 @@ export async function inspectLocalReadiness(root: string, actionKind: string, en
   const version = compozyBinary ? await runLimited(compozyBinary, COMPOZY_VERSION_ARGS, { PATH: environment.PATH }).catch(() => "") : "";
   if (!binaryMatches || !version.includes(COMPOZY_PIN.version)) throw new LocalExecutionError("runtime_incompatible", { cause: `CompozyOS local incompatível: esperado ${COMPOZY_PIN.version}, encontrado ${version || "nenhum binário verificável"}.` });
   return manifest;
-}
-
-export async function checkoutState(root: string): Promise<CheckoutState> {
-  const [status, listing] = await Promise.all([
-    exec("git", ["-C", root, "status", "--porcelain", "--untracked-files=all"], { maxBuffer: 1024 * 1024 }),
-    exec("git", ["-C", root, "ls-files", "--cached", "--others", "--exclude-standard", "-z"], { maxBuffer: 8 * 1024 * 1024 }),
-  ]);
-  const files = new Map<string, string>();
-  for (const path of listing.stdout.split("\0").filter(Boolean).sort()) {
-    if (isCompozyRuntimeState(path)) continue;
-    if (isAbsolute(path) || path.split(/[\\/]/).some((part) => part === ".." || part === ".git")) throw new LocalExecutionError("path_not_allowed");
-    const fullPath = resolve(root, path);
-    const canonical = await realpath(fullPath).catch(() => null);
-    if (!canonical || !isWithin(root, canonical) || !(await lstat(fullPath)).isFile()) throw new LocalExecutionError("path_not_allowed");
-    const bytes = await readFile(canonical);
-    files.set(path, digest(bytes));
-  }
-  const aggregate = [...files].map(([path, hash]) => `${path}\0${hash}`).join("\0");
-  return { digest: digest(aggregate), dirty: status.stdout.length > 0, files };
 }
 
 async function instructionSources(root: string, scopes: string[]) {
@@ -368,6 +406,8 @@ function instructionReferences(content: string) {
 }
 
 export async function resolveLocalGateManifest(root: string, actionKind: string) {
+  // Publishing changes no file of the checkout, and the gates already ran on the Review that released it.
+  if (actionKind === PULL_REQUEST_ACTION_KIND) return resolveGateManifest({ actionKind, declarations: [] });
   const configPath = resolve(root, ".flow-spec", "local-gates.json");
   const configText = await readFile(configPath, "utf8").catch((error: unknown) => isMissing(error) ? null : Promise.reject(error));
   const declarations: Array<{ id: string; label: string; argv: string[]; cwd: string; timeoutMs?: number; sourcePath: string; sourceText: string; kind: "command" | "playwright"; serviceUrls?: string[]; environmentKeys?: string[] }> = [];
@@ -425,7 +465,7 @@ function playwrightCounts(output: string) {
 }
 
 async function safeArtifacts(root: string, kind: string, allowedRoot: string, before: CheckoutState) {
-  if (kind === LOOP_KIND) return true;
+  if (kind === LOOP_KIND || kind === DIRECT_ACTION_KIND || kind === PULL_REQUEST_ACTION_KIND) return true;
   try {
     const output = resolve(root, ".flow-spec");
     const names = kind === "create_spec" ? ["_spec.md", "_user_stories.md", "_dx.md", "_tests.md"] : ["_tasks.md", ...(await readdir(output)).filter((name) => /^task_\d+\.md$/.test(name))];
@@ -455,5 +495,4 @@ function makeEvent<K extends LocalEvent["kind"]>(command: LocalCommand, sequence
 
 async function runLimited(command: string, args: string[], env?: NodeJS.ProcessEnv) { return (await exec(command, args, { timeout: 10_000, env: { HOME: homedir(), ...env, PATH: env?.PATH ?? process.env.PATH }, maxBuffer: 16_384 })).stdout.trim(); }
 function isWithin(root: string, path: string) { const value = relative(root, path); return value === "" || (value !== ".." && !value.startsWith(`..${sep}`) && !isAbsolute(value)); }
-function digest(value: string | Buffer) { return createHash("sha256").update(value).digest("hex"); }
 function isMissing(error: unknown) { return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"; }

@@ -7,8 +7,29 @@ SOCKET=/run/flow-spec/daemon.sock
 GRANTS_ROOT="${FLOW_GRANTS_ROOT:-/run/grants}"
 export HOME COMPOZY_HOME
 
-mkdir -p "$COMPOZY_HOME/agents/flow-spec"
-cp /opt/flow-runtime/agents/flow-spec/AGENT.md "$COMPOZY_HOME/agents/flow-spec/AGENT.md"
+AGENT_SOURCE=/opt/flow-runtime/agents/flow-spec/AGENT.md
+AGENT_TARGET="$COMPOZY_HOME/agents/flow-spec/AGENT.md"
+
+codex_only() {
+  IFS=';'
+  for entry in ${FLOW_PROVIDERS:-}; do
+    rest=${entry#*:}
+    [ "${rest%%:*}" = codex ] || { unset IFS; return 1; }
+  done
+  unset IFS
+}
+
+# The agent asks for the full-access mode of Codex; Claude rejects that ACP option and the session never starts.
+install_agent() {
+  mkdir -p "$COMPOZY_HOME/agents/flow-spec"
+  if codex_only; then
+    cp "$AGENT_SOURCE" "$AGENT_TARGET"
+  else
+    sed '/^acp_options:/,/^[^[:space:]]/{/^acp_options:/d;/^[[:space:]]/d;}' "$AGENT_SOURCE" > "$AGENT_TARGET"
+  fi
+}
+
+install_agent
 
 provider_block() {
   overlay=$1

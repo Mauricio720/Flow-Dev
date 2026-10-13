@@ -172,7 +172,7 @@ describe("local connector persistence", () => {
     await expect(dao.commandForActor({ actorId: crypto.randomUUID(), projectId: setup.project.id, commandId: preparationId })).resolves.toBeNull();
   });
 
-  it("keeps a checkout locked through unknown outcomes and releases it only on an authoritative terminal", async () => {
+  it.each([false, true])("keeps a checkout locked through unknown outcomes and releases it only on an authoritative terminal (issue worktree: %s)", async (issueWorktree) => {
     const setup = await specTask();
     const dao = new DrizzleLocalConnectorDao(setup.database);
     const now = new Date("2026-10-07T12:00:00.000Z");
@@ -182,7 +182,7 @@ describe("local connector persistence", () => {
     await dao.heartbeat({ machineId: confirmed.machineId!, credentialHash: hashSecret("lock-token"), capabilities: ["commands"], catalogRevision: 1, requestKey: crypto.randomUUID(), now });
     const checkoutHandle = "e".repeat(64);
     const linked = await dao.publishProjectLink({ ownerUserId: setup.ownerId, projectId: setup.project.id, expectedRevision: 0, requestKey: crypto.randomUUID(), descriptor: { machineId: confirmed.machineId!, checkoutHandle, checkoutKey: "f".repeat(64), repositoryId: "202", repositoryNodeId: "R_202", safeLabel: "Flow Dev" }, now });
-    const targets = { machineId: confirmed.machineId!, linkId: linked.id, linkRevision: linked.revision, checkoutHandle };
+    const targets = { machineId: confirmed.machineId!, linkId: linked.id, linkRevision: linked.revision, checkoutHandle, ...(issueWorktree ? { worktreeTaskId: setup.taskId } : {}) };
     const planId = crypto.randomUUID();
     await setup.database.insert(taskExecutionPlans).values({ id: planId, taskId: setup.taskId, kind: "os_unified", revision: 1, status: "running", createdBy: setup.ownerId });
     const createRun = async (isWrite = true) => {

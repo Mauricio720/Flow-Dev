@@ -1,23 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { validateLocalCommand, validateLocalEvent } from "./localProtocol";
+import { localProviderCatalogSchema, validateLocalCommand, validateLocalEvent } from "./localProtocol";
 
 const ids = ["00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002", "00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000004", "00000000-0000-4000-8000-000000000005"];
 const hash = "a".repeat(64);
 
 describe("local protocol strict schemas", () => {
-  it.each(["prepare", "start", "inspect", "cancel", "answer"] as const)("UT-180 rejects a command without its target link", (kind) => {
+  it("accepts OpenCode alongside Codex and Claude in the machine catalog", () => {
+    const model = { modelId: "anthropic/claude-sonnet-4-5", displayName: "Claude Sonnet", selectable: true, unselectableReason: null, reasoningChoices: [null] };
+    const catalog = (["codex", "claude", "opencode"] as const).map((providerKind) => ({ providerId: providerKind, providerKind, label: providerKind, models: [model] }));
+    expect(localProviderCatalogSchema.safeParse(catalog).success).toBe(true);
+  });
+
+  it.each(["prepare", "start", "inspect", "cancel", "answer", "open_worktree"] as const)("UT-180 rejects a command without its target link", (kind) => {
     const input = command(kind, payload(kind));
     input.target.linkId = undefined;
     expect(() => validateLocalCommand(input)).toThrowError(expect.objectContaining({ reason: "invalid_input" }));
   });
 
-  it.each(["prepare", "start", "inspect", "cancel", "answer"] as const)("UT-181 rejects a foreign machine target", (kind) => {
+  it.each(["prepare", "start", "inspect", "cancel", "answer", "open_worktree"] as const)("UT-181 rejects a foreign machine target", (kind) => {
     const input = command(kind, payload(kind));
     input.target.machineId = ids[0];
     expect(() => validateLocalCommand(input)).toThrowError(expect.objectContaining({ reason: "command_unavailable" }));
   });
 
-  it.each([["UT-122 and UT-169", "prepare"], ["UT-170", "start"], ["UT-171", "inspect"], ["UT-172", "cancel"], ["UT-173", "answer"]] as const)("%s rejects undeclared absolute paths in command payloads", (_id, kind) => {
+  it.each([["UT-122 and UT-169", "prepare"], ["UT-170", "start"], ["UT-171", "inspect"], ["UT-172", "cancel"], ["UT-173", "answer"], ["open worktree", "open_worktree"]] as const)("%s rejects undeclared absolute paths in command payloads", (_id, kind) => {
     expect(() => validateLocalCommand(command(kind, { ...payload(kind), absolutePath: "/home/private" }))).toThrowError(expect.objectContaining({ reason: "invalid_input" }));
   });
 
@@ -30,11 +36,11 @@ describe("local protocol strict schemas", () => {
   });
 });
 
-function command(kind: "prepare" | "start" | "inspect" | "cancel" | "answer", body: Record<string, unknown>) {
+function command(kind: "prepare" | "start" | "inspect" | "cancel" | "answer" | "open_worktree", body: Record<string, unknown>) {
   return { protocolVersion: 1, commandId: ids[0], machineId: ids[1], projectId: ids[2], runId: ids[3], actorId: ids[4], fence: 3, leaseExpiresAt: "2026-10-07T11:01:00.000Z", target: { machineId: ids[1], linkId: ids[4], linkRevision: 2, checkoutHandle: "checkout-opaque" }, payloadHash: hash, kind, payload: body };
 }
 
-function payload(kind: "prepare" | "start" | "inspect" | "cancel" | "answer"): Record<string, unknown> {
+function payload(kind: "prepare" | "start" | "inspect" | "cancel" | "answer" | "open_worktree"): Record<string, unknown> {
   if (kind === "prepare") return { preparationId: ids[3], actionId: "plan", sourceSnapshotId: ids[2], checkoutLabel: "Checkout", action: { kind: "create_spec" } };
   if (kind === "start") return { preparationId: ids[3], actionId: "plan", taskId: ids[2], snapshot: { action: "plan" }, task: { issueNumber: 42, title: "Task", bodyMarkdown: "Details" } };
   if (kind === "cancel") return { requestKey: ids[2] };

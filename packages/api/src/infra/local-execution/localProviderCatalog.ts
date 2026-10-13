@@ -9,14 +9,15 @@ import type { LocalProviderCatalogEntry } from "../../application/database/dao/l
 import type { LoopDefinition } from "../../application/software/compozyControlGateway";
 import { LocalExecutionError } from "../../application/services/local-execution/localExecutionErrors";
 import { PinnedCompozyControlGateway } from "../spec/compozy/compozyControlGateway";
-import { localProviderLines, warmClaudeModelFilter } from "./localProviderOverlay";
+import { localProviderLines, warmClaudeModelFilter, type LocalProviderKind } from "./localProviderOverlay";
 import { COMPOZY_VERSION_ARGS, compozyCommand, matchesCompozyPin } from "./pinnedCompozy";
 import { CATALOG_DIRECTORY_PREFIX, releaseCatalogDaemon, sweepStaleCatalogDaemons, trackCatalogDaemon } from "./catalogDaemonCleanup";
 import { discoverLocalLoops } from "./localLoopDiscovery";
+import { hasOpenCodeCredentials } from "./openCodeAuth";
 import type { CompozyRequest, CompozyTransport } from "../spec/compozy/compozyTransport";
 
 const execFile = promisify(execFileCallback);
-const MAX_MODELS_PER_PROVIDER = 64;
+const MAX_MODELS_PER_PROVIDER = 256;
 const CATALOG_START_TIMEOUT_MS = 20_000;
 const CATALOG_REQUEST_TIMEOUT_MS = 30_000;
 const CLEANUP_RETRIES = 5;
@@ -60,7 +61,7 @@ export async function discoverLocalCatalog(input: { runtimeRoot: string; environ
       catalog.push({
         providerId: providerKind,
         providerKind,
-        label: providerKind === "codex" ? "Codex local" : "Claude local",
+        label: providerKind === "codex" ? "Codex local" : providerKind === "opencode" ? "OpenCode local" : "Claude local",
         models: listed.value.slice(0, MAX_MODELS_PER_PROVIDER).map((model) => ({
           modelId: model.modelId,
           displayName: model.displayName,
@@ -82,21 +83,22 @@ export async function discoverLocalCatalog(input: { runtimeRoot: string; environ
 }
 
 async function authenticatedProviders(environment: NodeJS.ProcessEnv) {
-  const result: Array<"codex" | "claude"> = [];
+  const result: LocalProviderKind[] = [];
   const definitions = [
     { kind: "codex" as const, binary: "codex", args: ["login", "status", "-c", "cli_auth_credentials_store=file"], extra: { CODEX_HOME: resolve(homedir(), ".codex") } },
     { kind: "claude" as const, binary: "claude", args: ["auth", "status"], extra: { CLAUDE_CONFIG_DIR: resolve(homedir(), ".claude") } },
+    { kind: "opencode" as const, binary: "opencode", args: ["auth", "list"], extra: {} },
   ];
   for (const provider of definitions) {
     const executable = await resolveExecutable(provider.binary, environment.PATH ?? process.env.PATH ?? "");
     if (!executable) continue;
-    const status = await execute(executable, provider.args, { PATH: environment.PATH ?? process.env.PATH, HOME: homedir(), ...provider.extra }).then(() => true, () => false);
+    const status = await execute(executable, provider.args, { PATH: environment.PATH ?? process.env.PATH, HOME: homedir(), ...provider.extra }).then((output) => provider.kind === "opencode" ? hasOpenCodeCredentials(output) : true, () => false);
     if (status) result.push(provider.kind);
   }
   return result;
 }
 
-function configText(socketPath: string, port: number, providers: Array<"codex" | "claude">, runtimeRoot: string) {
+function configText(socketPath: string, port: number, providers: LocalProviderKind[], runtimeRoot: string) {
   const lines = ["[daemon]", `socket = ${toml(socketPath)}`, "", "[http]", 'host = "127.0.0.1"', `port = ${port}`];
   for (const providerKind of providers) lines.push(...localProviderLines({ id: providerKind, kind: providerKind, runtimeRoot }));
   return `${lines.join("\n")}\n`;
