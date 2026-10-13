@@ -74,6 +74,11 @@ export class LocalCommandJournal {
     return (await this.read()).entries.filter((entry) => entry.command.kind === "start" && !entry.events.some((event) => event.kind === "terminal")).map((entry) => ({ ...entry }));
   }
 
+  async pendingCancellation(runId: string) {
+    const entry = (await this.read()).entries.find((candidate) => candidate.command.kind === "cancel" && candidate.command.runId === runId && !candidate.events.some((event) => event.kind === "terminal"));
+    return entry?.command.kind === "cancel" ? entry.command : null;
+  }
+
   async unsentEvents() {
     return (await this.read()).entries.flatMap((entry) => entry.events.filter((event) => !entry.uploadedSequences?.includes(event.sequence)));
   }

@@ -10,7 +10,9 @@ export class WorkerReconciler {
     if (!status) return { state: "unknown", code: null };
     const activity = status.activity ? { activity: status.activity } : {};
     if (SUCCEEDED_STATES.includes(status.state)) return { state: "succeeded", code: status.state === "no-op" ? "no_op" : null, ...activity };
-    if (RUNNING_STATES.includes(status.state)) return { state: "running", code: status.state === "needs-approval" ? "needs_approval" : null, ...activity };
+    if (RUNNING_STATES.includes(status.state)) return status.terminalReason === "usage_limit_exceeded"
+      ? { state: "failed", code: status.terminalReason, ...activity }
+      : { state: "running", code: status.state === "needs-approval" ? "needs_approval" : null, ...activity };
     const terminal = TERMINAL_STATES.find((state) => state === status.state);
     if (!terminal) return { state: "unknown", code: null };
     return { state: terminal, code: status.terminalReason ?? status.state, ...activity };

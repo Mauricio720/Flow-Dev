@@ -8,6 +8,7 @@ import type { ControlCaller } from "./controlCaller";
 const RECENT_EVENT_LIMIT = 100;
 const PREVIEW_LIMIT = 1200;
 const ERROR_EVENT = "error";
+const USAGE_LIMIT_ERROR = /usage_limit_exceeded|usageLimitExceeded|hit your usage limit/i;
 const KNOWN_ERRORS = ["usage_limit_exceeded", "provider_rate_limited", "provider_auth_required"];
 const sessionEventsSchema = z.object({ events: z.array(eventsSchema.shape.events.element.extend({
   failure: z.object({ summary: z.string().optional() }).nullish(),
@@ -34,7 +35,7 @@ function publicPreview(activity: { kind: string; preview: string }) {
 function activityOf(event: SessionEvent): RunActivity | null {
   if (event.type === ERROR_EVENT) {
     const preview = redactText(errorMessage(event), null).slice(0, PREVIEW_LIMIT);
-    const code = /usage_limit_exceeded|hit your usage limit/i.test(preview) ? "usage_limit_exceeded" : event.provider_error?.code;
+    const code = USAGE_LIMIT_ERROR.test(preview) ? "usage_limit_exceeded" : event.provider_error?.code;
     return { sequence: event.sequence, at: event.timestamp, kind: "warning", preview, tool: null, source: null, status: code && KNOWN_ERRORS.includes(code) ? code : "runtime_failed" };
   }
   const normalized = normalizeSpecEvent({ ...event, turnId: event.turn_id });
@@ -49,5 +50,5 @@ export async function readLoopSessionActivity(caller: ControlCaller, input: { wo
   const result = await caller.guarded({ method: "GET", path }, sessionEventsSchema, (body) => body.events);
   if (!result.ok) return null;
   const activities = [...result.value].sort((first, second) => second.sequence - first.sequence).map(activityOf).filter((activity): activity is RunActivity => activity !== null);
-  return (input.failed ? activities.find((activity) => activity.kind === "warning") : null) ?? activities[0] ?? null;
+  return activities.find((activity) => activity.status === "usage_limit_exceeded") ?? (input.failed ? activities.find((activity) => activity.kind === "warning") : null) ?? activities[0] ?? null;
 }

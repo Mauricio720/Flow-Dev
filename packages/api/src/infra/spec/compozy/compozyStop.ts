@@ -9,6 +9,7 @@ import type { CompozyTransport } from "./compozyTransport";
 const STOP_ACCEPTED = [200, 202];
 const NOT_FOUND_STATUS = 404;
 const NO_CONTENT_STATUS = 204;
+const UNBOUND_RUNTIME_STATUS = "unbound";
 
 const base = (identity: RuntimeIdentity) => `/api/workspaces/${encodeURIComponent(identity.workspaceId)}/sessions/${encodeURIComponent(identity.sessionId)}`;
 
@@ -28,7 +29,7 @@ export async function inspectSession(transport: CompozyTransport, identity: Runt
   if (response.status !== 200) throw new SpecRuntimeError(response.status >= 500 ? "outcome_unknown" : "runtime_failed", response.status >= 500);
   const { session } = parse(sessionSchema, response.body);
   const pendingInteractions = await listInteractions(transport, identity).catch(() => []);
-  return { state: session.state, verified: session.verified ?? false, stopReason: session.stop_reason ?? null, stopCause: session.stop_cause ?? null, turnId: session.activity?.turn_id ?? null, attention: session.attention ?? null, pendingInteractions: pendingInteractions.filter((item) => item.status === "pending") };
+  return { state: session.state, verified: session.verified ?? false, stopReason: session.stop_reason ?? null, stopCause: session.stop_cause ?? null, turnId: session.activity?.turn_id ?? null, attention: session.attention ?? null, pendingInteractions: pendingInteractions.filter((item) => item.status === "pending"), startFailure: session.runtime?.status === UNBOUND_RUNTIME_STATUS ? session.runtime.failure ?? null : null };
 }
 
 export function snapshotToStop(snapshot: RuntimeSnapshot): RuntimeStop {

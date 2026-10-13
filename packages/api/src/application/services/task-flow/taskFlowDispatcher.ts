@@ -12,6 +12,7 @@ export type DispatcherDependencies = { unit: FlowUnitOfWork; broker: CredentialB
 
 const RECONCILING_STATE = "reconciling";
 const RUNNING_STATE = "running";
+const STOPPING_STATE = "stopping";
 const ACTIVE_MONITOR_LEASE_MS = 5000;
 
 export class TaskFlowDispatcher {
@@ -29,7 +30,7 @@ export class TaskFlowDispatcher {
     const fresh = run.state === "dispatching" && !run.runtime.sessionId && !run.runtime.runId;
     const blocked = fresh ? await this.deps.authorize?.(run) : null;
     if (blocked) return this.settle(run, { state: "blocked", terminalCode: blocked, actionState: "blocked" });
-    const request = await this.request(run);
+    const request = await this.request(run, fresh);
     if (fresh) return this.dispatch(request);
     const result = await this.deps.executor.reconcile(request);
     if (result.runtime) await this.deps.unit.run(({ flow }) => flow.runs.bindRuntime({ runId: run.id, fence: run.leaseFence, runtime: result.runtime! }));
@@ -41,7 +42,8 @@ export class TaskFlowDispatcher {
     }
     const settlement = settlementFor(result);
     if (settlement) return this.settle(run, await captureRunResult(this.deps.capture, run, settlement));
-    await this.advance(run, result.state === "running" ? RUNNING_STATE : RECONCILING_STATE);
+    const nextState = run.state === STOPPING_STATE ? STOPPING_STATE : result.state === "running" ? RUNNING_STATE : RECONCILING_STATE;
+    await this.advance(run, nextState);
   }
 
   private async dispatch(request: ExecutionRequest) {
@@ -60,10 +62,11 @@ export class TaskFlowDispatcher {
     await this.advance(run, RECONCILING_STATE);
   }
 
-  private async request(run: RunRecord): Promise<ExecutionRequest> {
+  private async request(run: RunRecord, fresh: boolean): Promise<ExecutionRequest> {
     const grants: AttemptGrant[] = [];
     const snapshot = run.snapshot as ActionSnapshot;
     if (snapshot.workspace.kind === "local") return { run, snapshot, grants };
+    if (!fresh && !hasRuntimeIdentity(run, snapshot)) return { run, snapshot, grants };
     try {
       for (const connectionId of run.connectionIds) grants.push(await this.deps.broker.grantForAttempt({ connectionId, attemptId: grantId(run.id, connectionId) }));
       return { run, snapshot, grants };
@@ -75,7 +78,7 @@ export class TaskFlowDispatcher {
 
   private async advance(run: RunRecord, state: string) {
     const { unit, clock } = this.deps;
-    const leaseMs = [RUNNING_STATE, RECONCILING_STATE].includes(state) ? ACTIVE_MONITOR_LEASE_MS : this.deps.leaseMs;
+    const leaseMs = [RUNNING_STATE, STOPPING_STATE, RECONCILING_STATE].includes(state) ? ACTIVE_MONITOR_LEASE_MS : this.deps.leaseMs;
     await unit.run(({ flow }) => flow.runs.advance({ runId: run.id, fence: run.leaseFence, state, leaseMs, now: clock() }));
   }
 
@@ -93,4 +96,9 @@ export class TaskFlowDispatcher {
   private async markUnknown(run: RunRecord) {
     await this.advance(run, RECONCILING_STATE).catch(() => undefined);
   }
+}
+
+function hasRuntimeIdentity(run: RunRecord, snapshot: ActionSnapshot) {
+  if (snapshot.kind === "loop") return Boolean(run.runtime.workspaceId && run.runtime.runId);
+  return Boolean(run.runtime.workspaceId && run.runtime.sessionId);
 }

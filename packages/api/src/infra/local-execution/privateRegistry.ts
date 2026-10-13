@@ -9,9 +9,9 @@ import type { LoopDefinition } from "../../application/software/compozyControlGa
 export type RegistryEntry = { handle: string; key: string; root: string; repository: string; label: string };
 export type PendingPairing = { server: string; pairingId: string; pollingSecret: string; requestKey: string; expiresAt: string };
 export type LocalMachineCredential = { server: string; machineId: string; label: string; token: string; expiresAt: string; credentialGeneration?: number; providerCatalogHash?: string };
-export type PendingHeartbeat = { requestKey: string };
+export type PendingHeartbeat = { requestKey: string; payloadHash?: string };
 export type PendingRevocation = { server: string; machineId: string; token: string; requestKey: string };
-export type PrivateRegistry = { version: 1; entries: RegistryEntry[]; pendingPairing?: PendingPairing; pendingRevocation?: PendingRevocation; pendingHeartbeat?: PendingHeartbeat; providerCatalog?: LocalProviderCatalogEntry[]; loopCatalog?: LoopDefinition[]; providerCatalogCheckedAt?: string; machine?: LocalMachineCredential };
+export type PrivateRegistry = { version: 1; entries: RegistryEntry[]; pendingPairing?: PendingPairing; pendingRevocation?: PendingRevocation; pendingHeartbeat?: PendingHeartbeat; providerCatalog?: LocalProviderCatalogEntry[]; loopCatalog?: LoopDefinition[]; providerCatalogCheckedAt?: string; providerCatalogLiveAt?: Record<string, string>; machine?: LocalMachineCredential };
 
 export class PrivateRegistryStore {
   constructor(private readonly path: string) {}
@@ -51,6 +51,7 @@ function isRegistry(value: unknown): value is PrivateRegistry {
   if ("providerCatalog" in value && value.providerCatalog !== undefined && !localProviderCatalogSchema.safeParse(value.providerCatalog).success) return false;
   if ("loopCatalog" in value && value.loopCatalog !== undefined && !localLoopCatalogSchema.safeParse(value.loopCatalog).success) return false;
   if ("providerCatalogCheckedAt" in value && value.providerCatalogCheckedAt !== undefined && !isString(value.providerCatalogCheckedAt)) return false;
+  if ("providerCatalogLiveAt" in value && value.providerCatalogLiveAt !== undefined && !isStringRecord(value.providerCatalogLiveAt)) return false;
   if ("machine" in value && value.machine !== undefined && !isMachine(value.machine)) return false;
   if ("pendingPairing" in value && value.pendingPairing !== undefined && !isPendingPairing(value.pendingPairing)) return false;
   if ("pendingRevocation" in value && value.pendingRevocation !== undefined && !isPendingRevocation(value.pendingRevocation)) return false;
@@ -62,4 +63,5 @@ function isMachine(value: unknown): value is LocalMachineCredential { return isR
 function isPendingPairing(value: unknown): value is PendingPairing { return isRecord(value) && isString(value.server) && isString(value.pairingId) && isString(value.pollingSecret) && isString(value.requestKey) && isString(value.expiresAt); }
 function isPendingRevocation(value: unknown): value is PendingRevocation { return isRecord(value) && isString(value.server) && isString(value.machineId) && isString(value.token) && isString(value.requestKey); }
 function isRecord(value: unknown): value is Record<string, unknown> { return !!value && typeof value === "object" && !Array.isArray(value); }
+function isStringRecord(value: unknown): value is Record<string, string> { return isRecord(value) && Object.values(value).every(isString); }
 function isString(value: unknown): value is string { return typeof value === "string" && value.length > 0; }

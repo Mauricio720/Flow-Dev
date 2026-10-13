@@ -44,6 +44,37 @@ describe("Loop diagnostics", () => {
     expect(new WorkerReconciler().resolve(result.value)).toMatchObject({ state: "failed", code: "usage_limit_exceeded", activity: { kind: "warning" } });
   });
 
+  it("fails a still-running review when the current node reports the Codex usage limit", async () => {
+    const reason = 'No write_artifacts: pending. {"code":-32603,"message":"Internal error","data":{"code":"usageLimitExceeded","message":"You’ve hit your usage limit."}}';
+    const body = { run: { ...RUN, progress: { round: 0, steps_done: 0, steps_total: 0 } }, node_controls: [{ attention_reason: reason, updated_at: AT }] };
+    const { gateway } = harness(body);
+    const result = await gateway.getLoopRun({ ...REF, name: "review-and-fix" });
+    expect(result).toMatchObject({ ok: true, value: { state: "running", terminalReason: "usage_limit_exceeded", activity: { kind: "warning", status: "usage_limit_exceeded", preview: expect.stringContaining("You’ve hit your usage limit") } } });
+    if (!result.ok) throw new Error("status unavailable");
+    expect(result.value.activity?.preview).toBe("You’ve hit your usage limit.");
+    expect(new WorkerReconciler().resolve(result.value)).toMatchObject({ state: "failed", code: "usage_limit_exceeded" });
+  });
+
+  it("keeps a usage-limit error from the active session after a later message", async () => {
+    const body = { run: RUN, generations: [{ generation: 2, outputs: [OUTPUT] }] };
+    const error = { ...event(8, "error", {}), failure: { summary: '{"data":{"code":"usageLimitExceeded"}}' } };
+    const { gateway } = harness(body, { events: [error, event(9, "agent_message", { text: "Encerrando a sessão." })] });
+    const result = await gateway.getLoopRun(REF);
+    expect(result).toMatchObject({ ok: true, value: { terminalReason: "usage_limit_exceeded", activity: { kind: "warning", status: "usage_limit_exceeded" } } });
+    if (!result.ok) throw new Error("status unavailable");
+    expect(new WorkerReconciler().resolve(result.value)).toMatchObject({ state: "failed", code: "usage_limit_exceeded" });
+  });
+
+  it("derives progress from the current generation when the runtime reports none", async () => {
+    const node = (node_id: string, status: string) => ({ node_id, status });
+    const retried = { generation: 3, origin: "reattempt", outputs: [node("collect_fixes", "pending"), node("fix_batch", "enqueued"), node("review", "succeeded"), node("write_artifacts", "succeeded")] };
+    const generations = [{ generation: 1, origin: "initial", outputs: [node("review", "succeeded")] }, { generation: 2, origin: "stop_when", outputs: [node("review", "failed")] }, retried];
+    const { gateway } = harness({ run: { ...RUN, generation: 3, progress: { round: 0, steps_done: 0, steps_total: 0 } }, generations });
+    const result = await gateway.getLoopRun({ ...REF, name: "review-and-fix" });
+    if (!result.ok) throw new Error("status unavailable");
+    expect(result.value.activity?.preview).toBe("Etapas do Loop: 2/4 concluídas · rodada 2. Nó fix_batch: em execução.");
+  });
+
   it("does not lose authoritative status when optional diagnostics or session events are unavailable", async () => {
     const malformed = harness({ run: { ...RUN, progress: "invalid" } });
     expect(await malformed.gateway.getLoopRun(REF)).toMatchObject({ ok: true, value: { state: "running" } });

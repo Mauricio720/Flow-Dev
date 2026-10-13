@@ -85,6 +85,7 @@ export class SnapshotRunExecutor implements ActionExecutor {
     const terminalState = activity.terminalState ?? terminalStateFromActivity(activity.activity) ?? terminalStateFromActivity(request.run.activity);
     if (terminalState) return this.finish(request.run.id, terminalState, activityUpdate);
     const snapshot = await this.deps.gateway.inspect({ socketPath, workspaceId, sessionId });
+    if (snapshot.startFailure) return this.failStart(request.run.id, snapshot.startFailure, activityUpdate);
     if (snapshot.state !== "stopped") return { state: "running", code: null, ...activityUpdate };
     try { await this.deps.launcher.stop(request.run.id); } catch { return { state: "unknown", code: null }; }
     if (isCanceledStopReason(snapshot.stopReason) || isCanceledStopReason(snapshot.stopCause)) return { state: "canceled", code: "runtime_canceled", ...activityUpdate };
@@ -95,6 +96,12 @@ export class SnapshotRunExecutor implements ActionExecutor {
     try { await this.deps.launcher.stop(runId); } catch { return { state: "unknown", code: null, ...activity }; }
     return { state, code: state === "canceled" ? "runtime_canceled" : null, ...activity };
   }
+
+  private async failStart(runId: string, detail: string, activity: ActivityUpdate): Promise<ReconcileResult> {
+    try { await this.deps.launcher.stop(runId); } catch { return { state: "unknown", code: null, ...activity }; }
+    return { state: "failed", code: "runtime_failed", detail, ...activity };
+  }
+
   private async submit(request: ExecutionRequest): Promise<ExecutionResult> {
     const action = request.snapshot as FlowAction & typeof request.snapshot;
     if (action.kind === "loop") return { kind: "failed", code: "loop_unavailable" };

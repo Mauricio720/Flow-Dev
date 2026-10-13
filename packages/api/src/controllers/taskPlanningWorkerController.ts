@@ -48,9 +48,9 @@ export class TaskPlanningWorkerController {
     if (claim.deadline.getTime() - this.clock().getTime() < PLANNING_REQUEST_DEADLINE_MS) throw new TaskError("planning_deadline");
     await this.authorize(claim);
     const input = await this.claims.input(claim);
-    const envelope = await this.gateway.analyze(input, signal);
-    if (heartbeatFailure()) throw new TaskError("stale_execution");
     await this.workspaceProvisioner?.provision(claim);
+    if (heartbeatFailure()) throw new TaskError("stale_execution");
+    const envelope = await this.gateway.analyze(input, signal);
     if (heartbeatFailure()) throw new TaskError("stale_execution");
     await this.claims.complete({ claim, envelope });
     logPlanningWorkerEvent("planning.saved", claim, { elapsedMs: this.elapsed(run) });

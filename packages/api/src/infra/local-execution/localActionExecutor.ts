@@ -85,9 +85,10 @@ export class LocalActionExecutor implements ActionExecutor {
     if (!target || !snapshot.operatorId) return { state: "unknown", code: "command_unavailable" };
     const context = await this.deps.flow.taskContext(request.run.taskId);
     if (!context) return { state: "unknown", code: "task_unavailable" };
-    const payload = { requestKey: deterministicLocalRequestKey(request.run.id, "cancel") };
+    const requestKey = deterministicLocalRequestKey(request.run.id, `cancel:${request.run.leaseFence}`);
+    const payload = { requestKey };
     const now = (this.deps.now ?? (() => new Date()))();
-    await this.deps.local.enqueueCommand({ machineId: target.machineId, linkId: target.linkId, projectId: context.projectId, actorId: snapshot.operatorId, runId: request.run.id, preparationId: null, protocolVersion: 1, target, requestKey: deterministicLocalRequestKey(request.run.id, "cancel"), kind: "cancel", payload, payloadHash: localPayloadHash(payload), fence: request.run.leaseFence, leaseExpiresAt: new Date(now.getTime() + COMMAND_LEASE_MS), expectedLinkRevision: target.linkRevision, now });
+    await this.deps.local.enqueueCommand({ machineId: target.machineId, linkId: target.linkId, projectId: context.projectId, actorId: snapshot.operatorId, runId: request.run.id, preparationId: null, protocolVersion: 1, target, requestKey, kind: "cancel", payload, payloadHash: localPayloadHash(payload), fence: request.run.leaseFence, leaseExpiresAt: new Date(now.getTime() + COMMAND_LEASE_MS), expectedLinkRevision: target.linkRevision, now });
     return { state: "running", code: null };
   }
 }

@@ -23,7 +23,7 @@ export function createGitRunner(recorder?: (record: SpawnRecord) => void): GitRu
 }
 
 function execute(invocation: GitInvocation, home: string, recorder?: (record: SpawnRecord) => void): Promise<GitResult> {
-  const env = { PATH: process.env.PATH ?? "", HOME: home, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", GIT_LFS_SKIP_SMUDGE: "1", LC_ALL: "C" };
+  const env = { NODE_ENV: process.env.NODE_ENV ?? "production", PATH: process.env.PATH ?? "", HOME: home, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", GIT_LFS_SKIP_SMUDGE: "1", LC_ALL: "C" };
   const helper = invocation.credential ? ["-c", `credential.helper=${CREDENTIAL_HELPER}`] : [];
   const args = [...HARDENING_ARGS, ...helper, ...invocation.args];
   recorder?.({ command: "git", args, env });
