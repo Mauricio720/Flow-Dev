@@ -1,10 +1,11 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import type { ActionRecord, ActionRelocation, PlanRecord, PlanSaveReceipt, PlanStore, PlannedAction } from "../../../../application/database/dao/taskFlowDao";
+import type { ActionConclusion, ActionRecord, ActionRelocation, PlanRecord, PlanSaveReceipt, PlanStore, PlannedAction } from "../../../../application/database/dao/taskFlowDao";
 import type { Database } from "../../client";
 import { taskExecutionActions, taskExecutionPlanSaves, taskExecutionPlans, taskExecutionRuntimeBindings } from "../../schema";
 import { toAction, toPlan } from "./taskFlowMappers";
 
 const PLANNED_STATE = "planned";
+const SUCCEEDED_STATE = "succeeded";
 
 export class TaskFlowPlanStore implements PlanStore {
   constructor(private readonly database: Database) {}
@@ -42,9 +43,13 @@ export class TaskFlowPlanStore implements PlanStore {
   async relocateAction(input: ActionRelocation) {
     const updatedAt = new Date();
     await this.database.update(taskExecutionPlans).set({ revision: input.revision, updatedAt }).where(eq(taskExecutionPlans.id, input.planId));
-    await this.database.update(taskExecutionActions).set({ ...workspaceColumns(input.workspace), updatedAt }).where(and(eq(taskExecutionActions.id, input.actionId), eq(taskExecutionActions.planId, input.planId)));
+    await this.database.update(taskExecutionActions).set({ ...workspaceColumns(input.workspace), loopVersion: input.loopVersion, updatedAt }).where(and(eq(taskExecutionActions.id, input.actionId), eq(taskExecutionActions.planId, input.planId)));
     await this.database.delete(taskExecutionRuntimeBindings).where(eq(taskExecutionRuntimeBindings.actionId, input.actionId));
     await this.database.insert(taskExecutionRuntimeBindings).values(input.bindings.map((binding) => ({ ...binding, actionId: input.actionId })));
+  }
+
+  async concludeAction(input: ActionConclusion) {
+    await this.database.update(taskExecutionActions).set({ state: SUCCEEDED_STATE, concludedBy: input.actorId, concludedAt: input.now, updatedAt: input.now }).where(eq(taskExecutionActions.id, input.actionId));
   }
 
   async findSave(taskId: string, idempotencyKey: string): Promise<PlanSaveReceipt | null> {

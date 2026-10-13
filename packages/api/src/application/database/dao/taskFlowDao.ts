@@ -1,6 +1,6 @@
 import type { PackageStore } from "./unifiedPackageDao";
 import type { TaskScope } from "../../services/task-flow/taskFlowPorts";
-import type { ActionRelocation, FlowKind, FlowPage, FlowPlanStatus, NewRun, PlanRecord, PlanSaveReceipt, PlannedAction, RunActivity, RunRecord, RunRuntime } from "./taskFlowTypes";
+import type { ActionConclusion, ActionRelocation, FlowKind, FlowPage, FlowPlanStatus, NewRun, PlanRecord, PlanSaveReceipt, PlannedAction, RunActivity, RunRecord, RunRuntime } from "./taskFlowTypes";
 
 export type * from "./taskFlowTypes";
 
@@ -12,6 +12,7 @@ export interface PlanStore {
   setStatus(planId: string, status: FlowPlanStatus): Promise<void>;
   replacePlanned(input: { planId: string; revision: number; actions: PlannedAction[] }): Promise<PlanRecord>;
   relocateAction(input: ActionRelocation): Promise<void>;
+  concludeAction(input: ActionConclusion): Promise<void>;
   findSave(taskId: string, idempotencyKey: string): Promise<PlanSaveReceipt | null>;
   recordSave(input: { taskId: string; idempotencyKey: string } & PlanSaveReceipt): Promise<void>;
 }

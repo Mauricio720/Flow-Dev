@@ -1,4 +1,4 @@
-export type FlowActionKind = "create_spec" | "create_tasks" | "loop";
+export type FlowActionKind = "create_spec" | "create_tasks" | "direct_execute" | "loop" | "open_pull_request";
 export type LocalWorkspaceTarget = { machineId: string; linkId: string; linkRevision: number; checkoutHandle: string };
 export type FlowWorkspace = { kind: "isolated" } | { kind: "local"; target?: LocalWorkspaceTarget } | { kind: "existing"; worktreeId: string } | { kind: "new"; name: string };
 export type FlowKind = "unified" | "legacy" | "none";
@@ -22,8 +22,9 @@ export type PlannedAction = {
   bindings: RuntimeBindingRecord[];
 };
 
-export type ActionRecord = PlannedAction & { id: string; state: string };
-export type ActionRelocation = { planId: string; actionId: string; revision: number; workspace: FlowWorkspace; bindings: RuntimeBindingRecord[] };
+export type ActionRecord = PlannedAction & { id: string; state: string; concludedAt?: Date | null };
+export type ActionConclusion = { actionId: string; actorId: string; now: Date };
+export type ActionRelocation = { planId: string; actionId: string; revision: number; workspace: FlowWorkspace; bindings: RuntimeBindingRecord[]; loopVersion: string | null };
 
 export type PlanRecord = {
   id: string;

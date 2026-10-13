@@ -29,7 +29,7 @@ export const localCommands = pgTable("local_commands", {
   uniqueIndex("local_commands_machine_request_unique").on(table.machineId, table.requestKey),
   index("local_commands_poll_idx").on(table.machineId, table.state, table.createdAt),
   check("local_commands_operation_check", sql`(${table.runId} IS NULL) <> (${table.preparationId} IS NULL)`),
-  check("local_commands_kind_check", sql`${table.kind} IN ('prepare','start','inspect','cancel','answer')`),
+  check("local_commands_kind_check", sql`${table.kind} IN ('prepare','start','inspect','cancel','answer','open_worktree')`),
   check("local_commands_protocol_check", sql`${table.protocolVersion} > 0`),
   check("local_commands_fence_check", sql`${table.fence} > 0`),
   check("local_commands_state_check", sql`${table.state} IN ('queued','leased','accepted','completed','expired')`),

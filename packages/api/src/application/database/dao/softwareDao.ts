@@ -2,7 +2,8 @@ export type SettingsValues = { enabled: boolean; docsProxyUrl: string | null; ma
 export type SettingsRecord = SettingsValues & { revision: number; updatedAt: Date };
 export type SettingsUpdate = { values: SettingsValues; actorId: string; expectedRevision: number };
 
-export type ProviderKind = "codex" | "claude";
+export const PROVIDER_KINDS = ["codex", "claude", "opencode"] as const;
+export type ProviderKind = (typeof PROVIDER_KINDS)[number];
 export type ConnectionModel = { modelId: string; displayName: string; selectable: boolean; unselectableReason: string | null; reasoningChoices: (string | null)[] };
 export type ConnectionAuthState = "unconnected" | "pending" | "connected" | "failed" | "expired" | "disconnected" | "setup_required";
 

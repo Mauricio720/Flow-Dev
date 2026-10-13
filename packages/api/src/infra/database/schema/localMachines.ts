@@ -2,6 +2,7 @@ import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uu
 import { sql } from "drizzle-orm";
 import { projects, users } from "../schema";
 import type { LoopDefinition } from "../../../application/software/compozyControlGateway";
+import type { ProviderKind } from "../../../application/database/dao/softwareDao";
 
 export const localMachines = pgTable("local_machines", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -20,7 +21,7 @@ export const localMachines = pgTable("local_machines", {
   protocolVersion: integer("protocol_version").notNull().default(1),
   capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
   catalogRevision: integer("catalog_revision").notNull().default(0),
-  providerCatalog: jsonb("provider_catalog").$type<Array<{ providerId: string; providerKind: "codex" | "claude"; label: string; models: Array<{ modelId: string; displayName: string; selectable: boolean; unselectableReason: string | null; reasoningChoices: (string | null)[] }> }>>().notNull().default([]),
+  providerCatalog: jsonb("provider_catalog").$type<Array<{ providerId: string; providerKind: ProviderKind; label: string; models: Array<{ modelId: string; displayName: string; selectable: boolean; unselectableReason: string | null; reasoningChoices: (string | null)[] }> }>>().notNull().default([]),
   loopCatalog: jsonb("loop_catalog").$type<LoopDefinition[]>().notNull().default([]),
   lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
   lastHeartbeatRequestKey: uuid("last_heartbeat_request_key"),

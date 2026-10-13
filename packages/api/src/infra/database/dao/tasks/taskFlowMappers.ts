@@ -28,6 +28,7 @@ export function toAction(row: ActionRow, bindings: BindingRow[]): ActionRecord {
     inputs: row.inputs,
     workspace: toWorkspace(row),
     state: row.state,
+    concludedAt: row.concludedAt,
     bindings: bindings.filter((binding) => binding.actionId === row.id).map(toBinding),
   };
 }

@@ -42,7 +42,7 @@ export const softwareConnections = pgTable("software_connections", {
   updatedAt,
 }, (table) => [
   uniqueIndex("software_connections_label_folded_unique").on(sql`lower(${table.label})`),
-  check("software_connections_provider_check", sql`${table.providerKind} IN ('codex','claude')`),
+  check("software_connections_provider_check", sql`${table.providerKind} IN ('codex','claude','opencode')`),
   check("software_connections_target_check", sql`(${table.executionTarget} = 'host' AND ${table.machineId} IS NULL AND ${table.ownerUserId} IS NULL) OR (${table.executionTarget} = 'machine' AND ${table.machineId} IS NOT NULL AND ${table.ownerUserId} IS NOT NULL)`),
   check("software_connections_auth_state_check", sql`${table.authState} IN ('unconnected','pending','connected','failed','expired','disconnected','setup_required')`),
   index("software_connections_created_idx").on(table.createdAt, table.id),

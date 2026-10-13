@@ -218,6 +218,41 @@
       "when": 1791428400000,
       "tag": "0030_local_loop_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791514800000,
+      "tag": "0031_direct_execution_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791601200000,
+      "tag": "0032_action_operator_conclusion",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791687600000,
+      "tag": "0033_open_worktree_command",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791774000000,
+      "tag": "0034_pull_request_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791860400000,
+      "tag": "0035_opencode_local_provider",
+      "breakpoints": true
     }
   ]
 }
