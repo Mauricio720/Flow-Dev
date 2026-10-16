@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "src/features/issues/assigned-work/spec/unified/PackageDocumentView.tsx"
+        ],
+        "createdAt": "2026-10-15T22:29:19.470Z",
+        "reason": "Claude triage: L21 is the pre-existing underline indicator of the package document tabs (border-b-2 with rounded-t-sm on the top corners only), moved unchanged into DocumentTabList; the bottom border does not meet the rounded corners"
+      }
+    ]
+  }
+}

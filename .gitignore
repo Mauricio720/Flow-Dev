@@ -47,3 +47,7 @@ next-env.d.ts
 node_modules/
 test-results/
 playwright-report/
+
+# QA living docs — generated views & bulky evidence (source: docs/qa/)
+docs/qa/state.csv
+docs/qa/evidence/
