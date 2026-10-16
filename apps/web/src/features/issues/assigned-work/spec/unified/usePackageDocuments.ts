@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import { readWithRetry } from "./readWithRetry";
 import type { FlowTarget, PackageDocuments } from "./unifiedContract";
 
 type State = { packageId: string; documents: PackageDocuments | null; failed: boolean };
@@ -11,7 +12,7 @@ export function usePackageDocuments(target: FlowTarget, packageId: string | null
   useEffect(() => {
     if (!packageId) return;
     let active = true;
-    trpc.taskFlow.package.query({ ...target, packageId }).then(
+    readWithRetry(() => trpc.taskFlow.package.query({ ...target, packageId }), () => active).then(
       (documents) => { if (active) setState({ packageId, documents, failed: false }); },
       () => { if (active) setState({ packageId, documents: null, failed: true }); },
     );

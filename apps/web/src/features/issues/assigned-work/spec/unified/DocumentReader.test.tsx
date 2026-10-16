@@ -69,6 +69,11 @@ describe("DocumentReader", () => {
     expect(openPoints([read(settled)])).toEqual([]);
   });
 
+  it("does not turn the criteria of a story about pending items into points to confirm", () => {
+    const story = "## US-001 — Identificar minhas pendências\n\n- AC-1: O sino mostra sete?\n- EC-1: Quantidade zero.\n\n## Pendências\n\n- Quem aprova o texto?";
+    expect(openPoints([read(story)]).map((point) => point.text)).toEqual(["Quem aprova o texto?"]);
+  });
+
   it("confirms each listed question once", () => {
     const listed = "## Open Questions\n\n- Manter a espera de 2000 ms? Hoje ela é fixa.\n- Quem aprova o texto?";
     expect(openPoints([read(listed)]).map((point) => point.text)).toEqual(["Manter a espera de 2000 ms? Hoje ela é fixa.", "Quem aprova o texto?"]);

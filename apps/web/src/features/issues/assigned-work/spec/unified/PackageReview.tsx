@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmPoints } from "./ConfirmPoints";
 import { DocumentsSkeleton } from "./FlowSkeletons";
 import { isApproved, latestPackage } from "./flowStages";
-import { openPoints } from "./openPoints";
+import { nextStepOf } from "./human-view/nextStep";
+import { APPROVAL_ANCHOR } from "./human-view/overviewCopy";
+import { usePackageProjection } from "./human-view/usePackageProjection";
 import { PackageDocumentView } from "./PackageDocumentView";
-import { readPackage } from "./packageReader";
 import { PACKAGE_FORMAT_LABELS, PACKAGE_STATUS_LABELS } from "./unifiedCopy";
 import type { FlowPackage, FlowTarget } from "./unifiedContract";
-import { usePackageDocuments } from "./usePackageDocuments";
 import { usePointConfirmations } from "./usePointConfirmations";
 import { WorkingIndicator } from "./WorkingIndicator";
 
@@ -23,7 +23,11 @@ const APPROVAL_NOTES: Record<string, string> = {
 
 function optionLabel(item: FlowPackage) {
   const status = isApproved(item) ? PACKAGE_STATUS_LABELS.approved : PACKAGE_STATUS_LABELS[item.status] ?? item.status;
-  return `${PACKAGE_FORMAT_LABELS[item.format] ?? item.format} v${item.version} · ${status}`;
+  return `${artifactLabel(item)} · ${status}`;
+}
+
+function artifactLabel(item: FlowPackage) {
+  return `${PACKAGE_FORMAT_LABELS[item.format] ?? item.format} v${item.version}`;
 }
 
 function olderNote(selected: FlowPackage, packages: FlowPackage[]) {
@@ -32,19 +36,29 @@ function olderNote(selected: FlowPackage, packages: FlowPackage[]) {
   return isApproved(selected) ? "Versão aprovada, somente leitura. Ela é a base da etapa seguinte." : null;
 }
 
+type ApprovalProps = { selected: FlowPackage; missing: number; total: number; disabled: boolean; onApprove: Props["onApprove"] };
+
+function ApprovalBar({ selected, missing, total, disabled, onApprove }: ApprovalProps) {
+  return (
+    <div id={APPROVAL_ANCHOR} className="flex scroll-mt-24 flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3">
+      <p className="max-w-[48ch] text-sm leading-6 text-ink-2">{missing > 0 ? `Faltam ${missing} de ${total} pontos para confirmar acima. A aprovação libera depois disso.` : APPROVAL_NOTES[selected.format]}</p>
+      <Button type="button" variant="publish" disabled={disabled} onClick={() => onApprove({ packageId: selected.id, version: selected.version })}>Aprovar versão {selected.version}</Button>
+    </div>
+  );
+}
+
 export function PackageReview({ target, packages, generating, canAct, busy, onApprove }: Props) {
   const latest = packages[0] ?? null;
   const [pickedId, setPickedId] = useState<string | null>(null);
   const selected = packages.find((item) => item.id === pickedId) ?? latest;
-  const { documents, failed, loading } = usePackageDocuments(target, selected?.id ?? null);
-  const tabs = useMemo(() => (documents ? readPackage(documents) : []), [documents]);
-  const points = useMemo(() => openPoints(tabs.flatMap((tab) => tab.documents)), [tabs]);
+  const { documents, failed, loading, tabs, points, projection, changes } = usePackageProjection({ target, selected, packages });
   const { confirmed, toggle } = usePointConfirmations(selected?.id ?? null);
   if ((!latest || !selected) && generating) return <div className="space-y-3"><WorkingIndicator label={GENERATING_LABEL} /><DocumentsSkeleton /></div>;
   if (!latest || !selected) return <p className="text-sm text-ink-2">Nenhum documento foi gerado ainda.</p>;
   const approvable = canAct && selected.id === latest.id && selected.status === "review_ready";
   const missing = points.filter((point) => !confirmed.has(point.id)).length;
   const note = selected.id === latest.id && !isApproved(selected) ? null : olderNote(selected, packages);
+  const next = nextStepOf({ selected, latest, canAct, generating, missingPoints: approvable ? missing : 0 });
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -57,13 +71,8 @@ export function PackageReview({ target, packages, generating, canAct, busy, onAp
       {loading && <DocumentsSkeleton />}
       {failed && <p role="alert" className="text-sm text-destructive">Não foi possível carregar os documentos desta versão.</p>}
       {documents && approvable && <ConfirmPoints points={points} confirmed={confirmed} disabled={busy} onToggle={toggle} />}
-      {documents && <div className="row-strike"><PackageDocumentView key={documents.id} tabs={tabs} /></div>}
-      {approvable && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface px-4 py-3">
-          <p className="max-w-[48ch] text-sm leading-6 text-ink-2">{missing > 0 ? `Faltam ${missing} de ${points.length} pontos para confirmar acima. A aprovação libera depois disso.` : APPROVAL_NOTES[selected.format]}</p>
-          <Button type="button" variant="publish" disabled={busy || missing > 0 || !documents} onClick={() => onApprove({ packageId: selected.id, version: selected.version })}>Aprovar versão {selected.version}</Button>
-        </div>
-      )}
+      {documents && <div className="row-strike"><PackageDocumentView key={documents.id} tabs={tabs} projection={projection} next={next} changes={changes} artifactLabel={artifactLabel(selected)} /></div>}
+      {approvable && <ApprovalBar selected={selected} missing={missing} total={points.length} disabled={busy || missing > 0 || !documents} onApprove={onApprove} />}
     </div>
   );
 }

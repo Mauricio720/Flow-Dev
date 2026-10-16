@@ -124,7 +124,11 @@ describe("unified package review", () => {
     vi.mocked(flow.package.query).mockResolvedValue({ ...packageOf({ version: 2, id: "k2" }), documents: [{ path: "_spec.md", role: "spec", sourceText: "# Spec\n\n## Product\n\nParte A\n\n## Technical\n\nParte B\n" }, { path: "_dx.md", role: "dx", sourceText: "# DX\n\nconteúdo dx" }] } as never);
     vi.mocked(flow.approvePackage.mutate).mockResolvedValue({ packageId: "k2", version: 2, status: "approved", approvedAt: "2026-10-06T12:00:00.000Z" });
     renderStage(overview);
-    expect(await screen.findByRole("region", { name: "Produto · PRD" })).toBeTruthy();
+    expect(await screen.findByRole("region", { name: "Próximo passo" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Visão geral", selected: true })).toBeTruthy();
+    await userEvent.click(screen.getByRole("tab", { name: "Documento original" }));
+    expect(screen.getByRole("tab", { name: "Produto · PRD", selected: true })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Produto · PRD" })).toBeTruthy();
     expect(screen.getByText("Parte A")).toBeTruthy();
     await userEvent.click(screen.getByRole("tab", { name: "Técnica · Tech Spec" }));
     expect(screen.getByRole("region", { name: "Técnica · Tech Spec" })).toBeTruthy();

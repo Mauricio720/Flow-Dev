@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { ReaderDocument } from "./documentModel";
+import type { ReaderDocument, ReaderSection } from "./documentModel";
 import { DocumentSection } from "./DocumentSection";
 import { PackageMarkdownBlocks } from "./PackageMarkdownBlock";
+import { useSourceFocus, type SourceFocus } from "./useSourceFocus";
 
-type Props = { document: ReaderDocument; onOpenDocument: (path: string) => void };
+type Props = { document: ReaderDocument; onOpenDocument: (path: string) => void; focus?: SourceFocus | null };
 const TOGGLE = "rounded-sm text-sm text-ink-2 underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink";
 
 function sectionCount(total: number) {
@@ -22,11 +23,17 @@ function Unchanged({ sections }: { sections: ReaderDocument["sections"] }) {
   );
 }
 
-export function DocumentReader({ document, onOpenDocument }: Props) {
+function SummarySection({ section, onOpenDocument, focusNonce }: { section: ReaderSection; onOpenDocument: (path: string) => void; focusNonce: number | null }) {
+  const headingRef = useSourceFocus<HTMLHeadingElement>(focusNonce);
+  return <section aria-label={section.title} className="space-y-3 [&_p]:text-base [&_p]:text-ink"><h5 ref={headingRef} tabIndex={-1} className="scroll-mt-28 text-sm font-semibold text-ink">{section.title}</h5><PackageMarkdownBlocks tokens={section.tokens} onOpenDocument={onOpenDocument} /></section>;
+}
+
+export function DocumentReader({ document, onOpenDocument, focus = null }: Props) {
   const [expandAll, setExpandAll] = useState(false);
   const [raw, setRaw] = useState(false);
   const summary = document.sections.find((section) => section.kind === "summary");
   const body = document.sections.filter((section) => section.kind !== "summary" && section.kind !== "empty");
+  const focusOf = (section: ReaderSection) => (focus && focus.documentId === document.id && focus.sectionId === section.id ? focus.nonce : null);
   return (
     <section aria-label={document.label} className="space-y-4">
       <header className="space-y-2">
@@ -36,9 +43,9 @@ export function DocumentReader({ document, onOpenDocument }: Props) {
       </header>
       {raw ? <pre tabIndex={0} aria-label="Texto original do documento" className="max-h-[32rem] overflow-auto rounded-md bg-surface p-4 font-mono text-[13px] leading-6 whitespace-pre-wrap text-ink-2">{document.source}</pre> : <>
         {document.intro.length > 0 && <div className="space-y-3"><PackageMarkdownBlocks tokens={document.intro} onOpenDocument={onOpenDocument} /></div>}
-        {summary && <section aria-label={summary.title} className="space-y-3 [&_p]:text-base [&_p]:text-ink"><h5 className="text-sm font-semibold text-ink">{summary.title}</h5><PackageMarkdownBlocks tokens={summary.tokens} onOpenDocument={onOpenDocument} /></section>}
+        {summary && <SummarySection section={summary} onOpenDocument={onOpenDocument} focusNonce={focusOf(summary)} />}
         <div className="divide-y divide-line border-y border-line">
-          {body.map((section) => <DocumentSection key={section.id} section={section} expandAll={expandAll} onOpenDocument={onOpenDocument} />)}
+          {body.map((section) => <DocumentSection key={section.id} section={section} expandAll={expandAll} onOpenDocument={onOpenDocument} focusNonce={focusOf(section)} />)}
           <Unchanged sections={document.sections.filter((section) => section.kind === "empty")} />
         </div>
       </>}

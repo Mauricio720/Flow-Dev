@@ -1,7 +1,7 @@
 import type { Token, Tokens } from "marked";
 import { plainText, statesNothing, type ReaderDocument } from "./documentModel";
 
-export type OpenPoint = { id: string; documentId: string; documentLabel: string; text: string; detail: Token[] };
+export type OpenPoint = { id: string; documentId: string; documentLabel: string; sectionId: string; sectionTitle: string; text: string; detail: Token[] };
 type PointDraft = Pick<OpenPoint, "text" | "detail">;
 
 const OPEN_SECTION = "open";
@@ -41,6 +41,6 @@ export function openPoints(documents: ReaderDocument[]): OpenPoint[] {
   return documents.flatMap((document) => document.sections.flatMap((section) => {
     if (section.kind !== OPEN_SECTION) return [];
     return draftsOf(section.tokens).map((draft) => ({ ...draft, text: draft.text.replace(/\s+/g, " ").trim() })).filter((draft) => draft.text && !statesNothing(draft.text))
-      .map((draft, index) => ({ id: `${document.id}:${section.id}:${index}`, documentId: document.id, documentLabel: document.label, ...draft }));
+      .map((draft, index) => ({ id: `${document.id}:${section.id}:${index}`, documentId: document.id, documentLabel: document.label, sectionId: section.id, sectionTitle: section.title, ...draft }));
   }));
 }

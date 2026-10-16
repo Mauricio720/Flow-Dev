@@ -4,6 +4,7 @@ import { LOADING_LABELS } from "./unifiedCopy";
 
 const RUNTIME_FIELDS = ["connection", "model", "reasoning"];
 const DOCUMENT_LINES = ["w-full", "w-11/12", "w-4/5", "w-2/3"];
+const SUMMARY_CELLS = ["what", "why", "impact", "status"];
 
 function Loading({ label, className, children }: { label: string; className: string; children: ReactNode }) {
   return <div role="status" className={className}><span className="sr-only">{label}</span>{children}</div>;
@@ -47,6 +48,14 @@ export function FlowSkeleton() {
     <Loading label={LOADING_LABELS.flow} className="space-y-6">
       <div className="space-y-2.5"><Skeleton className="h-5 w-48" /><Skeleton className="h-4 w-full max-w-[62ch]" /><Skeleton className="h-4 w-2/3" /></div>
       <div className="space-y-3 border-t border-line pt-6"><Skeleton className="h-5 w-36" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-2/3" /></div>
+    </Loading>
+  );
+}
+
+export function SummarySkeleton({ label }: { label: string }) {
+  return (
+    <Loading label={label} className="grid gap-x-10 gap-y-6 border-t border-line px-5 py-4 sm:grid-cols-2">
+      {SUMMARY_CELLS.map((cell) => <div key={cell} className="space-y-2"><Skeleton className="h-3 w-28" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4" /></div>)}
     </Loading>
   );
 }

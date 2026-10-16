@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import { readWithRetry } from "./readWithRetry";
 import type { FlowOptions, FlowOverview, FlowRuns, FlowTarget } from "./unifiedContract";
 
 const POLL_INTERVAL_MS = 2000;
+const RECONNECT_INTERVAL_MS = 5000;
 const CATALOG_RECHECK_MS = 15_000;
 const UNCONFIRMED_CATALOG = "catalog_stale";
 const TERMINAL_STATES = ["succeeded", "failed", "canceled", "blocked", "stalled", "exhausted"];
@@ -27,7 +29,7 @@ export function useFlowData({ target, initial, canAct }: Input) {
   const [loadingMore, setLoadingMore] = useState(false);
   const alive = useRef(true);
 
-  const refresh = useCallback(() => read(target, canAct).then(
+  const refresh = useCallback(() => readWithRetry(() => read(target, canAct), () => alive.current).then(
     (next) => { if (alive.current) { setSnapshot((current) => current ? { ...next, runs: { items: mergeRuns(next.runs.items, current.runs.items), nextCursor: current.runs.nextCursor } } : next); setFailed(false); } },
     () => { if (alive.current) setFailed(true); },
   ), [target, canAct]);
@@ -59,6 +61,12 @@ export function useFlowData({ target, initial, canAct }: Input) {
     const timer = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [active, refresh]);
+
+  useEffect(() => {
+    if (active || !failed) return;
+    const timer = window.setInterval(() => void refresh(), RECONNECT_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [active, failed, refresh]);
 
   const catalogUnconfirmed = snapshot?.options?.connections.some((connection) => connection.reason === UNCONFIRMED_CATALOG) ?? false;
   useEffect(() => {

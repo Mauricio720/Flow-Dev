@@ -12,6 +12,7 @@ const TOP_LEVEL_FIELD = /^([A-Za-z_][\w.-]*):\s*(\S.*)$/;
 const SUMMARY_TITLE = /^(resumo executivo|executive summary|overview|visão geral|resumo|summary)$/i;
 const OPEN_TITLE = /(open|unresolved) questions|(perguntas|questões|pontos) (em aberto|abert[ao]s)|\bpendências/i;
 const ASSUMPTION_TITLE = /assumptions|premissas|suposições/i;
+const STORY_TITLE = /^US-\d+/;
 const EMPTY_TEXT = /^(não aplicável|not applicable|n\/a|nenhuma?\b|none\b|não há\b)/i;
 const EMPTY_MAX_CHARS = 220;
 const WIDE_TYPES = ["table", "code"];
@@ -40,7 +41,7 @@ function sectionDepth(headings: Tokens.Heading[]) {
 }
 
 function kindOf(title: string, plain: string, tokens: Token[], summaryTaken: boolean): SectionKind {
-  if (OPEN_TITLE.test(title)) return "open";
+  if (OPEN_TITLE.test(title) && !STORY_TITLE.test(title.trim())) return "open";
   if (ASSUMPTION_TITLE.test(title)) return "assumption";
   if (!summaryTaken && SUMMARY_TITLE.test(title.trim())) return "summary";
   const simple = tokens.every((token) => token.type === "paragraph" || token.type === "space");
