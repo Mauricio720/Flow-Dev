@@ -13,8 +13,12 @@ export function queuePageOf(items: QueueItem[], patch: Partial<QueuePage> = {}):
   return { items, nextCursor: null, availability: items.length > 0 ? "available" : "empty", retryAfterSeconds: null, ...patch };
 }
 
+export function progressOf(patch: Partial<ActiveItem["progress"]> = {}): ActiveItem["progress"] {
+  return { route: null, flow: "none", actions: [], packages: [], activeRun: null, ...patch };
+}
+
 export function activeItemOf(patch: Partial<ActiveItem> = {}): ActiveItem {
-  return { taskId: T, title: "Corrigir total do carrinho", issueNumber: 41, issueUrl: "https://github.com/acme/cart/issues/41", operatorId: OPERATOR_ID, operatorName: "Ana", stage: "planning", blockReason: null, claimedAt: NOW, ...patch };
+  return { taskId: T, title: "Corrigir total do carrinho", issueNumber: 41, issueUrl: "https://github.com/acme/cart/issues/41", operatorId: OPERATOR_ID, operatorName: "Ana", stage: "planning", blockReason: null, claimedAt: NOW, progress: progressOf(), ...patch };
 }
 
 export function viewOf(patch: Partial<WorkView> = {}): WorkView {

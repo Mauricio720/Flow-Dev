@@ -27,5 +27,4 @@ export const QUEUE_CONTINUING = "Ainda procurando no quadro. Isto não significa
 export const ACTIVE_EMPTY = "Você ainda não tem trabalho reivindicado neste projeto.";
 export const ACTIVE_SHARED_EMPTY = "Ninguém neste projeto tem trabalho reivindicado agora.";
 export const NO_OPERATOR = "Operador não identificado";
-export const STAGE_NONE = "Sem etapa em andamento";
 export const NEEDS_ATTENTION = "Precisa de atenção";

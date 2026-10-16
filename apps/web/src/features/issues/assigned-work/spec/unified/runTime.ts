@@ -13,7 +13,7 @@ function formatted(format: Intl.DateTimeFormat, value: string) {
 export const runMoment = (value: string) => formatted(MOMENT, value);
 export const runClock = (value: string) => formatted(CLOCK, value);
 
-export function elapsedLabel(run: FlowRun, now: number) {
+export function elapsedLabel(run: Pick<FlowRun, "createdAt" | "finishedAt">, now: number) {
   const requestedAt = Date.parse(run.createdAt);
   if (now === 0 && !run.finishedAt) return "menos de 1 s";
   const endedAt = run.finishedAt ? Date.parse(run.finishedAt) : now;

@@ -80,7 +80,8 @@ describe("AssignedWork active list", () => {
   it("UT-078 shows each item with its own unchanged block reason", () => {
     const items = [activeItemOf({ blockReason: "machine_unavailable" }), activeItemOf({ taskId: "t2", title: "Segunda Issue", issueNumber: 42, blockReason: "source_changed" })];
     render(<AssignedWork project={CART_PROJECT} initial={loadOf({ active: { kind: "ready", page: { items, nextCursor: null } } })} />);
-    const [first, second] = within(screen.getByRole("list", { name: "Trabalho em andamento" })).getAllByRole("listitem");
+    const list = screen.getByRole("list", { name: "Trabalho em andamento" });
+    const [first, second] = within(list).getAllByRole("listitem").filter((row) => row.parentElement === list);
     expect(first.textContent).toContain("A máquina vinculada não respondeu");
     expect(first.textContent).not.toContain("O texto da Issue mudou");
     expect(second.textContent).toContain("O texto da Issue mudou no GitHub");
