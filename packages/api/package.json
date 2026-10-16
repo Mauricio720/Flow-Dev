@@ -10,7 +10,7 @@
     "./spec": "./src/spec.ts"
   },
   "scripts": {
-    "dev": "env -u LD_PRELOAD sh -c 'tsx --env-file=../../apps/web/.env.local src/cli/managedRuntimeDev.ts || exit $?; tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts & tsx watch src/cli/localConnector.ts dev --server http://localhost:3000 & trap \"kill 0\" EXIT INT TERM; wait'",
+    "dev": "env -u LD_PRELOAD sh -c 'tsx --env-file=../../apps/web/.env.local src/cli/managedRuntimeDev.ts || exit $?; tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts & tsx watch src/cli/localConnector.ts dev --server http://localhost:3000 & trap \"kill 0\" EXIT INT TERM; wait'",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -25,6 +25,7 @@
     "spec:worker": "tsx src/cli/specWorker.ts",
     "claims:reconcile": "tsx --env-file=../../apps/web/.env.local src/cli/claimsReconciler.ts",
     "taskflow:worker": "tsx --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts",
+    "issue-deletion:worker": "tsx --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts",
     "local:connector": "tsx src/cli/localConnector.ts"
   },
   "dependencies": {

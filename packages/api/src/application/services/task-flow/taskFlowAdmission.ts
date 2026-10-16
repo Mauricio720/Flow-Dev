@@ -31,6 +31,7 @@ export class TaskFlowAdmission {
 
   async start(dao: TaskFlowDao, scope: TaskScope, input: StartInput, mode: StartMode = "start"): Promise<StartResult> {
     await dao.lockTask(scope.taskId);
+    await dao.assertDeletionAdmission?.(scope.taskId);
     await dao.assertWorkScope?.(scope);
     const replay = await dao.runs.findByKey(scope.taskId, input.idempotencyKey);
     if (replay) return this.replayed(replay, input);

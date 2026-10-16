@@ -6,6 +6,7 @@ import { taskCaptureLeases, taskCommandReceipts, taskMessages, taskOperations, t
 import type { Database } from "../../client";
 import { assertWritable, findReceipt, findTask, payloadHash, saveReceipt } from "./taskCommandHelpers";
 import { assertGenerationCapacity } from "./taskGenerationCapacity";
+import { assertTaskAdmissionAllowed } from "../issue-deletion/deletionFence";
 
 export class DrizzleTaskCommandDao {
   constructor(private readonly database: Database) {}
@@ -40,6 +41,7 @@ export class DrizzleTaskCommandDao {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${input.actorUserId}, 1))`);
       const task = await findTask(tx as unknown as Database, input.projectId, input.taskId);
       assertWritable(task, input);
+      await assertTaskAdmissionAllowed(tx as unknown as Database, task.id);
       await assertNoCapture(tx as unknown as Database, input.actorUserId);
       await assertGenerationCapacity(tx as unknown as Database, { taskId: task.id, baseRevisionId: task.currentRevisionId, message: input.message });
       const last = (await tx.select({ sequence: taskMessages.sequence }).from(taskMessages).where(eq(taskMessages.taskId, task.id)).orderBy(desc(taskMessages.sequence)).limit(1))[0];
@@ -80,6 +82,7 @@ async function retryGeneration(database: Database, input: Parameters<TaskDao["re
   if (saved) return saved as TaskReceipt;
   const task = await findTask(database, input.projectId, input.taskId);
   assertWritable(task, input);
+  await assertTaskAdmissionAllowed(database, task.id);
   const failed = (await database.select().from(taskOperations).where(and(eq(taskOperations.taskId, task.id), eq(taskOperations.id, input.failedOperationId))).limit(1))[0];
   if (!failed || failed.kind !== "generate" || failed.state !== "failed") throw new TaskError("generation_not_failed");
   const message = (await database.select({ id: taskMessages.id }).from(taskMessages).where(and(eq(taskMessages.taskId, task.id), eq(taskMessages.operationId, failed.id), eq(taskMessages.role, "user"))).limit(1))[0];

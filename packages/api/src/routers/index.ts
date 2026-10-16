@@ -9,6 +9,7 @@ import { taskFlowRouter } from "./taskFlow";
 import { assignedIssuesRouter } from "./assignedIssues";
 import { localMachinesRouter } from "./localMachines";
 import { localProjectsRouter } from "./localProjects";
+import { issueDeletionRouter } from "./issueDeletion";
 
-export const appRouter = router({ health: healthRouter, projects: projectsRouter, access: accessRouter, tasks: tasksRouter, taskSpec: taskSpecRouter, software: softwareRouter, taskFlow: taskFlowRouter, assignedIssues: assignedIssuesRouter, localMachines: localMachinesRouter, localProjects: localProjectsRouter });
+export const appRouter = router({ health: healthRouter, projects: projectsRouter, access: accessRouter, tasks: tasksRouter, taskSpec: taskSpecRouter, software: softwareRouter, taskFlow: taskFlowRouter, assignedIssues: assignedIssuesRouter, localMachines: localMachinesRouter, localProjects: localProjectsRouter, issueDeletion: issueDeletionRouter });
 export type AppRouter = typeof appRouter;

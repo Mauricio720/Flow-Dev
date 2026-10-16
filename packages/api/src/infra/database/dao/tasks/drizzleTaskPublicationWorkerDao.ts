@@ -5,6 +5,7 @@ import { sessions, taskOperations, taskPublicationAttempts, tasks } from "../../
 import type { Database } from "../../client";
 import { settleTaskPublication } from "./taskPublicationState";
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
+import { activeDeletionForTask } from "../issue-deletion/deletionFence";
 
 const LEASE_MS = 60_000;
 
@@ -22,6 +23,7 @@ async function claimPublication(database: Database, workerId: string, now: Date)
     await expireFencedDispatches(tx as unknown as Database, now);
     const row = await selectClaim(tx as unknown as Database, now);
     if (!row) return null;
+    if (await activeDeletionForTask(tx as unknown as Database, row.taskId)) return null;
     await tx.update(taskOperations).set({ state: "running", leaseOwner: workerId, leaseUntil: new Date(now.getTime() + LEASE_MS), heartbeatAt: now, attempts: row.attempts + 1, updatedAt: now }).where(eq(taskOperations.id, row.operationId));
     return { ...row, workerId };
   });

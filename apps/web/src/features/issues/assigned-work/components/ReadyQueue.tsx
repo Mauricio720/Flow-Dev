@@ -24,7 +24,7 @@ export function ReadyQueue({ projectId, initial }: Props) {
       {queue.failure && <QueueFailure failure={queue.failure} returnPath={projectWorkPath(projectId)} onRetry={() => void queue.refresh()} />}
       {queue.items.length > 0 && (
         <ul aria-label="Issues em Ready" className="divide-y divide-line">
-          {queue.items.map((item) => <QueueRow key={item.issueNodeId} projectId={projectId} item={item} phase={claims.phaseOf(item.issueNodeId)} onClaim={(target) => void claims.claim(target)} />)}
+          {queue.items.map((item) => <QueueRow key={item.issueNodeId} projectId={projectId} item={item} phase={claims.phaseOf(item.issueNodeId)} onClaim={(target) => void claims.claim(target)} onDeleted={() => void queue.refresh()} />)}
         </ul>
       )}
       <QueueAvailability state={queue} />

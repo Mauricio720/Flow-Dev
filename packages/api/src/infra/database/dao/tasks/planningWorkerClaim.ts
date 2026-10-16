@@ -5,6 +5,7 @@ import { PLANNING_DEADLINE_MS, PLANNING_LEASE_MS, PLANNING_MAX_DISPATCHES } from
 import { taskContextCapabilities, taskOperations, tasks } from "../../schema";
 import type { Database } from "../../client";
 import { hashCapability } from "./taskOperationClaim";
+import { activeDeletionForTask } from "../issue-deletion/deletionFence";
 
 const SWEEP_BATCH_SIZE = 10;
 const CAPABILITY_BYTES = 32;
@@ -16,6 +17,7 @@ export function claimPlanning(database: Database, workerId: string, now: Date): 
     await sweepPlanning(tx, now);
     const row = (await tx.select({ operation: taskOperations, task: tasks }).from(taskOperations).innerJoin(tasks, eq(tasks.id, taskOperations.taskId)).where(and(eq(taskOperations.kind, "plan"), isNotNull(taskOperations.requesterUserId), eq(tasks.planningOperationId, taskOperations.id), eq(tasks.planningStatus, "in_progress"), lt(taskOperations.attempts, PLANNING_MAX_DISPATCHES), or(and(eq(taskOperations.state, "queued"), lte(taskOperations.nextRunAt, now)), and(eq(taskOperations.state, "running"), lte(taskOperations.leaseUntil, now))))).orderBy(asc(taskOperations.nextRunAt), asc(taskOperations.createdAt)).limit(1).for("update", { of: [tasks, taskOperations], skipLocked: true }))[0];
     if (!row) return null;
+    if (await activeDeletionForTask(tx as unknown as Database, row.task.id)) return null;
     const executionId = crypto.randomUUID();
     const leaseUntil = new Date(now.getTime() + PLANNING_LEASE_MS);
     const fence = row.operation.fence + 1;

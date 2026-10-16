@@ -3,6 +3,7 @@ import { and, asc, eq, lte, or, sql } from "drizzle-orm";
 import type { WorkerClaim } from "../../../../application/database/dao/taskOperationDao";
 import { taskContextCapabilities, taskOperations, tasks } from "../../schema";
 import type { Database } from "../../client";
+import { activeDeletionForTask } from "../issue-deletion/deletionFence";
 
 const LEASE_MS = 60_000;
 const MAX_EXECUTIONS = 3;
@@ -14,6 +15,7 @@ export async function claimTaskOperation(database: Database, workerId: string): 
     const reclaimReady = sql`${taskOperations.leaseUntil} + make_interval(secs => case ${taskOperations.attempts} when 1 then 5 when 2 then 15 else 45 end) <= ${now.toISOString()}::timestamptz`;
     const operation = (await tx.select().from(taskOperations).where(and(eq(taskOperations.kind, "generate"), lte(taskOperations.nextRunAt, now), lte(taskOperations.attempts, MAX_EXECUTIONS - 1), or(eq(taskOperations.state, "queued"), and(eq(taskOperations.state, "running"), reclaimReady)))).orderBy(asc(taskOperations.nextRunAt), asc(taskOperations.createdAt)).limit(1).for("update", { skipLocked: true }))[0];
     if (!operation) return null;
+    if (await activeDeletionForTask(tx as unknown as Database, operation.taskId)) return null;
     const executionId = crypto.randomUUID();
     const contextCapability = randomBytes(32).toString("base64url");
     const fence = operation.fence + 1;

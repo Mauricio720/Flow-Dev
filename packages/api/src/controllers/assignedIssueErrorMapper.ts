@@ -11,6 +11,7 @@ const CODES: Record<AssignedIssueReason, Code> = {
   provider_rate_limited: "TOO_MANY_REQUESTS", invalid_cursor: "BAD_REQUEST", invalid_input: "BAD_REQUEST", issue_unavailable: "NOT_FOUND",
   work_unavailable: "NOT_FOUND", request_key_reused: "CONFLICT", stale_fence: "CONFLICT", claimant_required: "FORBIDDEN", internal_error: "INTERNAL_SERVER_ERROR",
   operator_required: "FORBIDDEN", board_status_changed: "PRECONDITION_FAILED", source_changed: "PRECONDITION_FAILED", claim_required: "PRECONDITION_FAILED", planning_input_limit: "PRECONDITION_FAILED",
+  deletion_pending: "PRECONDITION_FAILED",
 };
 const MESSAGE = "Não foi possível concluir a operação da issue atribuída";
 

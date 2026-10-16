@@ -9,6 +9,8 @@ import { AssignedIssueError } from "../../../../application/services/assigned-is
 import { isUniqueViolation } from "../projects/projectRecordMapper";
 import { lockClaim, mapAttempt, mapClaim } from "./claimRecords";
 import { resolveSource } from "./sourceBinding";
+import { lockIdentity } from "./identityLock";
+import { assertQueueAdmissionAllowed } from "../issue-deletion/deletionFence";
 
 const PENDING_STATE = "pending";
 const RESERVED_STATE = "reserved";
@@ -16,6 +18,8 @@ const RESERVED_STATE = "reserved";
 export function reserveClaim(database: Database, input: ReserveInput): Promise<ReserveOutcome> {
   return database.transaction(async (raw) => {
     const tx = raw as unknown as Database;
+    await lockIdentity(tx, input.source.identity);
+    await assertQueueAdmissionAllowed(tx, input.source.identity);
     const source = await resolveSource(tx, input.source);
     const current = await lockClaim(tx, source.sourceId);
     if (current && isHeld(current.state as ClaimState)) return { kind: "held" as const, claim: mapClaim(current) };

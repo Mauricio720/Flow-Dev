@@ -21,13 +21,14 @@ import { GitHubHttpAssignedIssueGateway } from "./github/githubAssignedIssueGate
 import { createRepositoryAccessService } from "./repositoryAccessFactory";
 import { oauthClient, tokenCipher } from "./composition";
 
-type Overrides = { gateway?: AssignedIssueGateway; repositories?: RepositoryAccessService; clock?: () => Date; tokens?: (userId: string) => Promise<string | null> };
+type Overrides = { gateway?: AssignedIssueGateway; repositories?: RepositoryAccessService; clock?: () => Date; tokens?: (userId: string) => Promise<string | null>; exclude?: import("../application/services/assigned-issues/assignedIssueDiscovery").DiscoveryExclusion };
 
 export function createWorkAuthorization(database: ReturnType<typeof requireDatabase>, overrides: Overrides = {}) {
   const gateway = overrides.gateway ?? new GitHubHttpAssignedIssueGateway();
   const repositories = overrides.repositories ?? createRepositoryAccessService(database);
   const operability = new WorkOperability({ gateway, verifier: new AssignedIssueVerifier(gateway) });
-  return new WorkAuthorization({ repositories, sources: new DrizzleIssueSourceDao(database), claims: new DrizzleIssueClaimDao(database), operability });
+  const sources = new DrizzleIssueSourceDao(database);
+  return new WorkAuthorization({ repositories, sources, claims: new DrizzleIssueClaimDao(database), operability, refresher: new IssueSourceService(sources, overrides.clock) });
 }
 
 export function createAssignedIssuesServices(database: ReturnType<typeof requireDatabase>, overrides: Overrides = {}) {
@@ -42,7 +43,7 @@ export function createAssignedIssuesServices(database: ReturnType<typeof require
   const authorization = createWorkAuthorization(database, { gateway, repositories });
   const tokens = overrides.tokens ?? ((userId: string) => productionToken(database, userId));
   return {
-    discovery: new AssignedIssueDiscovery(repositories, gateway, verifier),
+    discovery: new AssignedIssueDiscovery(repositories, gateway, verifier, overrides.exclude),
     lookup: new AssignedIssueLookup({ repositories, verifier, sources }),
     claims: new IssueClaimService({ repositories, verifier, sources, claims, dispatcher }),
     reconciliation: new ClaimReconciliation({ repositories, claims, reconciler, tokens }),

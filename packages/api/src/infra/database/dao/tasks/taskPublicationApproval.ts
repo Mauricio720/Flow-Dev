@@ -4,6 +4,7 @@ import type { PublicationApproval, PublicationAccepted } from "../../../../appli
 import { taskCaptureLeases, taskCommandReceipts, taskOperations, taskPublicationAttempts, tasks } from "../../schema";
 import type { Database } from "../../client";
 import { payloadHash } from "./taskCommandHelpers";
+import { assertTaskAdmissionAllowed } from "../issue-deletion/deletionFence";
 
 export async function approveTaskPublication(database: Database, input: PublicationApproval): Promise<PublicationAccepted> {
   return database.transaction(async (tx) => {
@@ -13,6 +14,7 @@ export async function approveTaskPublication(database: Database, input: Publicat
     if (replay) return { ...replay, created: false };
     const task = (await tx.select().from(tasks).where(and(eq(tasks.projectId, input.projectId), eq(tasks.id, input.taskId))).limit(1).for("update"))[0];
     assertApprovable(task, input);
+    await assertTaskAdmissionAllowed(tx as unknown as Database, input.taskId);
     await assertNoCapture(tx as unknown as Database, input);
     const operationId = crypto.randomUUID();
     const attemptId = crypto.randomUUID();

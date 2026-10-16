@@ -7,6 +7,7 @@ import type { TaskScope } from "../../../../application/services/task-flow/taskF
 import { TaskFlowPlanStore } from "./taskFlowPlanStore";
 import { TaskFlowPackageStore } from "./taskFlowPackageStore";
 import { TaskFlowRunStore } from "./taskFlowRunStore";
+import { assertTaskAdmissionAllowed } from "../issue-deletion/deletionFence";
 
 export class DrizzleTaskFlowDao implements TaskFlowDao {
   readonly plans;
@@ -26,6 +27,10 @@ export class DrizzleTaskFlowDao implements TaskFlowDao {
 
   async lockTask(taskId: string) {
     await this.database.execute(sql`SELECT id FROM tasks WHERE id = ${taskId} FOR UPDATE`);
+  }
+
+  async assertDeletionAdmission(taskId: string) {
+    await assertTaskAdmissionAllowed(this.database, taskId);
   }
 
   async assertWorkScope(scope: TaskScope) {

@@ -7,7 +7,7 @@ const actor = { userId: "30000000-0000-4000-8000-000000000001" };
 const input = { projectId: "10000000-0000-4000-8000-000000000001", limit: 20 };
 const context = (board: { nodeId: string } | null = { nodeId: "board" }) => ({ project: {}, repository: { githubId: "101", nodeId: "R1" }, token: "token", githubUserId: "1001", board });
 const field = { fieldId: "field", options: [{ id: "ready", name: "Ready" }, { id: "progress", name: "In Progress" }] };
-const other = (id: string): BoardItemFacts => ({ itemId: id, boardNodeId: "board", archived: false, contentType: "Issue", statusOptionId: "backlog", issue: { nodeId: id, number: 1, url: "u", title: "t", body: "b", state: "OPEN", updatedAt: "2026-10-01T00:00:00Z", repositoryNodeId: "R1", repositoryId: "101", repositoryOwner: "a", repositoryName: "f", assignees: [], assigneesHasNextPage: false, assigneesCursor: null } });
+const other = (id: string): BoardItemFacts => ({ itemId: id, boardNodeId: "board", archived: false, contentType: "Issue", statusOptionId: "backlog", issue: { nodeId: id, number: 1, url: "u", title: "t", body: "b", state: "OPEN", updatedAt: "2026-10-01T00:00:00Z", repositoryNodeId: "R1", repositoryId: "101", repositoryOwner: "a", repositoryName: "f", author: null, assignees: [], assigneesHasNextPage: false, assigneesCursor: null } });
 
 function discovery(pages: { items: BoardItemFacts[]; hasNextPage: boolean; endCursor: string | null }[], board: { nodeId: string } | null = { nodeId: "board" }) {
   const itemsPage = vi.fn(async () => pages.shift()!);

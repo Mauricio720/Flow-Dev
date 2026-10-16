@@ -1,8 +1,10 @@
 import type { WorkSnapshot } from "../contract";
 import { ClaimPanel } from "./ClaimPanel";
 import { SourceSummary } from "./SourceSummary";
+import { IssueDeletionAction } from "@/features/issues/issue-deletion";
+import { projectWorkPath } from "@/lib/navigation/projectRoutes";
 
-export function WorkHeader({ snapshot }: { snapshot: WorkSnapshot }) {
+export function WorkHeader({ snapshot, projectId }: { snapshot: WorkSnapshot; projectId: string }) {
   const { view, detail } = snapshot;
   return (
     <header className="space-y-4">
@@ -12,6 +14,7 @@ export function WorkHeader({ snapshot }: { snapshot: WorkSnapshot }) {
       </div>
       <SourceSummary source={view.source} />
       <ClaimPanel view={view} />
+      <IssueDeletionAction target={{ kind: "task", projectId, taskId: detail.task.id }} returnTo={projectWorkPath(projectId)} />
     </header>
   );
 }

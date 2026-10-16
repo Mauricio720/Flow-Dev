@@ -3,6 +3,8 @@ import { PROJECTS_PATH, expiredSessionPath, repositoryConnectPath } from "@/lib/
 import type { TaskFailure } from "../contract";
 import type { AccessProblem } from "@/lib/tasks/taskFailure";
 import { failureMessage } from "../taskCopy";
+import Link from "next/link";
+import { projectIssuesPath } from "@/lib/navigation/projectRoutes";
 
 const SESSION_NOTE = "Sua sessão expirou. Entre novamente para continuar; o que já foi salvo permanece na tarefa.";
 const REVOKED_NOTE = "Seu acesso a este projeto mudou. Escolha outro projeto para continuar.";
@@ -42,4 +44,12 @@ export function StageFailure({ failure, onRetry }: LoadProps) {
       <Button type="button" variant="outline" onClick={onRetry}>Tentar novamente</Button>
     </div>
   );
+}
+
+export function TaskUnavailable({ projectId }: { projectId: string }) {
+  return <div role="status" className="mx-auto w-full max-w-[768px] space-y-3 px-4 pt-10 sm:px-0">
+    <h2 className="text-[17px] font-semibold">Esta issue não está mais disponível</h2>
+    <p className="max-w-[65ch] text-[15px] leading-relaxed text-ink-2">Ela pode ter sido excluída ou seu acesso pode ter mudado.</p>
+    <Button asChild variant="outline"><Link href={projectIssuesPath(projectId)}>Voltar para Issues do projeto</Link></Button>
+  </div>;
 }

@@ -4,8 +4,10 @@ import type { QueueItem } from "../contract";
 import type { ClaimPhase } from "../hooks/useClaim";
 import { safeIssueUrl } from "../workModel";
 import { ClaimOutcome } from "./ClaimOutcome";
+import { IssueDeletionAction } from "@/features/issues/issue-deletion";
+import { projectWorkPath } from "@/lib/navigation/projectRoutes";
 
-type Props = { projectId: string; item: QueueItem; phase: ClaimPhase; onClaim: (item: QueueItem) => void };
+type Props = { projectId: string; item: QueueItem; phase: ClaimPhase; onClaim: (item: QueueItem) => void; onDeleted: () => void };
 
 function IssueLink({ item }: { item: QueueItem }) {
   const url = safeIssueUrl(item.url);
@@ -14,7 +16,7 @@ function IssueLink({ item }: { item: QueueItem }) {
   return <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">{title}<ArrowUpRightIcon size={13} aria-hidden="true" /></a>;
 }
 
-export function QueueRow({ projectId, item, phase, onClaim }: Props) {
+export function QueueRow({ projectId, item, phase, onClaim, onDeleted }: Props) {
   const busy = phase.phase === "claiming" || phase.phase === "settled";
   return (
     <li className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
@@ -24,7 +26,10 @@ export function QueueRow({ projectId, item, phase, onClaim }: Props) {
         <p className="text-xs text-ink-3">Status no quadro: {item.status}</p>
         <ClaimOutcome projectId={projectId} phase={phase} />
       </div>
-      <Button type="button" size="sm" disabled={busy} onClick={() => onClaim(item)} aria-label={`Reivindicar #${item.number} ${item.title}`}>Reivindicar</Button>
+      <div className="flex items-center gap-1">
+        <IssueDeletionAction target={{ kind: "queue", projectId, issueNodeId: item.issueNodeId }} returnTo={projectWorkPath(projectId)} onComplete={onDeleted} />
+        <Button type="button" size="sm" disabled={busy} onClick={() => onClaim(item)} aria-label={`Reivindicar #${item.number} ${item.title}`}>Reivindicar</Button>
+      </div>
     </li>
   );
 }

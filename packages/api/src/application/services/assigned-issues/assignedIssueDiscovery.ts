@@ -12,9 +12,10 @@ const MAX_PROVIDER_PAGES = 2;
 const MAX_PROVIDER_PAGE_SIZE = 50;
 type ListInput = { projectId: string; cursor?: string; limit: number };
 type Scan = { items: AssignedIssueItem[]; after: string | null; hasNext: boolean; failure: { retryAfterSeconds: number | null } | null; scanned: number };
+export type DiscoveryExclusion = (identity: { projectId: string; repositoryId: string; issueNodeId: string }) => Promise<boolean>;
 
 export class AssignedIssueDiscovery {
-  constructor(private readonly repositories: RepositoryAccessService, private readonly gateway: AssignedIssueGateway, private readonly verifier: AssignedIssueVerifier) {}
+  constructor(private readonly repositories: RepositoryAccessService, private readonly gateway: AssignedIssueGateway, private readonly verifier: AssignedIssueVerifier, private readonly exclude?: DiscoveryExclusion) {}
 
   async list(actor: SessionPrincipal, input: ListInput): Promise<AssignedQueuePage> {
     const context = await translated(() => this.repositories.personalContext(actor, input.projectId));
@@ -25,11 +26,11 @@ export class AssignedIssueDiscovery {
     const ready = findOption(field.options, READY_STATUS_NAME);
     if (!ready) throw new AssignedIssueError("ready_missing");
     const verifyContext: VerifyContext = { token: context.token, githubUserId: context.githubUserId, boardNodeId: context.board.nodeId, repository: { githubId: context.repository.githubId, nodeId: context.repository.nodeId } };
-    const scan = await this.scan({ context: verifyContext, readyOptionId: ready.id, after: typeof start === "string" ? start : null, limit: input.limit });
+    const scan = await this.scan({ projectId: input.projectId, context: verifyContext, readyOptionId: ready.id, after: typeof start === "string" ? start : null, limit: input.limit });
     return toPage(scan, binding);
   }
 
-  private async scan(input: { context: VerifyContext; readyOptionId: string; after: string | null; limit: number }): Promise<Scan> {
+  private async scan(input: { projectId: string; context: VerifyContext; readyOptionId: string; after: string | null; limit: number }): Promise<Scan> {
     const scan: Scan = { items: [], after: input.after, hasNext: true, failure: null, scanned: 0 };
     while (scan.hasNext && scan.items.length === 0 && scan.scanned < MAX_PROVIDER_PAGES) {
       try { await this.scanPage(scan, input); } catch (error) { return this.failed(scan, error); }
@@ -37,7 +38,7 @@ export class AssignedIssueDiscovery {
     return scan;
   }
 
-  private async scanPage(scan: Scan, input: { context: VerifyContext; readyOptionId: string; limit: number }) {
+  private async scanPage(scan: Scan, input: { projectId: string; context: VerifyContext; readyOptionId: string; limit: number }) {
     const page = await this.gateway.itemsPage(input.context.token, { boardNodeId: input.context.boardNodeId, after: scan.after, first: Math.min(input.limit, MAX_PROVIDER_PAGE_SIZE) });
     const seen = new Set<string>();
     for (const item of page.items) if (await this.isEligible(input, item) && !seen.has(item.issue!.nodeId!)) { seen.add(item.issue!.nodeId!); scan.items.push(toItem(item)); }
@@ -46,8 +47,10 @@ export class AssignedIssueDiscovery {
     scan.hasNext = page.hasNextPage;
   }
 
-  private async isEligible(input: { context: VerifyContext; readyOptionId: string }, item: BoardItemFacts) {
-    return await this.verifier.assessEligibility(input.context, item, input.readyOptionId) === "eligible";
+  private async isEligible(input: { projectId: string; context: VerifyContext; readyOptionId: string }, item: BoardItemFacts) {
+    if (!(await this.verifier.assessEligibility(input.context, item, input.readyOptionId) === "eligible")) return false;
+    if (!this.exclude || !item.issue?.nodeId) return true;
+    return !(await this.exclude({ projectId: input.projectId, repositoryId: input.context.repository.githubId, issueNodeId: item.issue.nodeId }));
   }
 
   private failed(scan: Scan, error: unknown): Scan {

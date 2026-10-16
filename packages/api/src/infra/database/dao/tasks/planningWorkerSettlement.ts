@@ -3,6 +3,7 @@ import type { PlanningClaim, PlanningFailure, PlanningRequeue, PlanningSettlemen
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskOperations, taskPlanningDecisions, tasks } from "../../schema";
 import type { Database } from "../../client";
+import { activeDeletionForTask } from "../issue-deletion/deletionFence";
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 const SUCCESS_PROTOCOL_VERSION = 1;
@@ -36,6 +37,7 @@ export function requeuePlanning(database: Database, input: PlanningRequeue, now:
 
 async function lockCurrent(tx: Tx, claim: PlanningClaim, now: Date, requireLease: boolean) {
   const task = (await tx.select().from(tasks).where(eq(tasks.id, claim.taskId)).limit(1).for("update"))[0];
+  if (!task || await activeDeletionForTask(tx as unknown as Database, claim.taskId)) throw new TaskError("stale_execution");
   const lease = requireLease ? gt(taskOperations.leaseUntil, now) : undefined;
   const operation = (await tx.select().from(taskOperations).where(and(eq(taskOperations.id, claim.operationId), eq(taskOperations.state, "running"), eq(taskOperations.executionId, claim.executionId), eq(taskOperations.fence, claim.fence), eq(taskOperations.leaseOwner, claim.workerId), lease)).limit(1).for("update"))[0];
   const current = task?.planningOperationId === claim.operationId && task.activeOperationId === claim.operationId && task.planningStatus === "in_progress";

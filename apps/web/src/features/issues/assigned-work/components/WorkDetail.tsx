@@ -28,7 +28,7 @@ export function WorkDetail({ project, initial }: Props) {
             <Link href={projectWorkPath(project.id)}><BranchIcon />Voltar para Trabalho atribuído</Link>
           </Button>
           {failure && <WorkAccessNotice projectId={project.id} failure={failure} returnPath={returnPath} onRetry={() => void work.refresh()} />}
-          {snapshot && <WorkHeader snapshot={snapshot} />}
+          {snapshot && <WorkHeader snapshot={snapshot} projectId={project.id} />}
           {snapshot?.view.sourceChanged && <SourceChangedNotice />}
           {snapshot && !workStarted(snapshot) && <NotStartedNote />}
           {snapshot && <OperatorStages project={project} snapshot={snapshot} refresh={work.refresh} onFailure={work.report} />}

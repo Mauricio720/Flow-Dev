@@ -8,10 +8,12 @@ import type { Database } from "../../client";
 import { bindGeneratedDraft } from "./generationEvidenceBindings";
 import { loadBindableEvidence } from "./retainedEvidence";
 import { authorOf } from "./authorOf";
+import { activeDeletionForTask } from "../issue-deletion/deletionFence";
 
 export async function lockOperation(database: Database, claim: WorkerClaim) {
   const operation = (await database.select().from(taskOperations).where(and(eq(taskOperations.id, claim.operationId), eq(taskOperations.taskId, claim.taskId), eq(taskOperations.state, "running"), eq(taskOperations.leaseOwner, claim.workerId), eq(taskOperations.executionId, claim.executionId), eq(taskOperations.fence, claim.fence))).limit(1).for("update"))[0];
   if (!operation) throw new TaskError("stale_execution");
+  if (await activeDeletionForTask(database, claim.taskId)) throw new TaskError("stale_execution");
   return operation;
 }
 

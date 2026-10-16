@@ -103,6 +103,7 @@ export type RepositoryAuthorizationRow = typeof githubRepositoryAuthorizations.$
 export type RepositoryOAuthStateRow = typeof githubRepositoryOAuthStates.$inferSelect;
 export { taskCommandReceipts, taskDraftRevisions, taskMessages, taskRepositorySnapshot, tasks } from "./schema/tasks/records";
 export { taskCaptureLeases, taskContextCapabilities, taskPublicationAttempts } from "./schema/tasks/boundaries";
+export { taskImages } from "./schema/tasks/images";
 export { taskEvidence, taskOperations, taskToolActivity, taskToolCalls } from "./schema/tasks/operations";
 export { taskPlanningDecisions } from "./schema/tasks/planning";
 export { taskSpecAttempts, taskSpecStages, taskSpecWorkflows, taskSpecWorkspaces } from "./schema/tasks/spec";
@@ -120,3 +121,4 @@ export { localCommandEvents, localCommands } from "./schema/localCommands";
 export { localCheckoutLocks } from "./schema/localCheckoutLocks";
 export { taskRunEvidence, taskRunGates } from "./schema/localExecutionEvidence";
 export { localLinkRequests } from "./schema/localLinkRequests";
+export { issueDeletionOperations } from "./schema/issueDeletion";

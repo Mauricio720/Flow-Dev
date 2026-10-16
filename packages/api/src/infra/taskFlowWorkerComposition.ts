@@ -97,3 +97,13 @@ export async function createProductionTaskFlowDispatcher(environment: NodeJS.Pro
   const authorize = (run: RunRecord) => runAuthorization(authorization, database, run);
   return new TaskFlowDispatcher({ unit, broker, executor, owner: `taskflow:${randomUUID()}`, clock: () => new Date(), leaseMs: LEASE_MS, capture, authorize });
 }
+
+export async function createProductionTaskFlowExecutor(database: ReturnType<typeof requireDatabase>, environment: NodeJS.ProcessEnv = process.env) {
+  const configuration = await readConfiguration(environment);
+  const flow = new DrizzleTaskFlowDao(database);
+  const gateway = createSoftwareRuntime(environment).gateway;
+  const repositories = createRepositoryAccessService(database);
+  const resolver = new RegisteredWorkspaceResolver({ flow, repositories, gateway, workspaceRoot: configuration.workspaceRoot });
+  const provider = createProvider({ configuration, flow, resolver, gateway });
+  return { executor: createExecutor({ configuration, flow, environment, provider, gateway, resolver }), flow };
+}

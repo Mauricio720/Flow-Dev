@@ -42,6 +42,7 @@ export interface TaskFlowDao {
   packages: PackageStore;
   flowKind(taskId: string): Promise<FlowKind>;
   lockTask(taskId: string): Promise<void>;
+  assertDeletionAdmission?(taskId: string): Promise<void>;
   assertWorkScope?(scope: TaskScope): Promise<void>;
   taskContext(taskId: string): Promise<{ projectId: string; operatorUserId: string | null; source?: { issueNumber: number; title: string; bodyMarkdown: string } | null } | null>;
   transaction<T>(callback: (dao: TaskFlowDao) => Promise<T>): Promise<T>;

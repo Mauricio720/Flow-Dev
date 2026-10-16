@@ -55,6 +55,7 @@ function useRevokedRedirect(revoked: boolean) {
 }
 
 export function Workspace({ project, initial, canAuthor }: Props) {
+  const router = useRouter();
   const { navigation, history, workspace, problem, controls } = useWorkspaceData({ project, initial });
   const { grid, toggleGrid } = useGridPreference();
   const [railOpen, setRailOpen] = useState(false);
@@ -64,6 +65,10 @@ export function Workspace({ project, initial, canAuthor }: Props) {
   function select(taskId: string | null) {
     navigation.select(taskId);
     setRailOpen(false);
+  }
+  function onDeleted() {
+    router.replace(projectIssuesPath(project.id));
+    void history.refresh();
   }
   const rail = <SessionRail history={history} items={withCurrentTask(history.items, detail?.task ?? null)} activeId={navigation.taskId} canAuthor={canAuthor} onSelect={select} />;
   const revision = detail?.currentRevision ?? null;
@@ -77,7 +82,7 @@ export function Workspace({ project, initial, canAuthor }: Props) {
         <div className="hidden min-h-0 border-r border-line bg-surface xl:block">{rail}</div>
         <main className="relative flex min-h-0 flex-col">
           <AccessNotice problem={problem} returnPath={returnPath} />
-          {problem !== "revoked" && <TaskStage project={project} workspace={workspace} lock={problem ? ACCESS_LOCK_COPY[problem] : null} grid={grid} canAuthor={canAuthor} controls={controls} />}
+          {problem !== "revoked" && <TaskStage project={project} taskId={navigation.taskId} workspace={workspace} lock={problem ? ACCESS_LOCK_COPY[problem] : null} grid={grid} canAuthor={canAuthor} controls={controls} onDeleted={onDeleted} />}
         </main>
         <div className="hidden min-h-0 border-l border-line bg-surface 2xl:block">{sources}</div>
       </div>

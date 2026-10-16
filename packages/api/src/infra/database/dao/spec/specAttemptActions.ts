@@ -8,6 +8,7 @@ import type { Database } from "../../client";
 import { readPlanningProjection } from "../tasks/planningProjection";
 import { assertCapacity } from "./specCapacity";
 import { assertOperator, assertVersion, findReplay, lockSpecTask, lockSpecWorkflow, type SpecTask, type SpecWorkflowRow } from "./specCommandHelpers";
+import { assertTaskAdmissionAllowed } from "../issue-deletion/deletionFence";
 
 export const ACTIVE_ATTEMPT_STATES = ["queued", "dispatching", "running", "waiting", "finalizing", "stopping", "reconciling"];
 export const TERMINAL_FAILURE_STATES = ["failed", "canceled"];
@@ -20,6 +21,7 @@ export function runAction(database: Database, input: ActionInput, apply: (contex
     const db = tx as unknown as Database;
     const task = await lockSpecTask(db, input);
     await assertOperator(db, task, input.actorUserId);
+    await assertTaskAdmissionAllowed(db, task.id);
     const replay = await findReplay(db, input, input.action);
     if (replay) return replay;
     const workflow = await lockSpecWorkflow(db, task.id);
