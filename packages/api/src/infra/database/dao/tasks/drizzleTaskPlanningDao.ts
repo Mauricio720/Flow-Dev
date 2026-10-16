@@ -6,6 +6,7 @@ import type { Database } from "../../client";
 import { acceptPlanningRetry, acceptPlanningStart } from "./planningStart";
 import { approvePlanningRoute, savePlanningRoute } from "./planningReviewCommands";
 import { parsePlanningReceipt } from "./planningReceiptHelpers";
+import { acceptPlanningReplan } from "./planningReplan";
 import { readPlanningProjection } from "./planningProjection";
 
 const RECEIPT_SCOPE_CONSTRAINT = "task_command_receipts_scope_unique";
@@ -25,6 +26,7 @@ export class DrizzleTaskPlanningDao implements TaskPlanningDao {
 
   start(input: Parameters<TaskPlanningDao["start"]>[0]) { return this.guard(() => acceptPlanningStart(this.database, input)); }
   retry(input: Parameters<TaskPlanningDao["retry"]>[0]) { return this.guard(() => acceptPlanningRetry(this.database, input)); }
+  replan(input: Parameters<TaskPlanningDao["replan"]>[0]) { return this.guard(() => acceptPlanningReplan(this.database, input)); }
   selectRoute(input: Parameters<TaskPlanningDao["selectRoute"]>[0]) { return this.guard(() => savePlanningRoute(this.database, input)); }
   approve(input: Parameters<TaskPlanningDao["approve"]>[0]) { return this.guard(() => approvePlanningRoute(this.database, input)); }
 

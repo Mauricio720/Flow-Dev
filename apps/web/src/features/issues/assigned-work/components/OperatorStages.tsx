@@ -19,7 +19,8 @@ export function OperatorStages({ project, snapshot, refresh, onFailure }: Props)
   const planning = usePlanningActions({ projectId: project.id, task: detail.task, input: { clear: () => undefined }, onAccepted: refresh, onChanged: refresh, onFailure, planning: detail.planning });
   const lifecycle = planningLifecycle(detail.planning);
   if (lifecycle === null) return null;
+  const replan = operate && detail.planning.permissions.canReplan ? { busy: planning.command.phase === "sending", onReplan: () => void planning.replan() } : null;
   const lead: StageTab = { id: PLANNING_TAB_ID, label: PLANNING_TAB_LABEL, state: planningTabState(detail.planning, lifecycle), panel: <PlanningStage detail={detail} actions={operate ? planning : null} onRefresh={() => void refresh()} /> };
   if (!flowVisible(snapshot)) return <StageTabs tabs={[lead]} current={lead.id} canAct={operate} />;
-  return <FlowStage project={project} taskId={detail.task.id} decision={detail.planning.decision} canAct={operate} onFailure={onFailure} lead={lead} />;
+  return <FlowStage project={project} taskId={detail.task.id} decision={detail.planning.decision} canAct={operate} onFailure={onFailure} lead={lead} replan={replan} />;
 }

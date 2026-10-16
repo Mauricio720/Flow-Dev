@@ -6,6 +6,7 @@ type Scope = { projectId: string };
 export function dispatchPlanning(scope: Scope, command: PendingCommand) {
   const base = { projectId: scope.projectId, taskId: command.taskId, requestKey: command.requestKey, expectedVersion: command.expectedVersion };
   if (command.action === "planning.start") return trpc.tasks.planning.start.mutate(base);
+  if (command.action === "planning.replan") return trpc.tasks.planning.replan.mutate(base);
   if (command.action === "planning.retry") return trpc.tasks.planning.retry.mutate({ ...base, failedOperationId: command.failedOperationId });
   const review = { ...base, decisionId: command.decisionId, expectedDecisionVersion: command.expectedDecisionVersion };
   if (command.action === "planning.selectRoute") return trpc.tasks.planning.selectRoute.mutate({ ...review, selectedRoute: command.route });

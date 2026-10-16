@@ -1,4 +1,4 @@
-import { check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { softwareConnections } from "../software";
 import { users } from "../../schema";
@@ -25,10 +25,11 @@ export const taskExecutionActions = pgTable("task_execution_actions", {
   state: text("state").notNull().default("planned"),
   concludedBy: uuid("concluded_by").references(() => users.id, { onDelete: "restrict" }),
   concludedAt: timestamp("concluded_at", { withTimezone: true }),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
   createdAt,
   updatedAt,
 }, (table) => [
-  unique("task_execution_actions_position_unique").on(table.planId, table.position),
+  uniqueIndex("task_execution_actions_position_unique").on(table.planId, table.position).where(sql`${table.supersededAt} IS NULL`),
   unique("task_execution_actions_id_task_unique").on(table.id, table.taskId),
   check("task_execution_actions_kind_check", sql`${table.kind} IN ('create_spec','create_tasks','direct_execute','loop','open_pull_request')`),
   check("task_execution_actions_loop_check", sql`(${table.kind} = 'loop') = (${table.loopName} IS NOT NULL AND ${table.loopVersion} IS NOT NULL)`),

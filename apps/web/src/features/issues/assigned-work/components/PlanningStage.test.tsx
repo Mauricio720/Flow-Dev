@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { planningOf, publishedDetail, reviewDetail } from "@/test/tasks";
+import { decisionOf, planningOf, publishedDetail, reviewDetail } from "@/test/tasks";
 import type { PlanningActions } from "../hooks/usePlanningActions";
 import { IDLE_COMMAND } from "../planningCommandState";
 import { PlanningStage } from "./PlanningStage";
@@ -52,8 +53,19 @@ describe("PlanningStage and timeline", () => {
     expect(screen.queryByText(/%|implementação|PR\b/)).toBeNull();
   });
 
+  it("offers a confirmed new planning once the approved route stopped", async () => {
+    const replan = vi.fn();
+    const permissions = { canStart: false, canRetry: false, canReplan: true, canSelectRoute: false, canApprove: false };
+    const detail = { ...publishedDetail(), planning: planningOf({ status: "approved", eligibility: { canStart: true, reason: null }, decision: decisionOf({ status: "approved", selectedRoute: "direct_execution" }), replannable: true, permissions }) };
+    render(<PlanningStage detail={detail} actions={actions({ replan })} onRefresh={noop} />);
+    await userEvent.click(screen.getByRole("button", { name: "Refazer planejamento" }));
+    expect(replan).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar novo planejamento" }));
+    expect(replan).toHaveBeenCalledOnce();
+  });
+
   it("explains the awaiting state and offers the specified action", () => {
-    const detail = { ...publishedDetail(), planning: planningOf({ status: "awaiting", eligibility: { canStart: true, reason: null }, permissions: { canStart: true, canRetry: false, canSelectRoute: false, canApprove: false } }) };
+    const detail = { ...publishedDetail(), planning: planningOf({ status: "awaiting", eligibility: { canStart: true, reason: null }, permissions: { canStart: true, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false } }) };
     render(<PlanningStage detail={detail} actions={actions()} onRefresh={noop} />);
     expect(screen.getByRole("button", { name: "Analisar próxima etapa" })).toBeTruthy();
     expect(screen.getByText(/recomendar a próxima etapa/)).toBeTruthy();

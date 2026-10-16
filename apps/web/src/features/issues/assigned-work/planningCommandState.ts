@@ -1,10 +1,11 @@
 import type { PlanningRoute, TaskFailure } from "./contract";
 
-export type PlanningAction = "planning.start" | "planning.retry" | "planning.selectRoute" | "planning.approve";
+export type PlanningAction = "planning.start" | "planning.retry" | "planning.replan" | "planning.selectRoute" | "planning.approve";
 export type ReviewAction = "planning.selectRoute" | "planning.approve";
 type CommandBase = { requestKey: string; taskId: string; expectedVersion: number };
 export type PendingCommand =
   | (CommandBase & { action: "planning.start" })
+  | (CommandBase & { action: "planning.replan" })
   | (CommandBase & { action: "planning.retry"; failedOperationId: string })
   | (CommandBase & { action: ReviewAction; decisionId: string; expectedDecisionVersion: number; route: PlanningRoute });
 export type UnkeyedCommand = PendingCommand extends infer Command ? Command extends PendingCommand ? Omit<Command, "requestKey"> : never : never;

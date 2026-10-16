@@ -6,7 +6,7 @@ import type { EligibilityContext } from "./assignedIssueRules";
 const context: EligibilityContext = { repositoryNodeId: "R_fixture_flow", githubUserId: "1001", readyOptionId: "ready", boardNodeId: "board" };
 
 function item(overrides: Partial<BoardItemFacts> = {}, issue: Partial<NonNullable<BoardItemFacts["issue"]>> = {}): BoardItemFacts {
-  return { itemId: "PVTI_fixture_41", boardNodeId: "board", archived: false, contentType: "Issue", statusOptionId: "ready", issue: { nodeId: "I_fixture_41", number: 41, url: "https://github.com/acme/flow/issues/41", title: "Implement CSV export", body: "Implement CSV export.", state: "OPEN", updatedAt: "2026-10-01T00:00:00Z", repositoryNodeId: "R_fixture_flow", repositoryId: "101", repositoryOwner: "acme", repositoryName: "flow", assignees: [{ githubId: "1001", login: "u1" }], assigneesHasNextPage: false, assigneesCursor: null, ...issue }, ...overrides };
+  return { itemId: "PVTI_fixture_41", boardNodeId: "board", archived: false, contentType: "Issue", statusOptionId: "ready", issue: { nodeId: "I_fixture_41", number: 41, url: "https://github.com/acme/flow/issues/41", title: "Implement CSV export", body: "Implement CSV export.", state: "OPEN", updatedAt: "2026-10-01T00:00:00Z", repositoryNodeId: "R_fixture_flow", repositoryId: "101", repositoryOwner: "acme", repositoryName: "flow", author: null, assignees: [{ githubId: "1001", login: "u1" }], assigneesHasNextPage: false, assigneesCursor: null, ...issue }, ...overrides };
 }
 
 describe("assignedIssueRules", () => {

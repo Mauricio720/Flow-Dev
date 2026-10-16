@@ -13,12 +13,16 @@ const source = { snapshot: { id: "S1", contentHash: "hash" }, taskId: scope.task
 const context = { repository: { nodeId: "R1", githubId: "101", archived: false }, token: "token", githubUserId: "1001" };
 const claim = (overrides: Partial<ClaimRecord>) => ({ taskId: scope.taskId, state: "claimed", operatorUserId: scope.actorId, revision: 4, boardNodeId: "board", boardItemId: "item", optionId: "progress", ...overrides }) as ClaimRecord;
 
+const changedIssue = { nodeId: "I1", number: 25, url: "https://github.com/owner/repo/issues/25", title: "Issue", body: "Texto atualizado", updatedAt: "2026-10-15T20:26:48Z", repositoryId: "101", repositoryNodeId: "R1", authorDatabaseId: null };
+const refreshedSource = { ...source, snapshot: { id: "S2", contentHash: "other" }, created: false } as SourceRecord & { created: boolean };
+
 function authorization(options: { claim?: ClaimRecord | null; source?: SourceRecord | null; access?: () => Promise<unknown>; blocked?: string | null; hash?: string } = {}) {
   const sources = { findByTask: vi.fn(async () => options.source === undefined ? source : options.source) } as unknown as IssueSourceDao;
   const claims = { claimByTask: vi.fn(async () => options.claim === undefined ? claim({}) : options.claim) } as unknown as IssueClaimDao;
-  const blockReason = vi.fn(async () => ({ reason: options.blocked ?? null, contentHash: options.hash ?? "hash" }));
+  const blockReason = vi.fn(async () => ({ reason: options.blocked ?? null, contentHash: options.hash ?? "hash", issue: changedIssue }));
   const repositories = { personalContext: vi.fn(options.access ?? (async () => context)) };
-  return { service: new WorkAuthorization({ repositories: repositories as never, sources, claims, operability: { evaluate: blockReason } as unknown as WorkOperability }), blockReason, sources };
+  const refresher = { resolve: vi.fn(async () => refreshedSource) };
+  return { service: new WorkAuthorization({ repositories: repositories as never, sources, claims, operability: { evaluate: blockReason } as unknown as WorkOperability, refresher }), blockReason, sources, refresher };
 }
 
 describe("WorkAuthorization.requireRead", () => {
@@ -60,6 +64,18 @@ describe("WorkAuthorization.requireOperate", () => {
   it("UT-038 reports source_changed before a new decision when fresh content differs from the pinned snapshot", async () => {
     await expect(authorization({ hash: "other" }).service.requireOperate(scope, { currentSource: true })).rejects.toMatchObject({ reason: "source_changed" });
     await expect(authorization({ hash: "other" }).service.requireOperate(scope)).resolves.toMatchObject({ sourceSnapshotId: "S1" });
+  });
+
+  it("records the current GitHub text as the source when the operator asks to reanalyze it", async () => {
+    const { service, refresher } = authorization({ hash: "other" });
+    await expect(service.requireOperate(scope, { currentSource: true, refreshSource: true })).resolves.toMatchObject({ sourceSnapshotId: "S2" });
+    expect(refresher.resolve).toHaveBeenCalledWith({ projectId: scope.projectId, actorId: scope.actorId, issue: changedIssue });
+  });
+
+  it("does not record a new source when the GitHub text is unchanged", async () => {
+    const { service, refresher } = authorization({});
+    await expect(service.requireOperate(scope, { currentSource: true, refreshSource: true })).resolves.toMatchObject({ sourceSnapshotId: "S1" });
+    expect(refresher.resolve).not.toHaveBeenCalled();
   });
 
   it("UT-042 hides inaccessible projects as work_unavailable", async () => {

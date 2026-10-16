@@ -7,6 +7,7 @@ import type { PlanningActions as Actions } from "../hooks/usePlanningActions";
 import { CONFLICT_NOTICE, START_ACTION_LABEL, UNCERTAIN_NOTICE } from "../planningCopy";
 import { reasonMessage } from "../taskCopy";
 import { PlanningRouteSelector } from "./PlanningRouteSelector";
+import { ReplanControl } from "./ReplanControl";
 
 type Props = { detail: TaskDetail; actions: Actions };
 
@@ -42,6 +43,7 @@ export function PlanningActions({ detail, actions }: Props) {
       {planning.status === "awaiting" && <Button type="button" size="sm" disabled={busy || !planning.permissions.canStart} onClick={() => void actions.start()}>{START_ACTION_LABEL}</Button>}
       {planning.status === "failed" && planning.operation && <Button type="button" size="sm" disabled={busy || !planning.permissions.canRetry} onClick={() => void actions.retry(planning.operation!.id)}>Tentar novamente</Button>}
       {planning.status === "review" && <ReviewControls detail={detail} actions={actions} />}
+      {planning.status === "approved" && planning.permissions.canReplan && <ReplanControl busy={busy} onReplan={() => void actions.replan()} />}
     </div>
   );
 }

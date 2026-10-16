@@ -61,12 +61,12 @@ export function publishedDetail(): TaskDetail {
   return detailOf({ task: summaryOf({ status: "published", version: 9 }), publication });
 }
 
-const NO_PERMISSIONS = { canStart: false, canRetry: false, canSelectRoute: false, canApprove: false };
+const NO_PERMISSIONS = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false };
 export const DECISION_ID = "00000000-0000-4000-8000-000000000091";
 export const ASSESSMENT = { recommendedRoute: "tech_spec", complexity: "medium", summary: "A mudança altera o contrato do carrinho.", reasons: ["O total depende de dois módulos"], uncertainties: ["Definir paginação"] } as const;
 
 export function planningOf(patch: Partial<TaskDetail["planning"]> = {}): TaskDetail["planning"] {
-  return { status: null, eligibility: { canStart: false, reason: "publication_required" }, operation: null, decision: null, permissions: NO_PERMISSIONS, ...patch } as TaskDetail["planning"];
+  return { status: null, eligibility: { canStart: false, reason: "publication_required" }, operation: null, decision: null, replannable: false, permissions: NO_PERMISSIONS, ...patch } as TaskDetail["planning"];
 }
 
 export function decisionOf(patch: Partial<NonNullable<TaskDetail["planning"]["decision"]>> = {}): NonNullable<TaskDetail["planning"]["decision"]> {

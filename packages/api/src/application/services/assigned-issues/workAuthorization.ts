@@ -1,6 +1,8 @@
 import type { IssueClaimDao, ClaimRecord } from "../../database/dao/issueClaimDao";
 import type { IssueSourceDao, SourceRecord } from "../../database/dao/issueSourceDao";
 import type { RepositoryAccessService } from "../projects/repositoryAccessService";
+import type { VerifiedIssue } from "./assignedIssueRules";
+import type { IssueSourceService } from "./issueSourceService";
 import { AssignedIssueError } from "./assignedIssueErrors";
 import type { AssignedIssueReason } from "./assignedIssueErrors";
 import { translated } from "./assignedIssueTranslation";
@@ -8,9 +10,9 @@ import type { WorkOperability } from "./workOperability";
 
 export type WorkReadInput = { projectId: string; taskId: string; actorId: string };
 export type WorkScope = { projectId: string; taskId: string; actorId: string; sourceSnapshotId: string; claimRevision: number };
-export type WorkAssessment = { source: SourceRecord; claim: ClaimRecord | null; reason: AssignedIssueReason | null; contentHash: string | null };
-export type OperateOptions = { currentSource?: boolean };
-type Deps = { repositories: Pick<RepositoryAccessService, "personalContext">; sources: IssueSourceDao; claims: IssueClaimDao; operability: WorkOperability };
+export type WorkAssessment = { source: SourceRecord; claim: ClaimRecord | null; reason: AssignedIssueReason | null; contentHash: string | null; issue?: VerifiedIssue };
+export type OperateOptions = { currentSource?: boolean; refreshSource?: boolean };
+type Deps = { repositories: Pick<RepositoryAccessService, "personalContext">; sources: IssueSourceDao; claims: IssueClaimDao; operability: WorkOperability; refresher?: Pick<IssueSourceService, "resolve"> };
 
 export class WorkAuthorization {
   constructor(private readonly deps: Deps) {}
@@ -25,8 +27,14 @@ export class WorkAuthorization {
   async requireOperate(input: WorkReadInput, options: OperateOptions = {}): Promise<WorkScope> {
     const assessment = await this.assess(input, true);
     if (assessment.reason) throw new AssignedIssueError(assessment.reason);
-    if (options.currentSource && assessment.contentHash !== assessment.source.snapshot.contentHash) throw new AssignedIssueError("source_changed");
-    return { projectId: input.projectId, taskId: input.taskId, actorId: input.actorId, sourceSnapshotId: assessment.source.snapshot.id, claimRevision: assessment.claim!.revision };
+    const source = await this.currentSource(input, assessment, options);
+    return { projectId: input.projectId, taskId: input.taskId, actorId: input.actorId, sourceSnapshotId: source.snapshot.id, claimRevision: assessment.claim!.revision };
+  }
+
+  private async currentSource(input: WorkReadInput, assessment: WorkAssessment, options: OperateOptions) {
+    if (!options.currentSource || assessment.contentHash === assessment.source.snapshot.contentHash) return assessment.source;
+    if (!options.refreshSource || !assessment.issue || !this.deps.refresher) throw new AssignedIssueError("source_changed");
+    return this.deps.refresher.resolve({ projectId: input.projectId, actorId: input.actorId, issue: assessment.issue });
   }
 
   async assess(input: WorkReadInput, failOnProvider: boolean): Promise<WorkAssessment> {

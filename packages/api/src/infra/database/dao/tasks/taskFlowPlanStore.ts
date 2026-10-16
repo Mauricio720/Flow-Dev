@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { ActionConclusion, ActionRecord, ActionRelocation, PlanRecord, PlanSaveReceipt, PlanStore, PlannedAction } from "../../../../application/database/dao/taskFlowDao";
 import type { Database } from "../../client";
 import { taskExecutionActions, taskExecutionPlanSaves, taskExecutionPlans, taskExecutionRuntimeBindings } from "../../schema";
@@ -35,7 +35,7 @@ export class TaskFlowPlanStore implements PlanStore {
 
   async replacePlanned(input: { planId: string; revision: number; actions: PlannedAction[] }) {
     const [plan] = await this.database.update(taskExecutionPlans).set({ revision: input.revision, updatedAt: new Date() }).where(eq(taskExecutionPlans.id, input.planId)).returning();
-    await this.database.delete(taskExecutionActions).where(and(eq(taskExecutionActions.planId, input.planId), eq(taskExecutionActions.state, PLANNED_STATE)));
+    await this.database.delete(taskExecutionActions).where(and(eq(taskExecutionActions.planId, input.planId), eq(taskExecutionActions.state, PLANNED_STATE), isNull(taskExecutionActions.supersededAt)));
     await this.writeActions(plan!, input.actions);
     return this.hydrate(plan!);
   }
@@ -62,7 +62,7 @@ export class TaskFlowPlanStore implements PlanStore {
   }
 
   private async hydrate(row: typeof taskExecutionPlans.$inferSelect): Promise<PlanRecord> {
-    const actions = await this.database.select().from(taskExecutionActions).where(eq(taskExecutionActions.planId, row.id)).orderBy(asc(taskExecutionActions.position));
+    const actions = await this.database.select().from(taskExecutionActions).where(and(eq(taskExecutionActions.planId, row.id), isNull(taskExecutionActions.supersededAt))).orderBy(asc(taskExecutionActions.position));
     const bindings = actions.length ? await this.database.select().from(taskExecutionRuntimeBindings).where(inArray(taskExecutionRuntimeBindings.actionId, actions.map((action) => action.id))) : [];
     return toPlan(row, actions.map((action): ActionRecord => toAction(action, bindings)));
   }

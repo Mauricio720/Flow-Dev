@@ -27,6 +27,14 @@ describe("usePlanningActions", () => {
     expect(planningApi.selectRoute.mutate).toHaveBeenCalledWith(expect.objectContaining({ taskId: T, expectedVersion: 10, expectedDecisionVersion: 1, selectedRoute: "prd" }));
   });
 
+  it("sends a replan with the current task version", async () => {
+    planningApi.replan.mutate.mockResolvedValue(RECEIPT);
+    const { view } = mount();
+    await act(async () => { await view.result.current.replan(); });
+    expect(planningApi.replan.mutate).toHaveBeenCalledWith(expect.objectContaining({ projectId: P, taskId: T, expectedVersion: 10 }));
+    expect(view.result.current.command.phase).toBe("idle");
+  });
+
   it("UT-047 enters an uncertain state and blocks approval after a lost response", async () => {
     planningApi.selectRoute.mutate.mockRejectedValue(lostResponse());
     const { view } = mount();

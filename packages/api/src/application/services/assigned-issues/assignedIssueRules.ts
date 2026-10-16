@@ -8,7 +8,7 @@ export const READY_STATUS_NAME = "ready";
 
 export type EligibilityContext = { repositoryNodeId: string; githubUserId: string; readyOptionId: string; boardNodeId: string };
 export type Assessment = "eligible" | "malformed" | "not_issue" | "archived" | "closed" | "other_board" | "other_repository" | "not_ready" | "not_assigned" | "assignees_incomplete";
-export type VerifiedIssue = { nodeId: string; number: number; url: string; title: string; body: string; updatedAt: string; repositoryId: string; repositoryNodeId: string };
+export type VerifiedIssue = { nodeId: string; number: number; url: string; title: string; body: string; updatedAt: string; repositoryId: string; repositoryNodeId: string; authorDatabaseId: string | null };
 
 export function assessItem(item: BoardItemFacts, context: EligibilityContext): Assessment {
   if (item.archived) return "archived";
@@ -30,7 +30,7 @@ export function verifiedIssue(item: BoardItemFacts): VerifiedIssue | null {
   const issue = item.issue;
   if (!issue?.nodeId || !issue.number || !issue.url || issue.title === null || issue.body === null) return null;
   if (!issue.updatedAt || !issue.repositoryId || !issue.repositoryNodeId || !item.boardNodeId) return null;
-  return { nodeId: issue.nodeId, number: issue.number, url: issue.url, title: issue.title, body: issue.body, updatedAt: issue.updatedAt, repositoryId: issue.repositoryId, repositoryNodeId: issue.repositoryNodeId };
+  return { nodeId: issue.nodeId, number: issue.number, url: issue.url, title: issue.title, body: issue.body, updatedAt: issue.updatedAt, repositoryId: issue.repositoryId, repositoryNodeId: issue.repositoryNodeId, authorDatabaseId: issue.author?.databaseId ?? null };
 }
 
 export function sourceContentHash(input: { repositoryId: string; issueNodeId: string; title: string; bodyMarkdown: string }) {

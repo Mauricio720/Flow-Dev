@@ -1,6 +1,6 @@
 import type { PlanningRoute } from "../application/services/tasks/planningContracts";
 import type { PlanningService } from "../application/services/tasks/planningService";
-import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
+import type { OperateOptions, WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import type { SessionPrincipal } from "../context";
 import { requirePlanningConfiguration } from "./planningInputGuard";
@@ -9,12 +9,13 @@ import { finishPlanningCommand } from "./planningEvents";
 type Scope = { projectId: string; taskId: string };
 type Command = Scope & { requestKey: string; expectedVersion: number };
 type Review = Command & { decisionId: string; expectedDecisionVersion: number };
+const REANALYZE_SOURCE: OperateOptions = { currentSource: true, refreshSource: true };
 
 export class TaskPlanningController {
   constructor(private readonly planning: PlanningService, private readonly authorization: WorkAuthorization, private readonly configuration: () => void = requirePlanningConfiguration) {}
 
   async start(actor: SessionPrincipal, input: Command) {
-    await this.requireOperator(actor, input);
+    await this.requireOperator(actor, input, REANALYZE_SOURCE);
     const result = await this.planning.start({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor), beforeAccept: this.configuration });
     return finishPlanningCommand("planning.accepted", input.requestKey, result);
   }
@@ -22,6 +23,12 @@ export class TaskPlanningController {
   async retry(actor: SessionPrincipal, input: Command & { failedOperationId: string }) {
     await this.requireOperator(actor, input);
     const result = await this.planning.retry({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor), beforeAccept: this.configuration });
+    return finishPlanningCommand("planning.accepted", input.requestKey, result);
+  }
+
+  async replan(actor: SessionPrincipal, input: Command) {
+    await this.requireOperator(actor, input, REANALYZE_SOURCE);
+    const result = await this.planning.replan({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor), beforeAccept: this.configuration });
     return finishPlanningCommand("planning.accepted", input.requestKey, result);
   }
 
@@ -42,8 +49,8 @@ export class TaskPlanningController {
     return this.planning.submission({ ...input, actorUserId: actor.userId });
   }
 
-  private requireOperator(actor: SessionPrincipal, scope: Scope) {
-    return this.authorization.requireOperate({ projectId: scope.projectId, taskId: scope.taskId, actorId: actor.userId }, { currentSource: true });
+  private requireOperator(actor: SessionPrincipal, scope: Scope, options: OperateOptions = { currentSource: true }) {
+    return this.authorization.requireOperate({ projectId: scope.projectId, taskId: scope.taskId, actorId: actor.userId }, options);
   }
 }
 

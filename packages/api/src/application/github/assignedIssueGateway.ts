@@ -1,4 +1,5 @@
 export type BoardAssignee = { githubId: string; login: string | null };
+export type IssueAuthor = { databaseId: string; login: string | null };
 export type BoardIssueContent = {
   nodeId: string | null;
   number: number | null;
@@ -11,6 +12,7 @@ export type BoardIssueContent = {
   repositoryId: string | null;
   repositoryOwner: string | null;
   repositoryName: string | null;
+  author: IssueAuthor | null;
   assignees: BoardAssignee[];
   assigneesHasNextPage: boolean;
   assigneesCursor: string | null;

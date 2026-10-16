@@ -8,6 +8,7 @@ export function createTaskPlanningRouter(controller: () => TaskPlanningControlle
   return router({
     start: protectedProcedure.input(planningCommandInputSchema).mutation(({ ctx, input }) => call(() => controller().start(ctx.principal, input))),
     retry: protectedProcedure.input(planningRetryInputSchema).mutation(({ ctx, input }) => call(() => controller().retry(ctx.principal, input))),
+    replan: protectedProcedure.input(planningCommandInputSchema).mutation(({ ctx, input }) => call(() => controller().replan(ctx.principal, input))),
     selectRoute: protectedProcedure.input(planningSelectionInputSchema).mutation(({ ctx, input }) => call(() => controller().selectRoute(ctx.principal, input))),
     approve: protectedProcedure.input(planningApprovalInputSchema).mutation(({ ctx, input }) => call(() => controller().approve(ctx.principal, input))),
     submission: protectedProcedure.input(planningSubmissionInputSchema).query(({ ctx, input }) => call(() => controller().submission(ctx.principal, input))),

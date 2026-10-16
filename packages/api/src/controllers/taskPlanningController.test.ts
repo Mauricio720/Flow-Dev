@@ -13,17 +13,23 @@ const receipt = { taskId, operationId: "o", decisionId: null, version: 8, decisi
 const review = { ...command, decisionId: "d", expectedDecisionVersion: 1, reviewedRoute: "prd" as const };
 
 function build(configuration = () => {}) {
-  const planning = { start: vi.fn(async (_input?: { beforeAccept?: () => void }) => ({ ...receipt, replayed: false })), retry: vi.fn(async () => ({ ...receipt, replayed: false })), approve: vi.fn(async () => ({ ...receipt, replayed: false })), selectRoute: vi.fn(async () => ({ ...receipt, replayed: false })), submission: vi.fn(async () => ({ status: "not_accepted" as const })) };
+  const planning = { start: vi.fn(async (_input?: { beforeAccept?: () => void }) => ({ ...receipt, replayed: false })), retry: vi.fn(async () => ({ ...receipt, replayed: false })), replan: vi.fn(async () => ({ ...receipt, replayed: false })), approve: vi.fn(async () => ({ ...receipt, replayed: false })), selectRoute: vi.fn(async () => ({ ...receipt, replayed: false })), submission: vi.fn(async () => ({ status: "not_accepted" as const })) };
   const authorization = { requireOperate: vi.fn(async (input: { actorId: string; taskId: string }) => { if (input.actorId !== "operator") throw new AssignedIssueError("operator_required"); if (input.taskId !== taskId) throw new AssignedIssueError("work_unavailable"); }), requireRead: vi.fn(async (input: { taskId: string }) => { if (input.taskId !== taskId) throw new AssignedIssueError("work_unavailable"); }) };
   return { planning, authorization, controller: new TaskPlanningController(planning as unknown as PlanningService, authorization as unknown as WorkAuthorization, configuration) };
 }
 
 describe("TaskPlanningController", () => {
-  it("UT-015 returns the accepted receipt for the operator after requiring the current source", async () => {
+  it("UT-015 returns the accepted receipt for the operator after reanalyzing the current source", async () => {
     const { controller, planning, authorization } = build();
     expect(await controller.start(operator, command)).toEqual(receipt);
     expect(planning.start).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: "operator", sessionId: "s" }));
-    expect(authorization.requireOperate).toHaveBeenCalledWith({ projectId, taskId, actorId: "operator" }, { currentSource: true });
+    expect(authorization.requireOperate).toHaveBeenCalledWith({ projectId, taskId, actorId: "operator" }, { currentSource: true, refreshSource: true });
+  });
+
+  it("replans against the current GitHub text instead of blocking on a changed Issue", async () => {
+    const { controller, authorization } = build();
+    await controller.replan(operator, command);
+    expect(authorization.requireOperate).toHaveBeenCalledWith({ projectId, taskId, actorId: "operator" }, { currentSource: true, refreshSource: true });
   });
 
   it("UT-035 rejects an observer before any planning write", async () => {

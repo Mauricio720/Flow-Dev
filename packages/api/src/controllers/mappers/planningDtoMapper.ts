@@ -2,20 +2,23 @@ import type { PlanningDecisionRecord, PlanningProjectionRecord } from "../../app
 import { parsePlanningAssessment, planningEligibility, planningListStatus } from "../../application/services/tasks/planningRules";
 import { decisionMatchesSource, planningSourceEligibility } from "../../application/services/tasks/planningSourceInput";
 import { PlanningDomainError } from "../../application/services/tasks/planningContracts";
+import { canReplan } from "../../application/services/tasks/planningReplanRules";
 import { TaskError } from "../../application/services/tasks/taskErrors";
 
 type Viewer = { canOperate: boolean };
 const PLANNABLE_STATUSES = ["published", "imported"];
-const EMPTY_PERMISSIONS = { canStart: false, canRetry: false, canSelectRoute: false, canApprove: false };
+const EMPTY_PERMISSIONS = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false };
 
 export { planningListStatus };
 
 export function planningDto(record: PlanningProjectionRecord, viewer: Viewer, now = new Date()) {
-  if (!PLANNABLE_STATUSES.includes(record.taskStatus)) return { status: null, eligibility: { canStart: false, reason: "publication_required" as const }, operation: null, decision: null, permissions: EMPTY_PERMISSIONS, source: null, history: [] };
+  if (!PLANNABLE_STATUSES.includes(record.taskStatus)) return { status: null, eligibility: { canStart: false, reason: "publication_required" as const }, operation: null, decision: null, replannable: false, permissions: EMPTY_PERMISSIONS, source: null, history: [] };
   const status = record.planningStatus ?? "awaiting";
   const eligibility = record.source ? planningSourceEligibility({ snapshotId: record.source.snapshotId, repositoryId: record.source.repositoryId, repositoryNodeId: record.source.repositoryNodeId, issueNodeId: record.source.issueNodeId, issueNumber: record.source.issueNumber, title: record.source.title, bodyMarkdown: record.source.bodyMarkdown }) : planningEligibility(record.publication, record.taskStatus);
   const decision = decisionDto(record, status);
-  return { status, eligibility, operation: operationDto(record, now), decision: decision && { ...decision, matchesCurrentSource: record.source ? decisionMatchesSource(record.decision!, record.source) : null }, permissions: permissions(status, eligibility.canStart, viewer), source: sourceDto(record), history: record.history.map((entry) => ({ ...entry, createdAt: entry.createdAt.toISOString() })) };
+  const matchesCurrentSource = decision && record.source ? decisionMatchesSource(record.decision!, record.source) : null;
+  const replannable = eligibility.canStart && canReplan({ planningStatus: status, activeOperationId: record.activeOperationId, selectedRoute: record.decision?.selectedRoute ?? null, sourceChanged: matchesCurrentSource === false, actions: record.flowActions });
+  return { status, eligibility, operation: operationDto(record, now), decision: decision && { ...decision, matchesCurrentSource }, replannable, permissions: permissions({ status, canStart: eligibility.canStart, replannable }, viewer), source: sourceDto(record), history: record.history.map((entry) => ({ ...entry, createdAt: entry.createdAt.toISOString() })) };
 }
 
 function sourceDto(record: PlanningProjectionRecord) {
@@ -23,9 +26,9 @@ function sourceDto(record: PlanningProjectionRecord) {
   return source && { snapshotId: source.snapshotId, revision: source.revision, origin: source.origin, contentHash: source.contentHash, issueNumber: source.issueNumber, issueUrl: source.issueUrl };
 }
 
-function permissions(status: string, canStart: boolean, viewer: Viewer) {
+function permissions({ status, canStart, replannable }: { status: string; canStart: boolean; replannable: boolean }, viewer: Viewer) {
   if (!viewer.canOperate) return EMPTY_PERMISSIONS;
-  return { canStart: status === "awaiting" && canStart, canRetry: status === "failed", canSelectRoute: status === "review", canApprove: status === "review" };
+  return { canStart: status === "awaiting" && canStart, canRetry: status === "failed", canReplan: replannable, canSelectRoute: status === "review", canApprove: status === "review" };
 }
 
 function decisionDto(record: PlanningProjectionRecord, status: string) {

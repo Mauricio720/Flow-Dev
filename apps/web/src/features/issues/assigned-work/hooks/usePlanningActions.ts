@@ -20,6 +20,7 @@ export function usePlanningActions(context: Input) {
   return {
     command, draftRoute, setDraftRoute, reconcile, resend, reviewed,
     start: () => run({ action: "planning.start", taskId: scope.taskId, expectedVersion: scope.version }),
+    replan: () => run({ action: "planning.replan", taskId: scope.taskId, expectedVersion: scope.version }),
     retry: (failedOperationId: string) => run({ action: "planning.retry", taskId: scope.taskId, expectedVersion: scope.version, failedOperationId }),
     saveRoute: (route: PlanningRoute) => decision && run(reviewCommand("planning.selectRoute", scope, decision, route)),
     approve: () => decision && run(reviewCommand("planning.approve", scope, decision, decision.selectedRoute)),

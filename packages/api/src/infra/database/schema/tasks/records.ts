@@ -79,7 +79,7 @@ export const taskCommandReceipts = pgTable("task_command_receipts", {
   revisionId: uuid("revision_id"),
   acceptedResult: jsonb("accepted_result").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (table) => [unique("task_command_receipts_scope_unique").on(table.projectId, table.actorUserId, table.action, table.requestKey), check("task_command_receipts_action_check", sql`${table.action} in ('start','send','retryGeneration','resolveRefinement','saveDraft','publish','reconcilePublication','planning.start','planning.retry','planning.selectRoute','planning.approve')`)]);
+}, (table) => [unique("task_command_receipts_scope_unique").on(table.projectId, table.actorUserId, table.action, table.requestKey), check("task_command_receipts_action_check", sql`${table.action} in ('start','send','retryGeneration','resolveRefinement','saveDraft','publish','reconcilePublication','planning.start','planning.retry','planning.selectRoute','planning.approve','planning.replan')`)]);
 
 export const taskRepositorySnapshot = pgTable("task_repository_snapshots", {
   taskId: uuid("task_id").primaryKey().references(() => tasks.id, { onDelete: "restrict" }),

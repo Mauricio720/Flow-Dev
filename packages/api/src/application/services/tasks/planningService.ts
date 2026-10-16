@@ -18,6 +18,10 @@ export class PlanningService {
     return this.dao.retry({ ...input, payloadHash: planningPayloadHash(input) });
   }
 
+  replan(input: Accepting) {
+    return this.dao.replan({ ...input, payloadHash: planningPayloadHash(input) });
+  }
+
   selectRoute(input: Review & { selectedRoute: PlanningRoute }) {
     return this.dao.selectRoute({ ...input, payloadHash: planningPayloadHash(input) });
   }

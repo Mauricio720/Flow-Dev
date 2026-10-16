@@ -29,6 +29,14 @@ export const STALE_NOTICE = "Mostrando o último estado confirmado. A atualizaç
 export const UNCERTAIN_NOTICE = "Não recebemos a confirmação da última ação. Verifique o envio antes de tentar de novo.";
 export const CONFLICT_NOTICE = "A tarefa mudou desde que você abriu esta tela. Revise a rota salva atual antes de continuar.";
 
+export const REPLAN_COPY = {
+  open: "Refazer planejamento",
+  group: "Refazer o planejamento desta Issue",
+  warning: "O Dev Control analisa de novo o texto atual da Issue e recomenda outra rota. Se faltar contexto, atualize a Issue no GitHub antes de confirmar. As ações configuradas no fluxo atual são arquivadas, e o worktree local continua como está.",
+  confirm: "Confirmar novo planejamento",
+  back: "Voltar",
+};
+
 export const OPERATION_STATE_LABEL: Record<string, string> = { queued: "Na fila do Dev Control", running: "Dev Control analisando", failed: "Análise falhou", succeeded: "Análise concluída" };
 
 export const PLANNING_REASON_MESSAGE: Record<string, string> = {
@@ -37,6 +45,7 @@ export const PLANNING_REASON_MESSAGE: Record<string, string> = {
   planning_retry_required: "A análise falhou. Use “Tentar novamente” para uma nova análise.",
   planning_not_failed: "Não há análise com falha para tentar de novo.",
   planning_approved: "O planejamento já foi aprovado e não aceita mudanças.",
+  replan_unavailable: "O planejamento só pode ser refeito quando nada está em execução e a etapa atual parou ou a Issue mudou. Atualize para ver o estado atual.",
   planning_not_ready: "A recomendação ainda não está pronta para revisão.",
   decision_unavailable: "A decisão de planejamento não está disponível para esta tarefa.",
   planning_capacity: "Há muitas análises em andamento. Tente de novo em instantes.",

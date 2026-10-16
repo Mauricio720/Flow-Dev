@@ -9,34 +9,38 @@ import type { Database } from "../../client";
 import { loadSource } from "../assigned-issues/sourceRecords";
 import { findPlanningReplay, findPlanningTask, savePlanningReceipt } from "./planningReceiptHelpers";
 import { requirePlanningOperator } from "./planningOperatorGuard";
+import { assertTaskAdmissionAllowed } from "../issue-deletion/deletionFence";
 
 const MAX_REQUESTER_ACTIVE = 5;
 const MAX_GLOBAL_ACTIVE = 100;
 const ADMISSION_RETRY_SECONDS = 30;
 
-type AcceptInput = PlanningCommandTarget & { expectedVersion: number; sessionId: string; beforeAccept?: () => void };
+export type AcceptInput = PlanningCommandTarget & { expectedVersion: number; sessionId: string; beforeAccept?: () => void };
 type RetryInput = AcceptInput & { failedOperationId: string };
-type PlanningTaskRow = Awaited<ReturnType<typeof findPlanningTask>>;
+
+export type PlanningTaskRow = Awaited<ReturnType<typeof findPlanningTask>>;
+export type PlanningAcceptance = { action: string; prepare: (task: PlanningTaskRow, db: Database) => void | Promise<void> };
 
 export function acceptPlanningStart(database: Database, input: AcceptInput) {
-  return accept(database, input, "planning.start", (task) => assertStartable(task, input));
+  return acceptPlanning(database, input, { action: "planning.start", prepare: (task) => assertStartable(task, input) });
 }
 
 export function acceptPlanningRetry(database: Database, input: RetryInput) {
-  return accept(database, input, "planning.retry", async (task, db) => {
+  return acceptPlanning(database, input, { action: "planning.retry", prepare: async (task, db) => {
     assertVersion(task, input);
     assertRetryable(task, await latestOperation(db, task), input.failedOperationId);
-  });
+  } });
 }
 
-async function accept(database: Database, input: AcceptInput, action: string, assertState: (task: PlanningTaskRow, db: Database) => void | Promise<void>): Promise<PlanningCommandResult> {
+export async function acceptPlanning(database: Database, input: AcceptInput, { action, prepare }: PlanningAcceptance): Promise<PlanningCommandResult> {
   return database.transaction(async (tx) => {
     const db = tx as unknown as Database;
     const task = await findPlanningTask(db, input);
     await requirePlanningOperator(db, { taskId: task.id, actorUserId: input.actorUserId });
     const replay = await findPlanningReplay(db, input, action);
     if (replay) return { ...replay, replayed: true };
-    await assertState(task, db);
+    await prepare(task, db);
+    await assertTaskAdmissionAllowed(db, task.id);
     input.beforeAccept?.();
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended('planning-admission', 1))`);
     await assertAdmission(db, input.actorUserId);
