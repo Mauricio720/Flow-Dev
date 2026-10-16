@@ -253,6 +253,27 @@
       "when": 1791860400000,
       "tag": "0035_opencode_local_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791946800000,
+      "tag": "0036_issue_deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792033200000,
+      "tag": "0037_task_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792119600000,
+      "tag": "0038_superseded_flow_actions",
+      "breakpoints": true
     }
   ]
 }
