@@ -7,9 +7,10 @@ export type DirectFailure = { outcome: "failed" | "blocked"; reason: string; det
 const STATUS_LINE = /^\s*status:\s*([A-Z_]+)\s*$/m;
 const REASON_LINE = /^\s*reason:\s*(.+?)\s*$/m;
 const COMPLETED = "COMPLETED";
+export const DIRECT_PARTIAL_REASON = "direct_partial";
 const MISSING: DirectFailure = { outcome: "failed", reason: "direct_outcome_missing", detail: null };
 const BLOCKED_REASONS: Record<Exclude<DirectOutcomeStatus, "COMPLETED">, string> = {
-  PARTIAL: "direct_partial",
+  PARTIAL: DIRECT_PARTIAL_REASON,
   BLOCKED: "direct_blocked",
   ROUTING_MISMATCH: "routing_mismatch",
 };

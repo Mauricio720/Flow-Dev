@@ -1,5 +1,6 @@
 "use client";
 
+import { ReplanControl, type ReplanOffer } from "../../components/ReplanControl";
 import { ConcludeReview } from "./ConcludeReview";
 import type { ConcludeOffer } from "./concludeOffer";
 import { ACTIVE_RUN_STATES, type FlowStage } from "./flowStages";
@@ -12,7 +13,7 @@ import type { FlowAction, FlowConnection, FlowRun, FlowTarget, MovableWorkspaceK
 import { useRunQuestions } from "./useRunQuestions";
 
 export type RetryOffer = { action: FlowAction; renewedRoles?: string[] | null; connections: FlowConnection[]; workspaceKinds: MovableWorkspaceKind[]; pending: boolean; lastRun: FlowRun | null; preparation?: LocalPreparation; onRetry: (bindings?: RetryRuntimeBindings, moveTo?: MovableWorkspaceKind) => void };
-type Props = { stage: FlowStage; runs: FlowRun[]; target: FlowTarget; canAct: boolean; busy: boolean; retry?: RetryOffer | null; conclude?: ConcludeOffer | null; concluded?: boolean; onChanged: () => Promise<void>; onCancel: (runId: string) => void };
+type Props = { stage: FlowStage; runs: FlowRun[]; target: FlowTarget; canAct: boolean; busy: boolean; retry?: RetryOffer | null; conclude?: ConcludeOffer | null; replan?: ReplanOffer | null; concluded?: boolean; onChanged: () => Promise<void>; onCancel: (runId: string) => void };
 
 const DONE_STATE = "done";
 
@@ -23,7 +24,7 @@ function nowCopy({ stage, asking, canAct, concluded }: { stage: FlowStage; askin
   return NOW_COPY[stage.key][stage.state] ?? FINISHED_NOW;
 }
 
-export function NowPanel({ stage, runs, target, canAct, busy, retry, conclude, concluded = false, onChanged, onCancel }: Props) {
+export function NowPanel({ stage, runs, target, canAct, busy, retry, conclude, replan, concluded = false, onChanged, onCancel }: Props) {
   const activeRun = runs.find((run) => ACTIVE_RUN_STATES.includes(run.state)) ?? null;
   const askable = activeRun && activeRun.kind !== "loop" ? activeRun.id : null;
   const questions = useRunQuestions(target, askable, onChanged);
@@ -35,7 +36,8 @@ export function NowPanel({ stage, runs, target, canAct, busy, retry, conclude, c
         <p className="max-w-[62ch] text-sm leading-6 text-ink-2">{copy.detail}</p>
       </div>
       {retry && !activeRun && <RetryRuntimeForm key={retry.action.id} {...retry} busy={busy} />}
-      {conclude && !activeRun && <ConcludeReview busy={busy} onConclude={conclude.onConclude} />}
+      {conclude && !activeRun && <ConcludeReview busy={busy} onConclude={conclude.onConclude} copy={conclude.copy} />}
+      {replan && !activeRun && <ReplanControl busy={busy || replan.busy} onReplan={replan.onReplan} />}
       <QuestionList state={questions} canAct={canAct} />
       {activeRun && <RunLive key={activeRun.id} run={activeRun} busy={busy} asking={questions.questions.length > 0} onCancel={canAct ? onCancel : null} />}
     </section>

@@ -2,7 +2,7 @@ import type { FlowAction, SkillFlowAction } from "../../../application/services/
 import { buildDirectPrompt } from "./directPrompt";
 import { buildPullRequestPrompt } from "./pullRequestPrompt";
 
-export type PromptTask = { title: string; bodyMarkdown: string; issueNumber: number };
+export type PromptTask = { title: string; bodyMarkdown: string; issueNumber: number; acceptedPending?: string };
 
 const SKILL_BY_KIND: Record<string, string> = { create_spec: "cy-create-spec", create_tasks: "cy-create-tasks" };
 const OUTPUT_BY_KIND: Record<string, string> = {

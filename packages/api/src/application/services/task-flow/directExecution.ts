@@ -1,4 +1,5 @@
 import type { FlowAction } from "./flowContracts";
+import { isPullRequestAction } from "./pullRequestAction";
 import { TaskFlowError } from "./taskFlowErrors";
 
 export const DIRECT_ACTION_KIND = "direct_execute";
@@ -18,11 +19,12 @@ export function flowRouteOf(selectedRoute: string | null | undefined): FlowRoute
   return selectedRoute === DIRECT_PLANNING_ROUTE ? DIRECT_ROUTE : SPEC_ROUTE;
 }
 
-/** Direct execution replaces the whole spec pipeline, so it is the only action of its plan and runs on the operator's machine. */
+/** Direct execution replaces the whole spec pipeline: it opens its plan, runs on the operator's machine and may only be followed by publishing its result. */
 export function assertRouteShape(actions: FlowAction[], route: FlowRoute = SPEC_ROUTE) {
   const direct = actions.filter(isDirectAction);
   if (route === SPEC_ROUTE && direct.length > 0) throw new TaskFlowError("route_unsupported");
   if (route === SPEC_ROUTE) return;
-  if (direct.length !== 1 || actions.length !== 1) throw new TaskFlowError("route_unsupported");
+  const followers = actions.slice(1);
+  if (direct.length !== 1 || !isDirectAction(actions[0]!) || followers.some((action) => !isPullRequestAction(action))) throw new TaskFlowError("route_unsupported");
   if (direct[0]!.workspace.kind !== LOCAL_WORKSPACE) throw new TaskFlowError("worktree_not_ready", undefined, { cause: "local_required" });
 }

@@ -4,6 +4,7 @@ import type { PlannedAction } from "../src/application/database/dao/taskFlowDao"
 import { failureOf } from "./software-support";
 import { closeTaskFixture } from "./task-api-support";
 import { flowFixture, type FlowFixture } from "./task-flow-fixture";
+import { fixtureConnection } from "./task-flow-support";
 
 let current: FlowFixture | undefined;
 afterEach(async () => { await closeTaskFixture(); current = undefined; });
@@ -53,5 +54,36 @@ describe("concluding a failed review", () => {
     current = await flowFixture();
     const { reviewId } = await reviewedFlow(current, { implementation: "failed", review: "failed" });
     expect(await failureOf(current.author.concludeReview({ ...current.scope, actionId: reviewId, expectedRevision: PLAN_REVISION }))).toMatchObject({ reason: "stage_prerequisite" });
+  });
+});
+
+async function directFlow(fixture: FlowFixture, terminalCode: string) {
+  const { taskId, ownerId, database } = fixture.setup;
+  const connectionId = await fixtureConnection(database);
+  const plan = await fixture.flow.plans.insert({ taskId, actorId: ownerId, revision: PLAN_REVISION });
+  const direct: PlannedAction = { position: 1, kind: "direct_execute", loopName: null, loopVersion: null, inputs: {}, workspace: { kind: "isolated" }, bindings: [{ role: "main", connectionId, providerId: "codex", modelId: "gpt-5.6-sol", reasoningEffort: "high" }] };
+  const [action] = (await fixture.flow.plans.replacePlanned({ planId: plan.id, revision: PLAN_REVISION, actions: [direct] })).actions;
+  const run = await fixture.flow.runs.insert({ actionId: action!.id, taskId, snapshot: { kind: "direct_execute" }, worktreeId: null, connectionIds: [connectionId], isWrite: true, idempotencyKey: crypto.randomUUID(), requestedBy: ownerId });
+  await database.execute(sql`UPDATE task_execution_runs SET state='blocked', terminal_code=${terminalCode}, finished_at=now() WHERE id=${run.id}`);
+  await database.execute(sql`UPDATE task_execution_actions SET state='blocked' WHERE id=${action!.id}`);
+  return { actionId: action!.id, input: { ...fixture.scope, actionId: action!.id, expectedRevision: PLAN_REVISION } };
+}
+
+describe("accepting a partial direct execution", () => {
+  it("lets the operator accept a direct execution that ended as partial and records who did it", async () => {
+    current = await flowFixture();
+    const { actionId, input } = await directFlow(current, "direct_partial");
+    expect(await failureOf(current.reader.acceptPartialDirect(input))).toMatchObject({ code: "FORBIDDEN" });
+    const accepted = await current.author.acceptPartialDirect(input);
+    expect(accepted).toMatchObject({ actionId, state: "succeeded" });
+    expect((await current.author.byTask(current.scope)).plan!.actions[0]).toMatchObject({ state: "succeeded", concludedAt: expect.anything() });
+    expect((await current.author.acceptPartialDirect(input)).concludedAt).toEqual(accepted.concludedAt);
+  });
+
+  it("refuses a direct execution that stopped for any reason other than a partial result", async () => {
+    current = await flowFixture();
+    const { input } = await directFlow(current, "direct_blocked");
+    expect(await failureOf(current.author.acceptPartialDirect(input))).toMatchObject({ reason: "action_unavailable" });
+    expect(await failureOf(current.author.concludeReview(input))).toMatchObject({ reason: "action_unavailable" });
   });
 });

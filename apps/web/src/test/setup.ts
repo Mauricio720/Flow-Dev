@@ -41,6 +41,7 @@ vi.mock("@/lib/trpc/client", () => ({
       startAction: { mutate: vi.fn() },
       cancelRun: { mutate: vi.fn() },
       concludeReview: { mutate: vi.fn() },
+      acceptPartialDirect: { mutate: vi.fn() },
       retryAction: { mutate: vi.fn() },
       moveAction: { mutate: vi.fn() },
       prepareLocalAction: { mutate: vi.fn() },
@@ -92,6 +93,7 @@ vi.mock("@/lib/trpc/client", () => ({
       planning: {
         start: { mutate: vi.fn() },
         retry: { mutate: vi.fn() },
+        replan: { mutate: vi.fn() },
         selectRoute: { mutate: vi.fn() },
         approve: { mutate: vi.fn() },
         submission: { query: vi.fn() },
@@ -110,7 +112,10 @@ vi.mock("next/navigation", () => {
   return { useRouter: () => router, redirect };
 });
 
-beforeEach(() => { vi.mocked(trpc.taskFlow.questions.query).mockResolvedValue([]); });
+beforeEach(() => {
+  vi.mocked(trpc.taskFlow.questions.query).mockResolvedValue([]);
+  vi.mocked(trpc.taskFlow.package.query).mockReturnValue(new Promise(() => undefined) as never);
+});
 
 afterEach(() => {
   cleanup();

@@ -24,16 +24,17 @@ function toDraft(action: FlowAction): DraftAction {
 }
 
 function draftFrom(plan: FlowPlan | null, direct: boolean): DraftAction[] {
-  if (plan) return plan.actions.map(toDraft);
+  if (plan?.actions.length) return plan.actions.map(toDraft);
   return [{ kind: direct ? FIRST_KIND.direct : FIRST_KIND.spec, language: DEFAULT_LANGUAGE, runtime: null, workspace: direct ? { kind: "local" } : ISOLATED }];
 }
 
 export function usePlanDraft(plan: FlowPlan | null, direct = false) {
   const revision = plan?.revision ?? 0;
-  const [seen, setSeen] = useState(revision);
+  const draftKey = `${revision}:${direct}`;
+  const [seen, setSeen] = useState(draftKey);
   const [draft, setDraft] = useState(() => draftFrom(plan, direct));
-  if (seen !== revision) {
-    setSeen(revision);
+  if (seen !== draftKey) {
+    setSeen(draftKey);
     setDraft(draftFrom(plan, direct));
   }
   const patch = (index: number, change: Partial<DraftAction>) => setDraft((current) => current.map((action, position) => (position === index ? { ...action, ...change } : action)));

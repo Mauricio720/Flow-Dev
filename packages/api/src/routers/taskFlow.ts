@@ -17,6 +17,7 @@ export function createTaskFlowRouter(controller?: TaskFlowController) {
     approvePackage: protectedProcedure.input(approvePackageSchema).mutation(({ ctx, input }) => call(async () => (await get()).approvePackage(ctx.principal, input))),
     cancelRun: protectedProcedure.input(cancelRunSchema).mutation(({ ctx, input }) => call(async () => (await get()).cancelRun(ctx.principal, input))),
     concludeReview: protectedProcedure.input(concludeReviewSchema).mutation(({ ctx, input }) => call(async () => (await get()).concludeReview(ctx.principal, input))),
+    acceptPartialDirect: protectedProcedure.input(concludeReviewSchema).mutation(({ ctx, input }) => call(async () => (await get()).acceptPartialDirect(ctx.principal, input))),
     retryAction: protectedProcedure.input(retryActionSchema).mutation(({ ctx, input }) => call(async () => (await get()).retryAction(ctx.principal, input))),
     moveAction: protectedProcedure.input(moveActionSchema).mutation(({ ctx, input }) => call(async () => (await get()).moveAction(ctx.principal, input))),
     savePlan: protectedProcedure.input(savePlanSchema).mutation(({ ctx, input }) => call(async () => (await get()).savePlan(ctx.principal, input))),

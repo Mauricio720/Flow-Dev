@@ -1,7 +1,8 @@
 import type { ActionRecord, PlanRecord } from "../../database/dao/taskFlowDao";
 import type { TaskFlowGate } from "./taskFlowPorts";
 import { implementationConcluded, isReviewLoop } from "./loopOrder";
-import { isPullRequestAction, reviewPassedCleanly } from "./pullRequestAction";
+import { isPullRequestAction } from "./pullRequestAction";
+import { pullRequestReleased } from "./pullRequestRelease";
 import { TaskFlowError } from "./taskFlowErrors";
 
 const SUCCEEDED_STATE = "succeeded";
@@ -33,5 +34,5 @@ export async function assertPrerequisites(input: { plan: PlanRecord; action: Act
   if (action.kind === "create_tasks" && !(await gate.approvedSpec(taskId))) throw new TaskFlowError("stage_prerequisite");
   if (action.kind === "loop" && !(await gate.approvedTasks(taskId))) throw new TaskFlowError("stage_prerequisite");
   if (isReviewLoop(action) && !implementationConcluded(earlier)) throw new TaskFlowError("stage_prerequisite");
-  if (isPullRequestAction(action) && !reviewPassedCleanly(earlier)) throw new TaskFlowError("stage_prerequisite");
+  if (isPullRequestAction(action) && !pullRequestReleased(earlier)) throw new TaskFlowError("stage_prerequisite");
 }

@@ -5,7 +5,7 @@ import { assertPrerequisites, findPreparableAction } from "./admissionChecks";
 import { TaskFlowOptions } from "./taskFlowOptions";
 import { TaskFlowPlanService, type SavePlanInput } from "./taskFlowPlanService";
 import { ISOLATED_ONLY, type TaskScope } from "./taskFlowPorts";
-import { TaskFlowConclusion, type ConcludeReviewInput } from "./taskFlowConclusion";
+import { TaskFlowConclusion, type ConcludeReviewInput, type ConclusionKind } from "./taskFlowConclusion";
 import { TaskFlowPackageService, type ApprovePackageInput } from "./taskFlowPackageService";
 import { TaskFlowReader, type RunsInput } from "./taskFlowReader";
 import { TaskFlowRunControl, type CancelRunInput } from "./taskFlowRunControl";
@@ -84,7 +84,7 @@ export class TaskFlowService {
 
   startAction = (scope: TaskScope, input: StartInput) => this.admit(scope, input, "start");
   retryAction = (scope: TaskScope, input: StartInput) => this.admit(scope, input, "retry");
-  concludeReview = (scope: TaskScope, input: ConcludeReviewInput) => new TaskFlowConclusion(this.deps.unit, this.deps.control?.clock).conclude(scope, input);
+  concludeAction = (scope: TaskScope, input: ConcludeReviewInput, kind: ConclusionKind) => new TaskFlowConclusion(this.deps.unit, this.deps.control?.clock).conclude(scope, input, kind);
   moveAction = (scope: TaskScope, input: MoveActionInput) => new TaskFlowRelocation(this.deps).move(scope, input);
 
   private async admit(scope: TaskScope, input: StartInput, mode: "start" | "retry") {

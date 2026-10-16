@@ -8,13 +8,14 @@ import { LocalExecutionError } from "../../application/services/local-execution/
 import { settleReportedGates } from "./reportedGateSettlement";
 import { approvedLoopFiles, approvedSpecFiles } from "../../application/services/local-execution/loopTaskFiles";
 import { deterministicLocalRequestKey } from "./requestKey";
+import { publishedTask } from "../../application/services/local-execution/acceptedPending";
 
 const COMMAND_LEASE_MS = 60_000;
 const LOOP_KIND = "loop";
 const TASKS_KIND = "create_tasks";
 
 export class LocalActionExecutor implements ActionExecutor {
-  constructor(private readonly deps: { local: LocalConnectorDao; flow: Pick<TaskFlowDao, "taskContext"> & Partial<Pick<TaskFlowDao, "packages">>; fallback: Partial<ActionExecutor>; now?: () => Date }) {}
+  constructor(private readonly deps: { local: LocalConnectorDao; flow: Pick<TaskFlowDao, "taskContext"> & Partial<Pick<TaskFlowDao, "packages" | "runs">>; fallback: Partial<ActionExecutor>; now?: () => Date }) {}
 
   async execute(request: ExecutionRequest): Promise<ExecutionResult> {
     const snapshot = request.snapshot;
@@ -26,7 +27,7 @@ export class LocalActionExecutor implements ActionExecutor {
     if (!context || context.projectId === "" || !context.source) return { kind: "blocked", code: "task_unavailable" } as const;
     const taskFiles = await this.taskFiles(snapshot.kind, request.run.taskId);
     if (taskFiles === null) return { kind: "blocked", code: "artifact_conflict" } as const;
-    const payload = { preparationId: prep.preparationId, actionId: request.run.actionId, taskId: request.run.taskId, snapshot: snapshot as unknown as Record<string, unknown>, task: context.source, ...(taskFiles ? { taskFiles } : {}) };
+    const payload = { preparationId: prep.preparationId, actionId: request.run.actionId, taskId: request.run.taskId, snapshot: snapshot as unknown as Record<string, unknown>, task: await publishedTask({ kind: snapshot.kind, taskId: request.run.taskId, source: context.source, runs: this.deps.flow.runs }), ...(taskFiles ? { taskFiles } : {}) };
     const now = (this.deps.now ?? (() => new Date()))();
     const commandId = deterministicLocalRequestKey(request.run.id, "start");
     try {

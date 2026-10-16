@@ -4,12 +4,17 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { draftToInput, type DraftContext } from "./draftToInput";
 import type { DraftAction, FlowTarget, MovableWorkspaceKind, PlanActionInput, RetryRuntimeBindings } from "./unifiedContract";
-import { CONCLUDE_COPY } from "./stageCopy";
+import { ACCEPT_PARTIAL_COPY, CONCLUDE_COPY } from "./stageCopy";
 import { describeFailure } from "./unifiedReasons";
 import { SETTLED_PREPARATION_STATES, usePreparationPolling, type Preparation } from "./usePreparationPolling";
 
 type Notice = { tone: "ok" | "error"; text: string } | null;
 const INCOMPLETE_CHOICE = "Escolha conexão, modelo, raciocínio e checkout em cada ação. Se escolher um worktree, informe um nome ou selecione um válido antes de salvar.";
+
+function withoutPreparation(preparations: Record<string, Preparation>, actionId: string) {
+  if (!(actionId in preparations)) return preparations;
+  return Object.fromEntries(Object.entries(preparations).filter(([key]) => key !== actionId));
+}
 
 export function useFlowCommands(target: FlowTarget, onChanged: () => Promise<void>) {
   const [busy, setBusy] = useState(false);
@@ -21,6 +26,7 @@ export function useFlowCommands(target: FlowTarget, onChanged: () => Promise<voi
     setBusy(true);
     try {
       await operation();
+      if (actionId) setPreparations((current) => withoutPreparation(current, actionId));
       setNotice({ tone: "ok", text: success });
     } catch (error) {
       const failure = describeFailure(error);
@@ -82,8 +88,9 @@ export function useFlowCommands(target: FlowTarget, onChanged: () => Promise<voi
     run(() => trpc.taskFlow.cancelRun.mutate({ ...target, runId, idempotencyKey: crypto.randomUUID() }), "Pedido de cancelamento concluído. Nenhuma outra ação foi iniciada.");
 
   const concludeReview = (input: { actionId: string; expectedRevision: number }) => run(() => trpc.taskFlow.concludeReview.mutate({ ...target, ...input }), CONCLUDE_COPY.done);
+  const acceptPartialDirect = (input: { actionId: string; expectedRevision: number }) => run(() => trpc.taskFlow.acceptPartialDirect.mutate({ ...target, ...input }), ACCEPT_PARTIAL_COPY.done);
   const approvePackage = (input: { packageId: string; version: number }) =>
     run(() => trpc.taskFlow.approvePackage.mutate({ ...target, ...input, idempotencyKey: crypto.randomUUID() }), "Pacote aprovado. Escolha e inicie a próxima ação no fluxo.");
 
-  return { busy, notice, savePlan, prepareLocalAction, preparations, startAction, retryAction, retryFailedAction, retryPending: autoRetry !== null, cancelRun, approvePackage, concludeReview };
+  return { busy, notice, savePlan, prepareLocalAction, preparations, startAction, retryAction, retryFailedAction, retryPending: autoRetry !== null, cancelRun, approvePackage, concludeReview, acceptPartialDirect };
 }

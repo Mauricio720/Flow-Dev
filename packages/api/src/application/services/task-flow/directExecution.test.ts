@@ -18,6 +18,13 @@ describe("direct execution route", () => {
     expect(() => assertRouteShape([direct()], "direct")).not.toThrow();
   });
 
+  it("lets the direct route publish its result with a pull request after the direct action", () => {
+    const publish: FlowAction = { kind: "open_pull_request", language: "pt-BR", runtime, workspace: { kind: "local" } };
+    expect(() => assertRouteShape([direct(), publish], "direct")).not.toThrow();
+    expect(() => assertRouteShape([publish, direct()], "direct")).toThrowError(new TaskFlowError("route_unsupported"));
+    expect(() => assertRouteShape([direct(), spec], "direct")).toThrowError(new TaskFlowError("route_unsupported"));
+  });
+
   it("rejects spec actions on the direct route and direct actions on a spec route", () => {
     expect(() => assertRouteShape([spec], "direct")).toThrowError(new TaskFlowError("route_unsupported"));
     expect(() => assertRouteShape([direct(), direct()], "direct")).toThrowError(new TaskFlowError("route_unsupported"));

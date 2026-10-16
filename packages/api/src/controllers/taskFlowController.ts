@@ -2,6 +2,7 @@ import { AssignedIssueError } from "../application/services/assigned-issues/assi
 import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import { TaskFlowError } from "../application/services/task-flow/taskFlowErrors";
 import type { TaskScope } from "../application/services/task-flow/taskFlowPorts";
+import type { ConcludeReviewInput as ConclusionInput, ConclusionKind } from "../application/services/task-flow/taskFlowConclusion";
 import type { TaskFlowService } from "../application/services/task-flow/taskFlowService";
 import type { SessionPrincipal } from "../context";
 import { TASK_FLOW_DEFAULT_PAGE_SIZE } from "../schemas/taskFlow";
@@ -57,9 +58,12 @@ export class TaskFlowController {
     return this.service.cancelRun(await this.requireOperator(actor, { projectId, taskId }), cancel);
   }
 
-  async concludeReview(actor: SessionPrincipal, input: Scope & Parameters<TaskFlowService["concludeReview"]>[1]) {
+  concludeReview = (actor: SessionPrincipal, input: Scope & ConclusionInput) => this.conclude(actor, input, "review");
+  acceptPartialDirect = (actor: SessionPrincipal, input: Scope & ConclusionInput) => this.conclude(actor, input, "direct_partial");
+
+  private async conclude(actor: SessionPrincipal, input: Scope & ConclusionInput, kind: ConclusionKind) {
     const { projectId, taskId, ...conclusion } = input;
-    return this.service.concludeReview(await this.requireOperator(actor, { projectId, taskId }), conclusion);
+    return this.service.concludeAction(await this.requireOperator(actor, { projectId, taskId }), conclusion, kind);
   }
 
   async retryAction(actor: SessionPrincipal, input: Scope & Parameters<TaskFlowService["retryAction"]>[1]) {

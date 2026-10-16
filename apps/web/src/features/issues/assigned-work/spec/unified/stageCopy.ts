@@ -19,13 +19,22 @@ export const READER_STATE_LABELS: Record<StageState, string> = { ...STAGE_STATE_
 export const QUESTION_NOW: NowCopy = { title: "O agente precisa da sua resposta", detail: "A execução está parada esperando você. Responda abaixo e a mesma sessão continua de onde parou." };
 export const FINISHED_NOW: NowCopy = { title: "Fluxo concluído", detail: "Spec, tarefas, implementação e review terminaram. Os documentos e o histórico continuam disponíveis na aba de cada etapa." };
 export const CONCLUDED_NOW: NowCopy = { title: "Fluxo concluído pela pessoa operadora", detail: "O Review parou antes de uma rodada limpa e a pessoa operadora decidiu encerrar o fluxo assim. As tentativas que falharam continuam no histórico." };
-export const CONCLUDE_COPY = {
+export type ConcludeCopy = { open: string; group: string; warning: string; confirm: string; back: string; done: string };
+export const CONCLUDE_COPY: ConcludeCopy = {
   open: "Considerar a Issue concluída",
   group: "Concluir sem Review limpo",
   warning: "O Review não terminou com uma rodada limpa. Ao confirmar, o fluxo é encerrado como concluído com o código que está no checkout hoje, e o Review não poderá mais ser retomado nesta Issue. As tentativas que falharam continuam no histórico.",
   confirm: "Confirmar conclusão",
   back: "Voltar",
   done: "Fluxo concluído por decisão sua. O Review não será retomado.",
+};
+export const ACCEPT_PARTIAL_COPY: ConcludeCopy = {
+  open: "Aceitar o resultado parcial",
+  group: "Aceitar resultado parcial",
+  warning: "O agente concluiu parte da Issue e registrou acima o que ficou pendente. Ao aceitar, o que já está no worktree vira o resultado desta etapa e a Pull Request fica liberada. A PR lista as pendências e não fecha a Issue.",
+  confirm: "Aceitar e liberar a Pull Request",
+  back: "Voltar",
+  done: "Resultado parcial aceito. A Pull Request está liberada na próxima etapa.",
 };
 export const READER_NOTE = "Somente leitura. Apenas a pessoa operadora escolhe, inicia e aprova ações do fluxo.";
 
@@ -75,7 +84,7 @@ export const NOW_COPY: Record<StageKey, Partial<Record<StageState, NowCopy>>> = 
     failed: { title: "O Review parou", detail: RETRY_HINT },
   },
   pull_request: {
-    yours: { title: "Abra a Pull Request", detail: "O Review terminou com uma rodada limpa. Em Ações da etapa, adicione Abrir Pull Request, escolha o modelo, salve, prepare o projeto local e inicie. O agente cria os commits, envia a branch e abre a PR." },
+    yours: { title: "Abra a Pull Request", detail: "O trabalho está pronto para publicar. Em Ações da etapa, adicione Abrir Pull Request, escolha o modelo, salve, prepare o projeto local e inicie. O agente cria os commits, envia a branch e abre a PR." },
     current: { title: "O agente está publicando a Issue", detail: "Ele separa as alterações em commits, envia a branch da Issue ao GitHub e abre a Pull Request. Nenhum arquivo de código é alterado nesta etapa." },
     failed: { title: "A Pull Request não foi aberta", detail: RETRY_HINT },
     done: { title: "Pull Request aberta", detail: "Os commits foram enviados e a Pull Request está aberta no GitHub, vinculada à Issue. O histórico continua disponível abaixo." },
@@ -84,7 +93,7 @@ export const NOW_COPY: Record<StageKey, Partial<Record<StageState, NowCopy>>> = 
   direct: {
     yours: { title: "Inicie a execução direta", detail: "O planejamento aprovou implementar esta Issue sem spec. Em Ações da etapa, escolha conexão e modelo, salve, prepare o projeto local e inicie." },
     current: { title: "O agente está implementando a Issue", detail: "Ele trabalha no worktree da Issue no seu projeto local, seguindo os padrões do repositório. Se precisar de uma decisão sua, a pergunta aparece aqui." },
-    failed: { title: "A execução direta parou", detail: "Confira o motivo no histórico de execuções. Se o agente apontou que falta uma decisão de especificação, esta Issue precisa de Tech Spec ou PRD em vez de execução direta." },
-    done: { title: "Execução direta concluída", detail: "A Issue foi implementada no worktree local e as verificações obrigatórias passaram. O histórico continua disponível abaixo." },
+    failed: { title: "A execução direta parou", detail: "Confira o motivo no histórico de execuções. Se o agente concluiu parte da Issue, você pode aceitar o resultado parcial e seguir para a Pull Request. Se ele apontou que falta contexto ou uma decisão de especificação, atualize a Issue no GitHub e refaça o planejamento para escolher Tech Spec ou PRD." },
+    done: { title: "Execução direta concluída", detail: "O resultado está no worktree local da Issue. Siga para a Pull Request para publicá-lo. O histórico continua disponível abaixo." },
   },
 };

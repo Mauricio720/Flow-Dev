@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
-import { localTaskWorktree } from "./localTaskWorktree";
+import { FLOW_BASE_CONFIG_KEY, localTaskWorktree } from "./localTaskWorktree";
 import { localCheckoutScope } from "../../application/services/local-execution/localCheckoutScope";
 
 const git = promisify(execFile);
@@ -27,6 +27,14 @@ async function repository() {
 }
 
 describe("local issue worktree", () => {
+  it("records the branch the issue branch was created from for publication", async () => {
+    const input = await repository();
+    await git("git", ["-C", input.root, "checkout", "-q", "-b", "development"]);
+    await localTaskWorktree({ ...input, create: true });
+    const recorded = await git("git", ["-C", input.root, "config", "--get", `branch.flow/issue-${FIRST_TASK}.${FLOW_BASE_CONFIG_KEY}`]);
+    expect(recorded.stdout.trim()).toBe("development");
+  });
+
   it("creates separate worktrees from the current local project state", async () => {
     const input = await repository();
     await writeFile(join(input.root, "README.md"), "local changes\n");

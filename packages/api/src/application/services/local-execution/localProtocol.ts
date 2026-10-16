@@ -12,6 +12,7 @@ const TARGET = z.object({ machineId: UUID, linkId: UUID, linkRevision: z.number(
 const EMPTY = z.object({}).strict();
 const LOOP_TASK_FILES = z.array(z.object({ path: z.string().regex(ARTIFACT_PATH_PATTERN), content: z.string().min(1).max(ARTIFACT_MAX_BYTES) }).strict()).max(ARTIFACT_MAX_FILES);
 const SHORT_LABEL = z.string().max(100);
+export const MAX_ACCEPTED_PENDING = 4_000;
 export const ACTIVITY_KINDS = ["agent_message", "tool_call", "tool_result", "interaction", "lifecycle", "warning"] as const;
 const SAFE_CATALOG_TEXT = z.string().trim().min(1).max(128).refine((value) => !/[\u0000-\u001f\u007f]|(?:^|\s)(?:\/home\/|\/Users\/|[A-Z]:\\Users\\)|(?:gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,})/i.test(value));
 export const localProviderCatalogSchema = z.array(z.object({
@@ -45,7 +46,7 @@ const EVENT_DATA = {
 
 export const localCommandSchema = z.discriminatedUnion("kind", [
   z.object({ ...COMMAND_DATA, kind: z.literal("prepare"), payload: z.object({ preparationId: UUID, actionId: SAFE_ID, sourceSnapshotId: UUID, checkoutLabel: z.string().trim().min(1).max(80), action: z.record(z.string(), z.unknown()) }).strict() }).strict(),
-  z.object({ ...COMMAND_DATA, kind: z.literal("start"), payload: z.object({ preparationId: UUID, actionId: SAFE_ID, taskId: UUID, snapshot: z.record(z.string(), z.unknown()), task: z.object({ issueNumber: z.number().int().positive(), title: z.string().min(1).max(256), bodyMarkdown: z.string().max(65_536) }).strict(), taskFiles: LOOP_TASK_FILES.optional() }).strict() }).strict(),
+  z.object({ ...COMMAND_DATA, kind: z.literal("start"), payload: z.object({ preparationId: UUID, actionId: SAFE_ID, taskId: UUID, snapshot: z.record(z.string(), z.unknown()), task: z.object({ issueNumber: z.number().int().positive(), title: z.string().min(1).max(256), bodyMarkdown: z.string().max(65_536), acceptedPending: z.string().min(1).max(MAX_ACCEPTED_PENDING).optional() }).strict(), taskFiles: LOOP_TASK_FILES.optional() }).strict() }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("inspect"), payload: z.object({}).strict() }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("open_worktree"), payload: EMPTY }).strict(),
   z.object({ ...COMMAND_DATA, kind: z.literal("cancel"), payload: z.object({ requestKey: UUID }).strict() }).strict(),

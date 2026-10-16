@@ -12,11 +12,14 @@ export const FLOW_TABS: FlowTab[] = [
   { key: "review", label: "Review", stages: ["review"], actionKind: "loop", review: true, format: null, waitingNote: "Esta etapa começa depois que a implementação das tarefas terminar." },
   { key: "pull_request", label: "Pull Request", stages: ["pull_request"], actionKind: PULL_REQUEST_KIND, review: false, format: null, waitingNote: "Esta etapa começa depois que o Review terminar uma rodada limpa." },
 ];
+const PULL_REQUEST_TAB = FLOW_TABS.find((tab) => tab.key === "pull_request")!;
 
 export const DIRECT_TAB: FlowTab = { key: "direct", label: "Execução direta", stages: ["direct"], actionKind: DIRECT_KIND, review: false, format: null, waitingNote: "Esta etapa começa depois que o planejamento for aprovado." };
 
+export const DIRECT_PULL_REQUEST_TAB: FlowTab = { ...PULL_REQUEST_TAB, waitingNote: "Esta etapa começa depois que a execução direta terminar ou que você aceitar um resultado parcial." };
+
 export function flowTabsFor(direct: boolean): FlowTab[] {
-  return direct ? [DIRECT_TAB] : FLOW_TABS;
+  return direct ? [DIRECT_TAB, DIRECT_PULL_REQUEST_TAB] : FLOW_TABS;
 }
 
 export function ownsStep(tab: FlowTab, step: FlowStep) {

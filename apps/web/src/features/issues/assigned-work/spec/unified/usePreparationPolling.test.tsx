@@ -41,4 +41,21 @@ describe("local preparation expiry", () => {
     expect(result.current.preparations.a1?.state).toBe("expired");
     expect(result.current.notice?.text).toMatch(/expirou.*Prepare/);
   });
+
+  it("stops watching a preparation once a started attempt consumed it", async () => {
+    vi.useFakeTimers();
+    vi.mocked(trpc.taskFlow.prepareLocalAction.mutate).mockResolvedValue({ preparationId: "p1" });
+    vi.mocked(trpc.taskFlow.localPreparationStatus.query).mockResolvedValue({ preparationId: "p1", state: "ready", safeLabel: "checkout", dirty: false, capabilities: [], manifestHash: null, checkoutDigest: null, requiredGates: [], reason: null, detail: null });
+    vi.mocked(trpc.taskFlow.startAction.mutate).mockResolvedValue({} as never);
+    const { result } = renderHook(() => useFlowCommands(FLOW_TARGET, async () => undefined));
+    await act(async () => { await result.current.prepareLocalAction({ actionId: "a1", expectedRevision: 1 }); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    await act(async () => { await result.current.startAction({ actionId: "a1", expectedRevision: 1, preparationId: "p1" }); });
+    expect(result.current.preparations.a1).toBeUndefined();
+    vi.mocked(trpc.taskFlow.localPreparationStatus.query).mockClear();
+    vi.mocked(trpc.taskFlow.localPreparationStatus.query).mockResolvedValue({ preparationId: "p1", state: "expired", safeLabel: "checkout", dirty: null, capabilities: [], manifestHash: null, checkoutDigest: null, requiredGates: [], reason: null, detail: null });
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+    expect(trpc.taskFlow.localPreparationStatus.query).not.toHaveBeenCalled();
+    expect(result.current.preparations.a1).toBeUndefined();
+  });
 });

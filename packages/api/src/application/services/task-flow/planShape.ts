@@ -1,6 +1,6 @@
 import { MAX_PLAN_ACTIONS, type FlowAction } from "./flowContracts";
 import { reviewFollowsImplementation } from "./loopOrder";
-import { assertPullRequestShape } from "./pullRequestAction";
+import { assertPullRequestShape } from "./pullRequestRelease";
 import { TaskFlowError } from "./taskFlowErrors";
 
 export function assertPlanShape(actions: FlowAction[]) {

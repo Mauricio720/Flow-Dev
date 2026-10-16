@@ -10,8 +10,23 @@ describe("pull request prompt", () => {
   it("hands the finished worktree to the pull request skill", () => {
     const prompt = buildUnifiedPrompt({ action, task, workspaceRoot: "/Users/developer/flow/" });
     expect(prompt).toContain("Use the flow-pull-request skill to publish the finished work for GitHub issue #42: Corrigir rótulo.");
-    expect(prompt).toContain("open one pull request against the repository default branch that closes issue #42");
+    expect(prompt).toContain("The pull request closes issue #42.");
+    expect(prompt).not.toContain("Review");
     expect(prompt.endsWith("Corpo da issue")).toBe(true);
+  });
+
+  it("targets the branch the issue branch came from and falls back to the default branch only without it", () => {
+    const prompt = buildUnifiedPrompt({ action, task, workspaceRoot: "/Users/developer/flow/" });
+    expect(prompt).toContain("git config --get branch.<current branch>.flowbase");
+    expect(prompt).toContain("Only when that prints nothing, use the repository default branch.");
+  });
+
+  it("keeps the issue open and lists what was left pending when the operator accepted a partial result", () => {
+    const pending = "O segundo termo de aceite ficou fora de escopo.";
+    const prompt = buildUnifiedPrompt({ action, task: { ...task, acceptedPending: pending }, workspaceRoot: "/Users/developer/flow/" });
+    expect(prompt).toContain('reference it with "Refs #42" instead of "Closes #42"');
+    expect(prompt).toContain(pending);
+    expect(prompt).not.toContain("The pull request closes issue #42.");
   });
 
   it("pins the outcome report, the statuses, the language and the publication limits", () => {

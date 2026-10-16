@@ -34,8 +34,8 @@ function turnRetry(view: FlowView) {
 function TurnPanel({ view, retry }: { view: FlowView; retry: RetryOffer | null }) {
   const { data, commands, canAct } = view;
   const plan = data.overview?.plan ?? null;
-  const conclude = canAct ? concludeOffer(plan, commands) : null;
-  return <NowPanel stage={view.turn} runs={data.runs?.items ?? []} target={view.target} canAct={canAct} busy={commands.busy} retry={retry} conclude={conclude} concluded={concludedByOperator(plan)} onChanged={data.refresh} onCancel={(runId) => void commands.cancelRun(runId)} />;
+  const conclude = canAct ? concludeOffer(plan, commands, data.runs?.items ?? []) : null;
+  return <NowPanel stage={view.turn} runs={data.runs?.items ?? []} target={view.target} canAct={canAct} busy={commands.busy} retry={retry} conclude={conclude} replan={view.replan ?? null} concluded={concludedByOperator(plan)} onChanged={data.refresh} onCancel={(runId) => void commands.cancelRun(runId)} />;
 }
 
 export function FlowTabPanel({ tab, view }: Props) {

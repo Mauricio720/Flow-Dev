@@ -11,6 +11,7 @@ import { copyLocalProjectState, copyMissingEnvironmentFiles } from "./copyLocalP
 const git = promisify(execFile);
 const GIT_TIMEOUT_MS = 30_000;
 const UUID_PATTERN = /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i;
+export const FLOW_BASE_CONFIG_KEY = "flowbase";
 const WORKTREE_CAUSE = "Não foi possível preparar o worktree desta Issue. Confira o repositório local e prepare novamente.";
 type WorktreeInput = { root: string; runtimeRoot: string; target: LocalExecutionTarget; create?: boolean };
 
@@ -31,11 +32,18 @@ async function assertWorktree(input: WorktreeInput, path: string) {
   return path;
 }
 
+async function recordBaseBranch(root: string, branch: string) {
+  const source = await runGit(root, ["symbolic-ref", "--quiet", "--short", "HEAD"]).catch(() => null);
+  const base = source?.stdout.trim();
+  if (base) await runGit(root, ["config", `branch.${branch}.${FLOW_BASE_CONFIG_KEY}`, base]).catch(() => undefined);
+}
+
 async function createWorktree(input: WorktreeInput, path: string) {
   const branch = `flow/issue-${input.target.worktreeTaskId}`;
   const exists = await runGit(input.root, ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`]).then(() => true, () => false);
   const args = exists ? ["worktree", "add", path, branch] : ["worktree", "add", "-b", branch, path, "HEAD"];
   await runGit(input.root, args).catch(() => { throw new LocalExecutionError("path_invalid", { cause: WORKTREE_CAUSE }); });
+  if (!exists) await recordBaseBranch(input.root, branch);
   await copyLocalProjectState(input.root, path).catch(() => { throw new LocalExecutionError("path_invalid", { cause: WORKTREE_CAUSE }); });
 }
 
