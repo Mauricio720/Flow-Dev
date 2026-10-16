@@ -6,11 +6,12 @@ import type { BacklogPlacementService } from "../application/services/projects/b
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
 import { previewHash, parseIssueDraft, validatePublicationDraft } from "../application/services/tasks/draftRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
+import type { IssueImagePublisher } from "../application/services/tasks/issueImagePublisher";
 
 type Scope = { projectId: string; taskId: string };
 
 export class TaskPublicationController {
-  constructor(private readonly tasks: TaskDao, private readonly publications: TaskPublicationDao, private readonly repositories: RepositoryAccessService, private readonly github: GitHubIssueGateway, private readonly backlog?: BacklogPlacementService) {}
+  constructor(private readonly tasks: TaskDao, private readonly publications: TaskPublicationDao, private readonly repositories: RepositoryAccessService, private readonly github: GitHubIssueGateway, private readonly backlog?: BacklogPlacementService, private readonly images?: IssueImagePublisher) {}
 
   async preview(actor: SessionPrincipal, input: Scope & { revisionId: string }) {
     const resolved = await this.resolvePreview(actor, input, false);
@@ -39,15 +40,17 @@ export class TaskPublicationController {
     const revision = await this.tasks.findRevision(task.id, input.revisionId);
     if (!revision) throw new TaskError("preview_not_ready");
     const draft = parseIssueDraft(revision.canonicalDraft);
-    const bodyMarkdown = validatePublicationDraft(draft);
+    const draftBody = validatePublicationDraft(draft);
     const context = await this.repositories.contextCredentials(actor, input.projectId);
     if (context.repository.githubId !== task.repositoryId || context.repository.nodeId !== task.repositoryNodeId) throw new TaskError("destination_unavailable");
     const publisherGithubId = context.publisherGithubId;
     if (!publisherGithubId) throw new TaskError("repository_authorization_needed");
-    const publisherLogin = await this.assertEligibility(context.repository, context.token, publisherGithubId);
+    const eligibility = await this.assertEligibility(context.repository, context.token, publisherGithubId);
+    if (this.images?.hasImages(draftBody) && eligibility.canWriteContents !== true) throw new TaskError("image_permission_denied");
+    const bodyMarkdown = await this.images?.resolve(task.id, draftBody, context.repository) ?? draftBody;
     await this.backlog?.assertAuthorized({ projectId: input.projectId, token: context.token });
     const hash = previewHash({ revisionId: revision.id, title: draft.title, body: bodyMarkdown, repositoryId: task.repositoryId, owner: context.repository.owner, name: context.repository.name, publisherGithubId, labels: draft.labels });
-    return { repository: context.repository, token: context.token, publisherGithubId, preview: { projectId: task.projectId, taskId: task.id, revisionId: revision.id, version: task.version, repositoryId: task.repositoryId, repository: { id: task.repositoryId, owner: context.repository.owner, name: context.repository.name }, publisherGithubId, publisher: { githubId: publisherGithubId, login: publisherLogin }, title: draft.title, bodyMarkdown, labels: draft.labels, previewHash: hash } };
+    return { repository: context.repository, token: context.token, publisherGithubId, preview: { projectId: task.projectId, taskId: task.id, revisionId: revision.id, version: task.version, repositoryId: task.repositoryId, repository: { id: task.repositoryId, owner: context.repository.owner, name: context.repository.name }, publisherGithubId, publisher: { githubId: publisherGithubId, login: eligibility.publisherLogin ?? null }, title: draft.title, bodyMarkdown, labels: draft.labels, previewHash: hash } };
   }
 
   private async assertEligibility(repository: Awaited<ReturnType<RepositoryAccessService["contextCredentials"]>>["repository"], token: string, publisherGithubId: string) {
@@ -57,7 +60,7 @@ export class TaskPublicationController {
     if (!eligibility.issuesEnabled) throw new TaskError("issues_disabled");
     if (!eligibility.canRead) throw new TaskError("destination_unavailable");
     if (!eligibility.canCreateIssues) throw new TaskError("issue_permission_denied");
-    return eligibility.publisherLogin ?? null;
+    return eligibility;
   }
 
   private async requireAuthor(actor: SessionPrincipal, input: Scope) {

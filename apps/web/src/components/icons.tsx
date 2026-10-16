@@ -144,6 +144,14 @@ export const ChevronUpIcon = (p: IconProps) => (
   </Stroke>
 );
 
+export const ImageIcon = (p: IconProps) => (
+  <Stroke {...p}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <circle cx="9" cy="10" r="1.75" />
+    <path d="m20.5 15.5-4.5-4.5-8.5 8.5" />
+  </Stroke>
+);
+
 export const MicIcon = (p: IconProps) => (
   <Stroke {...p}>
     <rect x="9" y="3" width="6" height="11" rx="3" />

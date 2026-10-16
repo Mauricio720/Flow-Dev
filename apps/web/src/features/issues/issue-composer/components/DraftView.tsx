@@ -4,7 +4,7 @@ import type { IssueDraft } from "../contract";
 import { DRAFT_FIELD_LABEL, priorityCopy, type DraftErrors } from "../draftModel";
 import { VERIFICATION_LABEL, type DraftSource } from "../draftSources";
 import { DraftField } from "./DraftField";
-import { RichText } from "@/components/tasks/Graph";
+import { TextWithImages } from "./DraftImage";
 
 const EMPTY_COLLECTION = "Sem itens.";
 const SOURCE_BADGE = { project: "ref-project", github: "ref-github" } as const;
@@ -13,7 +13,7 @@ const CONTEXT_PREFIX = "relevantContext.";
 type Props = { draft: IssueDraft; sources: DraftSource[]; errors: DraftErrors };
 
 function Prose({ text }: { text: string }) {
-  return <p className="max-w-[65ch] text-[15px] leading-relaxed text-ink-2 [overflow-wrap:anywhere] whitespace-pre-wrap"><RichText text={text} /></p>;
+  return <p className="max-w-[65ch] text-[15px] leading-relaxed text-ink-2 [overflow-wrap:anywhere] whitespace-pre-wrap"><TextWithImages text={text} /></p>;
 }
 
 function TextList({ items }: { items: string[] }) {

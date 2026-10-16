@@ -1,13 +1,14 @@
 import { safeGitHubUrl } from "./draftSources";
+import { storedImageSource } from "./issueImageModel";
 
 export type MarkdownBlock = { kind: "heading"; text: string } | { kind: "paragraph"; text: string } | { kind: "list"; items: string[] };
-export type MarkdownSpan = { kind: "text" | "code"; text: string } | { kind: "link"; text: string; href: string };
+export type MarkdownSpan = { kind: "text" | "code"; text: string } | { kind: "link"; text: string; href: string } | { kind: "image"; alt: string; src: string };
 
 const HEADING_PREFIX = "## ";
 const ITEM_PREFIX = "- ";
 const BLOCK_BREAK = /\n{2,}/;
-// Matches an inline code span or a [label](destination) link; anything else stays literal text.
-const SPAN_PATTERN = /`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)\)/g;
+// Matches an inline code span, an ![alt](source) image or a [label](destination) link; anything else stays literal text.
+const SPAN_PATTERN = /`([^`]+)`|!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)/g;
 
 function blockOf(source: string): MarkdownBlock {
   const lines = source.split("\n");
@@ -22,8 +23,14 @@ export function markdownBlocks(body: string): MarkdownBlock[] {
 
 function spanOf(match: RegExpMatchArray): MarkdownSpan {
   if (match[1] !== undefined) return { kind: "code", text: match[1] };
-  const href = safeGitHubUrl(match[3]);
-  return href ? { kind: "link", text: match[2], href } : { kind: "text", text: match[0] };
+  if (match[3] !== undefined) return imageSpanOf(match);
+  const href = safeGitHubUrl(match[5]);
+  return href ? { kind: "link", text: match[4], href } : { kind: "text", text: match[0] };
+}
+
+function imageSpanOf(match: RegExpMatchArray): MarkdownSpan {
+  const src = storedImageSource(match[3]);
+  return src ? { kind: "image", alt: match[2], src } : { kind: "text", text: match[0] };
 }
 
 export function markdownSpans(text: string): MarkdownSpan[] {

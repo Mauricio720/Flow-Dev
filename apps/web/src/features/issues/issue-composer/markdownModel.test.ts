@@ -20,4 +20,15 @@ describe("safe markdown preview", () => {
     ]);
     expect(markdownSpans("[abrir](javascript:alert(1)) <script>x</script> [fora](https://evil.example/x)").map((span) => span.kind)).toEqual(["text", "text", "text"]);
   });
+
+  it("renders only images stored by Flow Dev, before and after publication, through the authenticated route", () => {
+    const image = "00000000-0000-4000-8000-0000000000a1";
+    const published = `https://github.com/acme/cart/blob/flow-dev-assets/issue-images/00000000-0000-4000-8000-000000000011/${image}.png?raw=true`;
+    expect(markdownSpans(`![tela](flow-image:${image}) ![depois](${published})`)).toEqual([
+      { kind: "image", alt: "tela", src: `/api/task-images/${image}` },
+      { kind: "text", text: " " },
+      { kind: "image", alt: "depois", src: `/api/task-images/${image}` },
+    ]);
+    expect(markdownSpans("![rastreador](https://evil.example/pixel.png)")).toEqual([{ kind: "text", text: "![rastreador](https://evil.example/pixel.png)" }]);
+  });
 });

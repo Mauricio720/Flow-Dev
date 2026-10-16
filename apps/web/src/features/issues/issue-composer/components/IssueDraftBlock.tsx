@@ -6,6 +6,7 @@ import type { IssueDraft } from "../contract";
 import type { DraftErrors } from "../draftModel";
 import type { DraftSource } from "../draftSources";
 import type { DraftEditor } from "../hooks/useDraftEditor";
+import type { ImageScope } from "../issueImageModel";
 import { DraftEditorFields } from "./DraftEditorFields";
 import { DraftView } from "./DraftView";
 
@@ -17,10 +18,11 @@ type Props = {
   sources: DraftSource[];
   errors: DraftErrors;
   editor: DraftEditor | null;
+  imageScope?: ImageScope | null;
   children: ReactNode;
 };
 
-export function IssueDraftBlock({ heading, repository, published, draft, sources, errors, editor, children }: Props) {
+export function IssueDraftBlock({ heading, repository, published, draft, sources, errors, editor, imageScope = null, children }: Props) {
   const id = useId();
   return (
     <article aria-labelledby={`${id}-heading`} className={`overflow-hidden rounded-xl border-2 bg-raised transition-colors duration-500 ${published ? "border-merge" : "border-merge/45"}`}>
@@ -31,7 +33,7 @@ export function IssueDraftBlock({ heading, repository, published, draft, sources
           <span className="truncate" title={repository}>{repository}</span>
         </span>
       </header>
-      {editor?.editing ? <DraftEditorFields editor={editor} errors={errors} /> : <DraftView draft={draft} sources={sources} errors={errors} />}
+      {editor?.editing ? <DraftEditorFields editor={editor} errors={errors} imageScope={imageScope} /> : <DraftView draft={draft} sources={sources} errors={errors} />}
       {children}
     </article>
   );

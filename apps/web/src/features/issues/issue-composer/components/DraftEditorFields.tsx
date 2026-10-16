@@ -3,7 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DRAFT_FIELD_LABEL, MAX_COLLECTION_ENTRIES, MAX_PRODUCT_CONSIDERATIONS, type DraftErrors } from "../draftModel";
 import type { DraftEditor } from "../hooks/useDraftEditor";
+import type { ImageScope } from "../issueImageModel";
 import { DraftField } from "./DraftField";
+import { ImageTextarea } from "./ImageTextarea";
 import { DraftListEditor } from "./DraftListEditor";
 import { LabelsEditor } from "./LabelsEditor";
 import { PriorityPointsEditor } from "./PriorityPointsEditor";
@@ -13,9 +15,15 @@ const CONSTRAINT_LABEL = "Restrição";
 const CONSIDERATION_LABEL = "Consideração de produto";
 const TEXT_PATHS = ["context", "objective"] as const;
 
-type Props = { editor: DraftEditor; errors: DraftErrors };
+type Props = { editor: DraftEditor; errors: DraftErrors; imageScope: ImageScope | null };
+type TextFieldProps = { fieldId: string; describedBy?: string; value: string; imageScope: ImageScope | null; onChange: (value: string) => void };
 
-export function DraftEditorFields({ editor, errors }: Props) {
+function DraftTextInput({ fieldId, describedBy, value, imageScope, onChange }: TextFieldProps) {
+  if (imageScope) return <ImageTextarea id={fieldId} value={value} invalid={Boolean(describedBy)} describedBy={describedBy} scope={imageScope} onChange={onChange} />;
+  return <Textarea id={fieldId} rows={3} className="resize-y hover:border-ink-3" value={value} aria-invalid={Boolean(describedBy)} aria-describedby={describedBy} onChange={(event) => onChange(event.target.value)} />;
+}
+
+export function DraftEditorFields({ editor, errors, imageScope }: Props) {
   const id = useId();
   const { draft, change } = editor;
   const describedBy = (path: keyof DraftErrors) => (errors[path] ? `${id}-${path}-error` : undefined);
@@ -26,7 +34,7 @@ export function DraftEditorFields({ editor, errors }: Props) {
       </DraftField>
       {TEXT_PATHS.map((path) => (
         <DraftField key={path} label={DRAFT_FIELD_LABEL[path]} htmlFor={`${id}-${path}`} error={errors[path]} errorId={`${id}-${path}-error`}>
-          <Textarea id={`${id}-${path}`} rows={3} className="resize-y hover:border-ink-3" value={draft[path]} aria-invalid={Boolean(errors[path])} aria-describedby={describedBy(path)} onChange={(event) => change(path, event.target.value)} />
+          <DraftTextInput fieldId={`${id}-${path}`} describedBy={describedBy(path)} value={draft[path]} imageScope={imageScope} onChange={(value) => change(path, value)} />
         </DraftField>
       ))}
       <DraftField label={DRAFT_FIELD_LABEL.constraints}>

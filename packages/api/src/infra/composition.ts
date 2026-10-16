@@ -33,6 +33,7 @@ import { BacklogPlacementService } from "../application/services/projects/backlo
 import { createPlanningWorkerController } from "./planningComposition";
 import { createRepositoryAccessService } from "./repositoryAccessFactory";
 import { TaskPublicationWorkerController } from "../controllers/taskPublicationWorkerController";
+import { createIssueImagePublisher } from "./taskImageComposition";
 
 export function createProductionProjectsController() {
   const database = requireDatabase();
@@ -61,7 +62,7 @@ export function createProductionTranscriptionController() {
 export function createProductionTaskWorkerController() {
   const database = requireDatabase();
   const operations = new DrizzleWorkerOperationDao(database);
-  const publications = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(database), new DrizzleTaskDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), crypto.randomUUID(), createBacklogPlacementService(database), new GitHubHttpIssueGateway());
+  const publications = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(database), new DrizzleTaskDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), crypto.randomUUID(), createBacklogPlacementService(database), new GitHubHttpIssueGateway(), createIssueImagePublisher(database));
   const planning = createPlanningWorkerController(database);
   return new TaskWorkerController(operations, new DevControlIssueAuthorGateway(undefined, undefined, patientFetch, (executionId, toolCallId) => operations.hasActivity(executionId, toolCallId)), crypto.randomUUID(), publications, planning);
 }
@@ -73,7 +74,7 @@ export function createProductionIssueContextController() {
 
 export function createProductionTaskPublicationController() {
   const database = requireDatabase();
-  return new TaskPublicationController(new DrizzleTaskDao(database), new DrizzleTaskPublicationDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), createBacklogPlacementService(database));
+  return new TaskPublicationController(new DrizzleTaskDao(database), new DrizzleTaskPublicationDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), createBacklogPlacementService(database), createIssueImagePublisher(database));
 }
 
 export function createBacklogPlacementService(database: ReturnType<typeof requireDatabase>) {

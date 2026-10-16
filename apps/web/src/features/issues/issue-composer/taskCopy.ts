@@ -37,6 +37,8 @@ const REASON_MESSAGE: Record<string, string> = {
   issues_disabled: "As Issues estão desativadas neste repositório.",
   identity_mismatch: "A conta do GitHub autorizada não é a mesma da sua entrada no Flow Dev.",
   issue_permission_denied: "Sua conta do GitHub não tem permissão para criar Issues neste repositório.",
+  image_permission_denied: "O draft tem imagens, e elas são gravadas na branch flow-dev-assets do repositório. Sua conta do GitHub precisa de permissão de escrita no repositório para publicar com imagens.",
+  image_unavailable: "Uma imagem do draft não foi encontrada nesta tarefa. Remova a referência ou insira a imagem de novo.",
   invalid_stored_content: "O conteúdo salvo desta tarefa não pôde ser lido com segurança. Nada foi inventado no lugar.",
   provider_rate_limited: "O GitHub limitou as consultas por agora. Tente de novo em alguns minutos.",
   provider_unavailable: "O Issue Author está indisponível no momento.",

@@ -1,5 +1,6 @@
+import { MAX_TRPC_BATCH_SIZE } from "@/lib/trpc/batchPolicy";
+
 const MAX_TRPC_BODY_BYTES = 512 * 1024;
-const MAX_TRPC_BATCH_SIZE = 5;
 
 export async function enforceTrpcRequestPolicy(request: Request) {
   if (request.method !== "POST") return { request };

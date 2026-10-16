@@ -7,9 +7,10 @@ import { previewHash, parseIssueDraft, validatePublicationDraft } from "../appli
 import { defineTaskLabels } from "../application/services/tasks/labelDefinitions";
 import type { IssueDraft } from "../application/services/tasks/taskContracts";
 import { TaskError } from "../application/services/tasks/taskErrors";
+import type { IssueImagePublisher } from "../application/services/tasks/issueImagePublisher";
 
 export class TaskPublicationWorkerController {
-  constructor(private readonly claims: TaskPublicationWorkerDao, private readonly tasks: TaskDao, private readonly repositories: RepositoryAccessService, private readonly github: GitHubIssueGateway, private readonly workerId = crypto.randomUUID(), private readonly backlog?: BacklogPlacementService, private readonly labels?: GitHubIssueLabelGateway) {}
+  constructor(private readonly claims: TaskPublicationWorkerDao, private readonly tasks: TaskDao, private readonly repositories: RepositoryAccessService, private readonly github: GitHubIssueGateway, private readonly workerId = crypto.randomUUID(), private readonly backlog?: BacklogPlacementService, private readonly labels?: GitHubIssueLabelGateway, private readonly images?: IssueImagePublisher) {}
 
   async tick() {
     const claim = await this.claims.claim(this.workerId);
@@ -23,10 +24,11 @@ export class TaskPublicationWorkerController {
     const timer = setInterval(() => { void this.claims.heartbeat(claim).catch((error) => { heartbeatFailure = error; }); }, 15_000);
     try {
       const context = await this.authorizedContext(claim);
-      const draft = await this.assertSnapshot(claim, context);
+      const { draft, draftBody } = await this.assertSnapshot(claim, context);
       if (heartbeatFailure) throw new TaskError("stale_execution");
       if (!await this.claims.sessionActive(claim)) throw new TaskError("access_revoked");
       await this.defineLabels(claim, context.token, draft);
+      await this.images?.upload({ taskId: claim.taskId, body: draftBody, destination: { owner: claim.owner, name: claim.name, token: context.token } });
       if (!await this.claims.fenceDispatch(claim)) return true;
       fenced = true;
       const outcome = await this.github.create({ repositoryId: claim.repositoryId, owner: claim.owner, name: claim.name, token: context.token, publisherGithubId: claim.publisherGithubId, title: claim.title, body: claim.bodyMarkdown, labels: draft.labels });
@@ -77,10 +79,11 @@ export class TaskPublicationWorkerController {
     const revision = await this.tasks.findRevision(claim.taskId, claim.revisionId);
     if (!revision) throw new TaskError("invalid_stored_content");
     const draft = parseIssueDraft(revision.canonicalDraft);
-    const bodyMarkdown = validatePublicationDraft(draft);
+    const draftBody = validatePublicationDraft(draft);
+    const bodyMarkdown = await this.images?.resolve(claim.taskId, draftBody, context.repository) ?? draftBody;
     const currentHash = previewHash({ revisionId: claim.revisionId, title: draft.title, body: bodyMarkdown, repositoryId: claim.repositoryId, owner: context.repository.owner, name: context.repository.name, publisherGithubId: claim.publisherGithubId, labels: draft.labels });
     if (draft.title !== claim.title || bodyMarkdown !== claim.bodyMarkdown || currentHash !== claim.previewHash) throw new TaskError("preview_changed");
-    return draft;
+    return { draft, draftBody };
   }
 }
 

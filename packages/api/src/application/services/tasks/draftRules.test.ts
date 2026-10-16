@@ -14,6 +14,11 @@ describe("task draft rules", () => {
   it("UT-024 rejects unsafe reference protocols", () => expect(() => renderIssueBody({ ...draft, references: [{ type: "github-issue", path: null, line: null, repository: "acme/cart", issueNumber: 1, url: "javascript:alert(1)" }] })).toThrowError(new TaskError("unsafe_source")));
   it("UT-075 rejects a title over 256 code points", () => expect(() => validatePublicationDraft({ ...draft, title: "a".repeat(257) })).toThrowError(new TaskError("input_limit", { title: "input_limit" })));
   it("UT-076 rejects a body over 60,000 UTF-8 bytes", () => expect(() => validatePublicationDraft({ ...draft, constraints: Array(7).fill("a".repeat(9_999)) })).toThrowError(new TaskError("input_limit", { bodyMarkdown: "input_limit" })));
+  it("accepts a context long enough to carry supplied copy verbatim and rejects one past its limit", () => {
+    expect(parseIssueDraft({ ...draft, context: "a".repeat(30_000) }).context).toHaveLength(30_000);
+    expect(() => parseIssueDraft({ ...draft, context: "a".repeat(40_001) })).toThrowError(new TaskError("input_limit", { context: "input_limit" }));
+    expect(() => parseIssueDraft({ ...draft, objective: "a".repeat(10_001) })).toThrowError(new TaskError("input_limit", { objective: "input_limit" }));
+  });
   it("UT-078 rejects more than 100 constraints without truncating", () => expect(() => parseIssueDraft({ ...draft, constraints: Array(101).fill("constraint") })).toThrowError(new TaskError("input_limit", { constraints: "input_limit" })));
   it("UT-077 rejects more than three product considerations", () => expect(() => parseIssueDraft({ ...draft, productConsiderations: ["1", "2", "3", "4"] })).toThrowError(new TaskError("input_limit", { productConsiderations: "input_limit" })));
   it("UT-025 preserves unselected fields byte-for-byte", () => expect(applySelectedFields({ ...draft, context: "Preservar regra fiscal" }, { ...draft, title: "Novo título", context: "Substituir tudo" }, ["title"]).context).toBe("Preservar regra fiscal"));

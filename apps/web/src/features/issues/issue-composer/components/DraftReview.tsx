@@ -32,7 +32,7 @@ export function DraftReview({ repository, ...input }: Props) {
   const { saveState, busy, commandFailure } = input.actions;
   const { revision } = input;
   return (
-    <IssueDraftBlock heading={DRAFT_HEADING} repository={repository} published={false} draft={review.draft} sources={review.sources} errors={review.errors} editor={editor}>
+    <IssueDraftBlock heading={DRAFT_HEADING} repository={repository} published={false} draft={review.draft} sources={review.sources} errors={review.errors} editor={editor} imageScope={{ projectId: input.context.projectId, taskId: input.detail.task.id }}>
       {editor?.stale && <StaleRevisionNotice editor={editor} />}
       {proposal && (
         <RefinementReview key={proposal.operationId} fields={proposalFields(revision.draft, proposal.draft, revision.manuallyEditedPaths)} busy={busy} failure={commandFailure} onApply={(paths) => review.actions.resolve("apply", paths)} onDiscard={() => review.actions.resolve("discard", [])} />

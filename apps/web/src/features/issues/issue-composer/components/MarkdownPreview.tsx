@@ -1,4 +1,5 @@
 import { markdownBlocks, markdownSpans, type MarkdownBlock } from "../markdownModel";
+import { DraftImage } from "./DraftImage";
 
 const PROSE_CLASS = "max-w-[65ch] text-[15px] leading-relaxed text-ink-2 [overflow-wrap:anywhere] whitespace-pre-wrap";
 
@@ -7,6 +8,7 @@ function Spans({ text }: { text: string }) {
     <>
       {markdownSpans(text).map((span, index) => {
         if (span.kind === "code") return <code key={index} className="rounded-[4px] bg-ink/[0.06] px-1 py-px font-mono text-[0.86em] text-ink">{span.text}</code>;
+        if (span.kind === "image") return <DraftImage key={index} alt={span.alt} src={span.src} />;
         if (span.kind === "link") return <a key={index} href={span.href} target="_blank" rel="noopener noreferrer" className="text-ink underline">{span.text}</a>;
         return <span key={index}>{span.text}</span>;
       })}

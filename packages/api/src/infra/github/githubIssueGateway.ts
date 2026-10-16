@@ -16,7 +16,7 @@ export class GitHubHttpIssueGateway implements GitHubIssueGateway, GitHubIssueLa
     const repository = await this.get(input.token, `/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}`);
     if (String(repository.id) !== input.repositoryId) throw new TaskError("destination_unavailable");
     const permissions = asRecord(repository.permissions);
-    return { repositoryId: input.repositoryId, owner: input.owner, name: input.name, publisherGithubId: input.publisherGithubId, publisherLogin: typeof profile.login === "string" ? profile.login : null, archived: repository.archived === true, issuesEnabled: repository.has_issues === true, canRead: permissions.pull === true, canCreateIssues: permissions.pull === true || permissions.push === true || permissions.triage === true };
+    return { repositoryId: input.repositoryId, owner: input.owner, name: input.name, publisherGithubId: input.publisherGithubId, publisherLogin: typeof profile.login === "string" ? profile.login : null, archived: repository.archived === true, issuesEnabled: repository.has_issues === true, canRead: permissions.pull === true, canCreateIssues: permissions.pull === true || permissions.push === true || permissions.triage === true, canWriteContents: permissions.push === true };
   }
 
   async create(input: ApprovedIssueRequest): Promise<CreationOutcome> {

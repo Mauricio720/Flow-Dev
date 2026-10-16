@@ -6,12 +6,13 @@ import { TaskError } from "./taskErrors";
 import type { IssueDraft, IssueSource } from "./taskContracts";
 
 const MAX_TEXT = 10_000;
+const MAX_CONTEXT = 40_000;
 const MAX_TITLE = 256;
 const MAX_BODY_BYTES = 60_000;
 const MIN_PRIORITY_POINTS = 1;
 const MAX_PRIORITY_POINTS = 5;
 const sourceSchema = z.object({ type: z.enum(["project-file", "github-issue"]), path: z.string().nullable(), line: z.number().int().positive().nullable(), repository: z.string().nullable(), issueNumber: z.number().int().positive().nullable(), url: z.string().nullable() });
-export const issueDraftSchema = z.object({ title: z.string().max(MAX_TITLE), context: z.string().max(MAX_TEXT), objective: z.string().max(MAX_TEXT), constraints: z.array(z.string().max(MAX_TEXT)).max(100), relevantContext: z.array(z.object({ statement: z.string().max(MAX_TEXT), source: sourceSchema })).max(100), productConsiderations: z.array(z.string().max(MAX_TEXT)).max(3), references: z.array(sourceSchema).max(100), priorityPoints: z.number().int().min(MIN_PRIORITY_POINTS).max(MAX_PRIORITY_POINTS).nullable().default(null), labels: z.array(z.enum(TASK_LABELS)).max(TASK_LABELS.length).default([]) });
+export const issueDraftSchema = z.object({ title: z.string().max(MAX_TITLE), context: z.string().max(MAX_CONTEXT), objective: z.string().max(MAX_TEXT), constraints: z.array(z.string().max(MAX_TEXT)).max(100), relevantContext: z.array(z.object({ statement: z.string().max(MAX_TEXT), source: sourceSchema })).max(100), productConsiderations: z.array(z.string().max(MAX_TEXT)).max(3), references: z.array(sourceSchema).max(100), priorityPoints: z.number().int().min(MIN_PRIORITY_POINTS).max(MAX_PRIORITY_POINTS).nullable().default(null), labels: z.array(z.enum(TASK_LABELS)).max(TASK_LABELS.length).default([]) });
 
 export function parseIssueDraft(value: unknown): IssueDraft {
   assertDraftLimits(value);
@@ -40,7 +41,7 @@ function assertDraftLimits(value: unknown) {
   const draft = value as Record<string, unknown>;
   const fieldErrors: Record<string, string> = {};
   if (typeof draft.title === "string" && [...draft.title].length > MAX_TITLE) fieldErrors.title = "input_limit";
-  for (const field of ["context", "objective"] as const) if (typeof draft[field] === "string" && [...draft[field] as string].length > MAX_TEXT) fieldErrors[field] = "input_limit";
+  for (const [field, limit] of [["context", MAX_CONTEXT], ["objective", MAX_TEXT]] as const) if (typeof draft[field] === "string" && [...draft[field] as string].length > limit) fieldErrors[field] = "input_limit";
   for (const field of ["constraints", "relevantContext", "references"] as const) if (Array.isArray(draft[field]) && draft[field].length > 100) fieldErrors[field] = "input_limit";
   if (Array.isArray(draft.productConsiderations) && draft.productConsiderations.length > 3) fieldErrors.productConsiderations = "input_limit";
   if (Object.keys(fieldErrors).length) throw new TaskError("input_limit", fieldErrors);

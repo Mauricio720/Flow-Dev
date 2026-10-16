@@ -12,9 +12,12 @@ import { createTasksRouter } from "../src/routers/tasks";
 import { sessions, taskDraftRevisions, tasks } from "../src/infra/database/schema";
 import { designateAdmin, fixture } from "./fixture";
 import { draft } from "./task-api-support";
+import type { IssueImageStore } from "../src/application/github/issueImageStore";
+import { IssueImagePublisher } from "../src/application/services/tasks/issueImagePublisher";
+import { DrizzleTaskImageDao } from "../src/infra/database/dao/tasks/drizzleTaskImageDao";
 
-type Eligibility = { archived?: boolean; issuesEnabled?: boolean; canRead?: boolean; canCreateIssues?: boolean; repositoryId?: string; publisherGithubId?: string; error?: "provider_rate_limited" };
-type Options = { draft?: typeof draft; withoutRevision?: boolean; archived?: boolean; creation?: Awaited<ReturnType<GitHubIssueGateway["create"]>>; eligibility?: Eligibility };
+type Eligibility = { archived?: boolean; issuesEnabled?: boolean; canRead?: boolean; canCreateIssues?: boolean; canWriteContents?: boolean; repositoryId?: string; publisherGithubId?: string; error?: "provider_rate_limited" };
+type Options = { draft?: typeof draft; withoutRevision?: boolean; archived?: boolean; creation?: Awaited<ReturnType<GitHubIssueGateway["create"]>>; eligibility?: Eligibility; imageStore?: IssueImageStore };
 
 export async function publicationCase(options: Options = {}) {
   const state = await fixture();
@@ -36,9 +39,10 @@ export async function publicationCase(options: Options = {}) {
   const gatewayState = gateway(options);
   const github = gatewayState.gateway;
   const publications = new DrizzleTaskPublicationDao(state.database);
-  const controller = new TaskPublicationController(taskDao, publications, access, github);
+  const images = options.imageStore ? new IssueImagePublisher(new DrizzleTaskImageDao(state.database), options.imageStore) : undefined;
+  const controller = new TaskPublicationController(taskDao, publications, access, github, undefined, images);
   const caller = (userId = state.member.id) => createTasksRouter(undefined, controller).createCaller({ principal: { userId, sessionId }, requestId: "publication-case" });
-  const worker = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(state.database), taskDao, access, github, "00000000-0000-4000-8000-000000000081");
+  const worker = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(state.database), taskDao, access, github, "00000000-0000-4000-8000-000000000081", undefined, undefined, images);
   return { state, project, taskId, revisionId, taskDao, caller, worker, github, calls: gatewayState.calls, setArchived: gatewayState.setArchived, close: () => state.close() };
 }
 
