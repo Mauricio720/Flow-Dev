@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import type { RuntimeIdentity, RuntimeSnapshot, RuntimeStop } from "../../../application/spec/specRuntimeGateway";
 import { mapStop } from "../../../application/spec/specRuntimeOutcomes";
 import { sessionSchema, stopSchema } from "./compozySchemas";
@@ -29,7 +30,12 @@ export async function inspectSession(transport: CompozyTransport, identity: Runt
   if (response.status !== 200) throw new SpecRuntimeError(response.status >= 500 ? "outcome_unknown" : "runtime_failed", response.status >= 500);
   const { session } = parse(sessionSchema, response.body);
   const pendingInteractions = await listInteractions(transport, identity).catch(() => []);
-  return { state: session.state, verified: session.verified ?? false, stopReason: session.stop_reason ?? null, stopCause: session.stop_cause ?? null, turnId: session.activity?.turn_id ?? null, attention: session.attention ?? null, pendingInteractions: pendingInteractions.filter((item) => item.status === "pending"), startFailure: session.runtime?.status === UNBOUND_RUNTIME_STATUS ? session.runtime.failure ?? null : null };
+  return { state: session.state, verified: session.verified ?? false, stopReason: session.stop_reason ?? null, stopCause: session.stop_cause ?? null, turnId: session.activity?.turn_id ?? null, attention: session.attention ?? null, pendingInteractions: pendingInteractions.filter((item) => item.status === "pending"), startFailure: session.runtime?.status === UNBOUND_RUNTIME_STATUS ? session.runtime.failure ?? null : null, unboundSince: unboundSince(session) };
+}
+
+function unboundSince(session: z.infer<typeof sessionSchema>["session"]) {
+  const idle = session.runtime?.status === UNBOUND_RUNTIME_STATUS && !session.runtime.failure && !session.queue?.entries;
+  return idle ? session.created_at ?? null : null;
 }
 
 export function snapshotToStop(snapshot: RuntimeSnapshot): RuntimeStop {

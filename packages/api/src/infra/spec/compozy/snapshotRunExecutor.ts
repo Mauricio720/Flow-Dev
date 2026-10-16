@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import type { ActionExecutor, ExecutionRequest, ExecutionResult, ReconcileResult } from "../../../application/services/task-flow/actionExecutor";
 import type { FlowAction } from "../../../application/services/task-flow/flowContracts";
+import type { RuntimeIdentity, RuntimeSnapshot } from "../../../application/spec/specRuntimeGateway";
 import { isCanceledStopReason } from "../../../application/spec/specRuntimeOutcomes";
 import type { RuntimeConfiguration, SpecRuntimeGateway } from "../../../application/spec/specRuntimeGateway";
 import { SpecRuntimeError } from "./compozyErrors";
@@ -8,7 +8,9 @@ import { rejectedSubmission } from "./submissionRejection";
 import { failureDetailOf } from "../../../application/services/local-execution/localFailureDetail";
 import { runPreflight } from "./compozyPreflight";
 import { unixSocketTransport } from "./compozyTransport";
-import { buildUnifiedPrompt, type PromptTask } from "./unifiedPrompt";
+import type { PromptTask } from "./unifiedPrompt";
+import { FIRST_PROMPT_PURPOSE, RETRY_PROMPT_PURPOSE, submitRunPrompt } from "./snapshotRunPrompt";
+import { PROMPT_START_FAILURE, promptStartVerdict } from "./promptStartRecovery";
 import { readSnapshotRunActivity, terminalStateFromActivity, type SnapshotTerminalState } from "./snapshotRunActivity";
 
 export type RunLauncher = {
@@ -22,9 +24,9 @@ export type SnapshotExecutorDependencies = {
   taskFor(request: ExecutionRequest): Promise<PromptTask>;
   beforeSubmit?(request: ExecutionRequest): Promise<void>;
   workspaceRoot?(request: ExecutionRequest): string;
+  now?(): Date;
 };
 const WORKSPACE_ROOT = "/workspace";
-const idFor = (runId: string, purpose: string) => createHash("sha256").update(`${purpose}:${runId}`).digest("hex").replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, "$1-$2-$3-$4-$5");
 type ActivityUpdate = Partial<Pick<ReconcileResult, "runtimeEventSequence" | "activity">>;
 
 export class SnapshotRunExecutor implements ActionExecutor {
@@ -86,7 +88,7 @@ export class SnapshotRunExecutor implements ActionExecutor {
     if (terminalState) return this.finish(request.run.id, terminalState, activityUpdate);
     const snapshot = await this.deps.gateway.inspect({ socketPath, workspaceId, sessionId });
     if (snapshot.startFailure) return this.failStart(request.run.id, snapshot.startFailure, activityUpdate);
-    if (snapshot.state !== "stopped") return { state: "running", code: null, ...activityUpdate };
+    if (snapshot.state !== "stopped") return this.whileRunning(request, { socketPath, workspaceId, sessionId }, snapshot, activityUpdate);
     try { await this.deps.launcher.stop(request.run.id); } catch { return { state: "unknown", code: null }; }
     if (isCanceledStopReason(snapshot.stopReason) || isCanceledStopReason(snapshot.stopCause)) return { state: "canceled", code: "runtime_canceled", ...activityUpdate };
     return snapshot.verified && !snapshot.stopCause ? { state: "succeeded", code: null, ...activityUpdate } : { state: "failed", code: snapshot.stopCause ?? "runtime_failed", ...activityUpdate };
@@ -95,6 +97,13 @@ export class SnapshotRunExecutor implements ActionExecutor {
   private async finish(runId: string, state: SnapshotTerminalState, activity: ActivityUpdate): Promise<ReconcileResult> {
     try { await this.deps.launcher.stop(runId); } catch { return { state: "unknown", code: null, ...activity }; }
     return { state, code: state === "canceled" ? "runtime_canceled" : null, ...activity };
+  }
+
+  private async whileRunning(request: ExecutionRequest, identity: RuntimeIdentity, snapshot: RuntimeSnapshot, activity: ActivityUpdate): Promise<ReconcileResult> {
+    const resubmit = () => submitRunPrompt(this.deps, request, { ...identity, purpose: RETRY_PROMPT_PURPOSE });
+    const verdict = await promptStartVerdict({ gateway: this.deps.gateway, identity, snapshot, now: this.deps.now?.() ?? new Date(), resubmit });
+    if (verdict === "stalled") return this.failStart(request.run.id, PROMPT_START_FAILURE, activity);
+    return { state: "running", code: null, ...activity };
   }
 
   private async failStart(runId: string, detail: string, activity: ActivityUpdate): Promise<ReconcileResult> {
@@ -111,11 +120,9 @@ export class SnapshotRunExecutor implements ActionExecutor {
     await runPreflight(unixSocketTransport(socketPath), config, false);
     const session = await this.deps.gateway.create({ socketPath, workspaceRoot: this.deps.workspaceRoot?.(request) ?? WORKSPACE_ROOT, workspaceName: `flow-${request.run.taskId}`, agentName: this.deps.runtime.agentName, sessionName: `run-${request.run.id}` });
     const runtimeIdentity = { workspaceId: session.workspaceId, sessionId: session.sessionId, turnId: null };
-    const message = buildUnifiedPrompt({ action, task: await this.deps.taskFor(request), workspaceRoot: this.deps.workspaceRoot?.(request) });
-    const { runtime } = action;
     let submission: Awaited<ReturnType<SpecRuntimeGateway["submit"]>>;
     try {
-      submission = await this.deps.gateway.submit({ socketPath, workspaceId: session.workspaceId, sessionId: session.sessionId, messageId: idFor(request.run.id, "message"), idempotencyKey: idFor(request.run.id, "prompt"), message, provider: action.runtimeProviderIds[runtime.connectionId], model: runtime.modelId, reasoningEffort: runtime.reasoningEffort });
+      submission = await submitRunPrompt(this.deps, request, { socketPath, workspaceId: session.workspaceId, sessionId: session.sessionId, purpose: FIRST_PROMPT_PURPOSE });
     } catch (error) {
       if (error instanceof SpecRuntimeError && error.uncertain) return { kind: "unknown", runtime: runtimeIdentity };
       throw error;

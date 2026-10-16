@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { SnapshotRunExecutor } from "./snapshotRunExecutor";
+import { PROMPT_START_FAILURE } from "./promptStartRecovery";
+import { idFor, RETRY_PROMPT_PURPOSE } from "./snapshotRunPrompt";
 
 describe("SnapshotRunExecutor cancellation", () => {
   it("retains an unknown outcome until the daemon verifies the canceled stop", async () => {
@@ -58,5 +60,49 @@ describe("SnapshotRunExecutor reconciliation", () => {
     const { launcher, result } = reconcileWith({ ...sessionSnapshot, startFailure: null });
     await expect(result).resolves.toMatchObject({ state: "running", code: null });
     expect(launcher.stop).not.toHaveBeenCalled();
+  });
+});
+
+describe("SnapshotRunExecutor prompt that never started", () => {
+  const pins = { version: "v1", openApiSha256: "a", binarySha256: "b", bundleSha256: "c" };
+  const SESSION_CREATED_AT = "2026-10-15T16:56:23.000Z";
+  const MINUTE_MS = 60_000;
+  const action = { kind: "direct_execute", language: "pt-BR", runtime: { connectionId: "connection-1", providerId: "claude", modelId: "claude-sonnet-5", reasoningEffort: "medium" }, runtimeProviderIds: { "connection-1": "claude" }, workspace: { kind: "local" } };
+  const unboundSession = { state: "active", verified: false, stopReason: null, stopCause: null, turnId: null, attention: null, pendingInteractions: [], startFailure: null, unboundSince: SESSION_CREATED_AT };
+
+  function reconcileAfter(minutes: number, eventTypes: string[] = []) {
+    const launcher = { start: vi.fn(async () => ({ socketPath: "/tmp/daemon.sock" })), stop: vi.fn(async () => {}) };
+    const events = vi.fn(async function* () { for (const [index, type] of eventTypes.entries()) yield { sequence: index + 1, id: `event-${index}`, type, turnId: "turn-1", timestamp: SESSION_CREATED_AT, content: {} }; });
+    const gateway = { events, inspect: vi.fn(async () => unboundSession), submit: vi.fn(async () => { throw new Error("timeout"); }) };
+    const now = () => new Date(Date.parse(SESSION_CREATED_AT) + minutes * MINUTE_MS);
+    const executor = new SnapshotRunExecutor({ gateway: gateway as never, launcher, now, runtime: { agentName: "flow-direct", declared: pins, accepted: pins }, taskFor: async () => ({ issueNumber: 1, title: "Issue", bodyMarkdown: "Details" }) });
+    const request = { run: { id: "run-1", runtime: { workspaceId: "workspace-1", sessionId: "session-1" } }, snapshot: action } as never;
+    return { launcher, gateway, result: executor.reconcile(request) };
+  }
+
+  it("keeps waiting without resending while the runtime may still be binding", async () => {
+    const { gateway, result } = reconcileAfter(1);
+    await expect(result).resolves.toMatchObject({ state: "running", code: null });
+    expect(gateway.submit).not.toHaveBeenCalled();
+  });
+
+  it("resends the prompt once under its own idempotency key when the session never received it", async () => {
+    const { gateway, launcher, result } = reconcileAfter(3, ["hook.dispatch.start"]);
+    await expect(result).resolves.toMatchObject({ state: "running", code: null });
+    expect(gateway.submit).toHaveBeenCalledWith(expect.objectContaining({ sessionId: "session-1", idempotencyKey: idFor("run-1", RETRY_PROMPT_PURPOSE), provider: "claude", model: "claude-sonnet-5" }));
+    expect(launcher.stop).not.toHaveBeenCalled();
+  });
+
+  it("does not resend a prompt the session already received", async () => {
+    const { gateway, result } = reconcileAfter(3, ["user_message"]);
+    await expect(result).resolves.toMatchObject({ state: "running", code: null });
+    expect(gateway.submit).not.toHaveBeenCalled();
+  });
+
+  it("fails the run instead of idling until the runtime inactivity stop", async () => {
+    const { gateway, launcher, result } = reconcileAfter(7);
+    await expect(result).resolves.toMatchObject({ state: "failed", code: "runtime_failed", detail: PROMPT_START_FAILURE });
+    expect(gateway.submit).not.toHaveBeenCalled();
+    expect(launcher.stop).toHaveBeenCalledWith("run-1");
   });
 });
