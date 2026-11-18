@@ -9,13 +9,11 @@ import { WorkDetail } from "./WorkDetail";
 
 const byTask = vi.mocked(trpc.assignedIssues.byTask.query);
 const byId = vi.mocked(trpc.tasks.byId.query);
-const NONE = { kind: "none" } as const;
-const SELECTION = { stage: null, packageId: null, documentId: null };
 const SOURCE = { snapshotId: "s1", revision: 1, origin: "external", contentHash: "abcdef0123456789", issueNumber: 41, issueUrl: "https://github.com/acme/cart/issues/41" };
 const AWAITING = (): TaskDetail => ({ ...publishedDetail(), publication: null, currentRevision: null, task: summaryOf({ status: "published", authorUserId: null as never, authorName: null }), planning: planningOf({ status: "awaiting", source: SOURCE, eligibility: { canStart: true, reason: null } } as never) });
 
 function loadOf(view = {}, detail = AWAITING()): WorkDetailLoad {
-  return { taskId: T, work: { kind: "ready", snapshot: snapshotOf(view, detail) }, spec: NONE, specSelection: SELECTION, flow: NONE };
+  return { taskId: T, work: { kind: "ready", snapshot: snapshotOf(view, detail) } };
 }
 
 function renderDetail(initial: WorkDetailLoad) {

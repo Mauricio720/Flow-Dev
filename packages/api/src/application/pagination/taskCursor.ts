@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { TaskError } from "../services/tasks/taskErrors";
 
-type CursorPayload = { kind: "tasks" | "messages" | "revisions" | "spec_events" | "spec_packages" | "spec_blocks"; scope: string; position: string; id?: string; direction?: "after" | "before" };
+type CursorPayload = { kind: "tasks" | "messages" | "revisions"; scope: string; position: string; id?: string; direction?: "after" | "before" };
 
 export function encodeTaskCursor(payload: CursorPayload) {
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");

@@ -6,14 +6,13 @@
   "exports": {
     ".": "./src/index.ts",
     "./server": "./src/server.ts",
-    "./schemas/*": "./src/schemas/*.ts",
-    "./spec": "./src/spec.ts"
+    "./schemas/*": "./src/schemas/*.ts"
   },
   "scripts": {
-    "dev": "env -u LD_PRELOAD sh -c 'tsx --env-file=../../apps/web/.env.local src/cli/managedRuntimeDev.ts || exit $?; tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts & tsx watch src/cli/localConnector.ts dev --server http://localhost:3000 & trap \"kill 0\" EXIT INT TERM; wait'",
+    "dev": "env -u LD_PRELOAD sh -c 'tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts & trap \"kill 0\" EXIT INT TERM; wait'",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx --env-file=../../apps/web/.env.local src/cli/databaseMigrate.ts",
     "catalog:import": "tsx src/cli/catalogImport.ts",
     "admins:provision": "tsx src/cli/adminsProvision.ts",
     "board:backfill": "tsx src/cli/boardBackfill.ts",
@@ -22,22 +21,13 @@
     "tasks:worker": "tsx src/cli/tasksWorker.ts",
     "db:prepare": "tsx src/cli/databasePrepare.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "spec:worker": "tsx src/cli/specWorker.ts",
     "claims:reconcile": "tsx --env-file=../../apps/web/.env.local src/cli/claimsReconciler.ts",
-    "taskflow:worker": "tsx --env-file=../../apps/web/.env.local src/cli/taskFlowWorker.ts",
-    "issue-deletion:worker": "tsx --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts",
-    "local:connector": "tsx src/cli/localConnector.ts"
+    "issue-deletion:worker": "tsx --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts"
   },
   "dependencies": {
-    "@compozy/cli": "0.3.0-beta.29",
     "@trpc/server": "^11.19.0",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
-    "mdast-util-from-markdown": "^2.1.0",
-    "mdast-util-frontmatter": "^2.0.1",
-    "mdast-util-gfm": "^3.1.0",
-    "micromark-extension-frontmatter": "^2.0.0",
-    "micromark-extension-gfm": "^3.0.0",
     "postgres": "^3.4.9",
     "zod": "^4.6.5"
   },

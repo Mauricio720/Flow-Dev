@@ -6,17 +6,16 @@ import { taskIssueClaims, taskIssueSources, taskOperations, taskPlanningDecision
 import type { Database } from "../../client";
 import { loadSource } from "../assigned-issues/sourceRecords";
 import { planningSourceRecord } from "./planningSourceRecord";
-import { readFlowActions } from "./planningReplan";
 
 const HISTORY_LIMIT = 20;
 
 export async function readPlanningProjection(database: Database, taskId: string): Promise<PlanningProjectionRecord> {
   const task = (await database.select().from(tasks).where(eq(tasks.id, taskId)).limit(1))[0];
   if (!task) throw new TaskError("task_unavailable");
-  const [operation, decision, publication, source, flowActions] = await Promise.all([findOperation(database, task.planningOperationId), findDecision(database, task), findPublication(database, taskId), findSource(database, taskId), readFlowActions(database, taskId)]);
+  const [operation, decision, publication, source] = await Promise.all([findOperation(database, task.planningOperationId), findDecision(database, task), findPublication(database, taskId), findSource(database, taskId)]);
   const history = decision ? await findHistory(database, taskId, decision.id) : [];
   const retained = publication && { taskId, outcome: publication.outcome, repositoryBindingMatches: publication.repositoryId === task.repositoryId && publication.repositoryNodeId === task.repositoryNodeId, attemptId: publication.id, repositoryId: publication.repositoryId, repositoryNodeId: publication.repositoryNodeId, issueId: publication.issueId ?? "", issueNumber: publication.issueNumber ?? 0, title: publication.titleSnapshot, bodyMarkdown: publication.bodySnapshot, issueUrl: publication.issueUrl ?? "" };
-  return { taskStatus: task.status, planningStatus: task.planningStatus as PlanningStatus | null, activeOperationId: task.activeOperationId, operation, decision, publication: retained ?? null, source, history, flowActions };
+  return { taskStatus: task.status, planningStatus: task.planningStatus as PlanningStatus | null, activeOperationId: task.activeOperationId, operation, decision, publication: retained ?? null, source, history };
 }
 
 async function findOperation(database: Database, operationId: string | null) {

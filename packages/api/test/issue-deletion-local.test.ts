@@ -2,7 +2,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { and, eq, sql } from "drizzle-orm";
 import { taskDraftRevisions, taskExecutionRuns, taskIssueSources, taskMessages, taskOperations, taskPublicationAttempts, tasks, projectAssignments } from "../src/infra/database/schema";
 import { DrizzleTaskDao } from "../src/infra/database/dao/tasks/drizzleTaskDao";
-import { DrizzleTaskFlowDao } from "../src/infra/database/dao/tasks/drizzleTaskFlowDao";
 import { approveTaskPublication } from "../src/infra/database/dao/tasks/taskPublicationApproval";
 import { DrizzleAccessDao } from "../src/infra/database/dao/drizzleAccessDao";
 import { DrizzleProjectDao } from "../src/infra/database/dao/projects/drizzleProjectDao";
@@ -101,24 +100,6 @@ describe("issueDeletion local journey", () => {
     expect(status.state).toBe("completed");
   });
 
-  it("IT-025 only current run is canceled; cleanup removes run history", async () => {
-    const taskId = await seedTask(f.database, { projectId: f.project.id, authorUserId: f.member.id });
-    const historical = await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "succeeded" });
-    const active = await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "running", worktreeId: "worktree-1" });
-    const start = await startLocalDeletion(taskId);
-    await f.worker.tick();
-    const [canceled] = await f.database.select().from(taskExecutionRuns).where(eq(taskExecutionRuns.id, active));
-    expect(canceled?.state).toBe("canceled");
-    const [untouched] = await f.database.select().from(taskExecutionRuns).where(eq(taskExecutionRuns.id, historical));
-    expect(untouched?.state).toBe("succeeded");
-    await f.drain();
-    const runs = await f.database.select().from(taskExecutionRuns).where(eq(taskExecutionRuns.taskId, taskId));
-    expect(runs).toHaveLength(0);
-    const status = await f.caller(f.member.id).status({ operationId: start.operationId });
-    expect(status.state).toBe("completed");
-    expect(status.workStopped).toBe(true);
-  });
-
   it("IT-026 run operator without deletion authority cannot interrupt via start", async () => {
     const taskId = await seedTask(f.database, { projectId: f.project.id, authorUserId: f.member.id });
     const runId = await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "running", worktreeId: "worktree-1" });
@@ -142,7 +123,6 @@ describe("issueDeletion local journey", () => {
     expect(publish).toMatchObject({ reason: "deletion_fenced" });
     const draft = await rejection(router.send({ projectId: f.project.id, taskId, requestKey: crypto.randomUUID(), expectedVersion: 1, message: "still blocked" }));
     expect(draft?.code).toBe("CONFLICT");
-    await expect(new DrizzleTaskFlowDao(f.database).assertDeletionAdmission(taskId)).rejects.toMatchObject({ reason: "deletion_fenced" });
   });
 
   it("IT-029 repeated confirmations during stop yield one operation", async () => {
@@ -225,35 +205,17 @@ describe("issueDeletion local journey", () => {
     expect(preview.canDelete).toBe(true);
   });
 
-  it("IT-047 dirty worktree, branch and PR remain unchanged after deletion", async () => {
+  it("IT-049 an active run left without an executor keeps the stop recoverable", async () => {
     const taskId = await seedTask(f.database, { projectId: f.project.id, authorUserId: f.member.id });
-    await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "running", worktreeId: "worktree-dirty" });
+    await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "running", worktreeId: "worktree-disconnected" });
     const start = await startLocalDeletion(taskId);
     await f.drain();
     const status = await f.caller(f.member.id).status({ operationId: start.operationId });
-    expect(status.state).toBe("completed");
-    expect(f.world.mutations.filter((mutation) => mutation.includes("branch") || mutation.includes("pull_request") || mutation.includes("pr"))).toHaveLength(0);
-    const otherTask = await seedTask(f.database, { projectId: f.project.id, authorUserId: f.member.id });
-    expect(await f.database.select().from(tasks).where(eq(tasks.id, otherTask))).toHaveLength(1);
+    expect(status.state).toBe("recoverable");
+    expect(status.reason).toBe("unknown_stop");
+    expect(status.workStopped).toBe(false);
+    expect(await f.database.select().from(tasks).where(eq(tasks.id, taskId))).toHaveLength(1);
   });
-
-  it("IT-049 disconnected connector leaves recoverable stop and intact worktree", async () => {
-    f.runState.fail = true;
-    try {
-      const taskId = await seedTask(f.database, { projectId: f.project.id, authorUserId: f.member.id });
-      await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "running", worktreeId: "worktree-disconnected" });
-      const start = await startLocalDeletion(taskId);
-      await f.drain();
-      const status = await f.caller(f.member.id).status({ operationId: start.operationId });
-      expect(status.state).toBe("recoverable");
-      expect(status.reason).toBe("unknown_stop");
-      expect(status.workStopped).toBe(false);
-      expect(await f.database.select().from(tasks).where(eq(tasks.id, taskId))).toHaveLength(1);
-    } finally {
-      f.runState.fail = false;
-    }
-  });
-
   it("IT-051 prepublication worktree survives local-only deletion", async () => {
     const taskId = await seedTask(f.database, { projectId: f.project.id, authorUserId: f.member.id });
     await seedRun(f.database, { taskId, requestedBy: f.member.id, state: "succeeded", worktreeId: "worktree-prepub" });

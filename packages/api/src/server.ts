@@ -9,5 +9,4 @@ export { createProductionRepositoryOAuthController } from "./infra/composition";
 export { createProductionTasksController, createProductionTranscriptionController } from "./infra/composition";
 export { createProductionIssueContextController } from "./infra/composition";
 export { createProductionTaskImageController } from "./infra/taskImageComposition";
-export { createProductionLocalLinkRequestController, createProductionLocalMachineController, createProductionLocalProjectLinkController } from "./infra/localMachineComposition";
 export { oauthFailure } from "./controllers/repositoryOAuthController";

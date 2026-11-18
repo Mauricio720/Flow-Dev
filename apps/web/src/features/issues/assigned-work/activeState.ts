@@ -4,8 +4,7 @@ export type ActiveState = { filter: ActiveFilter; items: ActiveItem[]; nextCurso
 export type ActiveAction =
   | { type: "requested"; filter: ActiveFilter }
   | { type: "loaded"; filter: ActiveFilter; page: ActivePage; replace: boolean }
-  | { type: "failed"; failure: TaskFailure }
-  | { type: "polled"; filter: ActiveFilter; page: ActivePage };
+  | { type: "failed"; failure: TaskFailure };
 
 function uniqueByTask(items: ActiveItem[]) {
   const seen = new Set<string>();
@@ -17,13 +16,7 @@ export function initialActiveState(load: ActiveLoad): ActiveState {
   return { filter: "mine", items: uniqueByTask(load.page.items), nextCursor: load.page.nextCursor, failure: null, busy: false };
 }
 
-function withPolled(state: ActiveState, page: ActivePage): ActiveState {
-  const fresh = new Map(page.items.map((item) => [item.taskId, item]));
-  return { ...state, items: state.items.map((item) => fresh.get(item.taskId) ?? item) };
-}
-
 export function activeReducer(state: ActiveState, action: ActiveAction): ActiveState {
-  if (action.type === "polled") return action.filter === state.filter && !state.busy ? withPolled(state, action.page) : state;
   if (action.type === "requested") return { ...state, filter: action.filter, busy: true };
   if (action.type === "failed") return { ...state, busy: false, failure: action.failure };
   if (action.filter !== state.filter) return state;

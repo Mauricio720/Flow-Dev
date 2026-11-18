@@ -4,7 +4,7 @@ export const PROJECT_CREATED_PATH = `${PROJECTS_PATH}?criado=1`;
 export const REVOKED_ACCESS_PATH = `${PROJECTS_PATH}?erro=acesso_revogado`;
 const EXPIRED_SESSION_PATH = "/login?erro=sessao_expirada";
 const SAFE_SEGMENT = "[0-9a-zA-Z_-]+";
-const SAFE_RETURN_PATTERN = new RegExp(`^(\/settings\/local-machine\/pairing\/[A-Za-z0-9_-]{8}|/projects(/new|/${SAFE_SEGMENT}(/(issues|work)(/${SAFE_SEGMENT})?|/settings(/local-project)?)?)?)$`);
+const SAFE_RETURN_PATTERN = new RegExp(`^/projects(/new|/${SAFE_SEGMENT}(/(issues|work)(/${SAFE_SEGMENT})?|/settings)?)?$`);
 const TASK_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function projectPath(projectId: string) {
@@ -39,10 +39,6 @@ export function projectWorkPath(projectId: string) {
 
 export function projectWorkTaskPath(projectId: string, taskId: string) {
   return `${projectWorkPath(projectId)}/${taskId}`;
-}
-
-export function projectLocalProjectPath(projectId: string) {
-  return `${projectSettingsPath(projectId)}/local-project`;
 }
 
 export function safeReturnPath(value: string | null | undefined, fallback: string) {

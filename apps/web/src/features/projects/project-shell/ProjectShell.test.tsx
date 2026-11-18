@@ -22,13 +22,13 @@ function activeProject() {
 }
 
 describe("project shell navigation by role", () => {
-  it("shows an administrator the work, authoring and local project menus", () => {
+  it("shows an administrator the work and authoring menus", () => {
     states.mockImplementation(() => pendingForever());
     render(shellFor(projectFixture("p1", "p1", OCTO_DOCS)));
     const menus = within(screen.getByRole("navigation", { name: "Menus do projeto" }));
     expect(menus.getByRole("link", { name: "Trabalho atribuído" }).getAttribute("href")).toBe("/projects/p1/work");
     expect(menus.getByRole("link", { name: "Issues" }).getAttribute("href")).toBe("/projects/p1/issues");
-    expect(menus.getByRole("link", { name: "Projeto local" }).getAttribute("href")).toBe("/projects/p1/settings/local-project");
+    expect(menus.queryByRole("link", { name: "Projeto local" })).toBeNull();
   });
 
   it("hides the authoring menu from a non administrator and marks the work menu current", () => {

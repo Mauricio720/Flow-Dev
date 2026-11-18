@@ -1,58 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 import { CoordinatedDeletionStop } from "./coordinatedDeletionStop";
-import type { RunCancelPort } from "./deletionStop";
 
-function dao(sequence: { operations: string[]; runs: string[]; specs: string[] }[]) {
-  let call = -1;
+function dao(remaining: { operations: string[]; runs: string[]; specs: string[] }) {
   return {
     cancelTaskWork: vi.fn(async () => {}),
-    remainingActiveWork: vi.fn(async () => { call += 1; return sequence[Math.min(call, sequence.length - 1)]!; }),
+    remainingActiveWork: vi.fn(async () => remaining),
   };
 }
 
 describe("CoordinatedDeletionStop", () => {
-  it("UT-013 old-run acknowledgement does not stop the current run", async () => {
-    const runs: RunCancelPort = { cancelActiveRuns: vi.fn(async () => [{ runId: "r1", state: "canceled", terminalCode: null }]) };
-    const data = dao([{ operations: [], runs: ["r2"], specs: [] }, { operations: [], runs: ["r2"], specs: [] }]);
-    const stop = new CoordinatedDeletionStop({ dao: data as never, runs });
-    const outcome = await stop.stopTask("t1", "op1");
-    expect(outcome.workStopped).toBe(false);
-    expect(outcome.reason).toBe("unknown_stop");
-    expect(runs.cancelActiveRuns).toHaveBeenCalledOnce();
-  });
-
-  it("UT-014 already-terminal current run requires no second cancellation", async () => {
-    const runs: RunCancelPort = { cancelActiveRuns: vi.fn(async () => []) };
-    const data = dao([{ operations: [], runs: [], specs: [] }]);
-    const stop = new CoordinatedDeletionStop({ dao: data as never, runs });
-    const outcome = await stop.stopTask("t1", "op1");
-    expect(outcome.workStopped).toBe(true);
-    expect(outcome.reason).toBeNull();
-    expect(runs.cancelActiveRuns).not.toHaveBeenCalled();
-  });
-
-  it("reports stopped after canceling queued operations and settling runs", async () => {
-    const runs: RunCancelPort = { cancelActiveRuns: vi.fn(async () => [{ runId: "r2", state: "canceled", terminalCode: "user_canceled" }]) };
-    const data = dao([{ operations: [], runs: ["r2"], specs: [] }, { operations: [], runs: [], specs: [] }]);
-    const stop = new CoordinatedDeletionStop({ dao: data as never, runs });
-    const outcome = await stop.stopTask("t1", "op1");
-    expect(outcome.workStopped).toBe(true);
-  });
-
-  it("reports unknown_stop when run cancellation cannot terminate a run", async () => {
-    const runs: RunCancelPort = { cancelActiveRuns: vi.fn(async () => [{ runId: "r2", state: "reconciling", terminalCode: null }]) };
-    const data = dao([{ operations: [], runs: ["r2"], specs: [] }, { operations: [], runs: ["r2"], specs: [] }]);
-    const stop = new CoordinatedDeletionStop({ dao: data as never, runs });
-    const outcome = await stop.stopTask("t1", "op1");
-    expect(outcome.workStopped).toBe(false);
-    expect(outcome.reason).toBe("unknown_stop");
-  });
-
-  it("without a run cancel port any active run keeps the stop uncertain", async () => {
-    const data = dao([{ operations: [], runs: ["r2"], specs: [] }]);
+  it("reports stopped when canceling leaves no active work", async () => {
+    const data = dao({ operations: [], runs: [], specs: [] });
     const stop = new CoordinatedDeletionStop({ dao: data as never });
     const outcome = await stop.stopTask("t1", "op1");
-    expect(outcome.workStopped).toBe(false);
-    expect(outcome.reason).toBe("unknown_stop");
+    expect(outcome).toEqual({ workStopped: true, reason: null });
+    expect(data.cancelTaskWork).toHaveBeenCalledWith("t1", "op1");
+  });
+
+  it.each([
+    { operations: ["o1"], runs: [], specs: [] },
+    { operations: [], runs: ["r1"], specs: [] },
+    { operations: [], runs: [], specs: ["s1"] },
+  ])("keeps the stop uncertain while work remains active (%o)", async (remaining) => {
+    const stop = new CoordinatedDeletionStop({ dao: dao(remaining) as never });
+    const outcome = await stop.stopTask("t1", "op1");
+    expect(outcome).toEqual({ workStopped: false, reason: "unknown_stop" });
   });
 });

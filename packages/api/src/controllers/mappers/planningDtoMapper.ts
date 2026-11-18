@@ -17,7 +17,7 @@ export function planningDto(record: PlanningProjectionRecord, viewer: Viewer, no
   const eligibility = record.source ? planningSourceEligibility({ snapshotId: record.source.snapshotId, repositoryId: record.source.repositoryId, repositoryNodeId: record.source.repositoryNodeId, issueNodeId: record.source.issueNodeId, issueNumber: record.source.issueNumber, title: record.source.title, bodyMarkdown: record.source.bodyMarkdown }) : planningEligibility(record.publication, record.taskStatus);
   const decision = decisionDto(record, status);
   const matchesCurrentSource = decision && record.source ? decisionMatchesSource(record.decision!, record.source) : null;
-  const replannable = eligibility.canStart && canReplan({ planningStatus: status, activeOperationId: record.activeOperationId, selectedRoute: record.decision?.selectedRoute ?? null, sourceChanged: matchesCurrentSource === false, actions: record.flowActions });
+  const replannable = eligibility.canStart && canReplan({ planningStatus: status, activeOperationId: record.activeOperationId, sourceChanged: matchesCurrentSource === false });
   return { status, eligibility, operation: operationDto(record, now), decision: decision && { ...decision, matchesCurrentSource }, replannable, permissions: permissions({ status, canStart: eligibility.canStart, replannable }, viewer), source: sourceDto(record), history: record.history.map((entry) => ({ ...entry, createdAt: entry.createdAt.toISOString() })) };
 }
 

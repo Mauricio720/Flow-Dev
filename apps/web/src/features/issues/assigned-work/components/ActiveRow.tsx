@@ -8,8 +8,6 @@ import { STATE_TONE } from "../progressTone";
 import { reasonMessage } from "../taskCopy";
 import { NEEDS_ATTENTION, NO_OPERATOR } from "../workCopy";
 import { progressSummary, type ProgressSummary } from "../workProgress";
-import { LiveRunSummary } from "./LiveRunSummary";
-import { ProgressRail } from "./ProgressRail";
 
 type Props = { projectId: string; item: ActiveItem; operator: boolean };
 
@@ -48,9 +46,7 @@ export function ActiveRow({ projectId, item, operator }: Props) {
         </div>
         <StateBadge summary={summary} />
       </div>
-      <ProgressRail rail={summary.rail} />
       <p className={cn("text-sm font-medium", STATE_TONE[summary.state].headline)}>{summary.headline}</p>
-      {summary.run && <LiveRunSummary run={summary.run} />}
       {item.blockReason && <BlockReason reason={item.blockReason} />}
     </li>
   );

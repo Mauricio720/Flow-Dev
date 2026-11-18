@@ -3,7 +3,7 @@ export {};
 const POLL_INTERVAL_MS = 1000;
 
 const { createProductionIssueDeletionWorker } = await import("../infra/issueDeletionComposition");
-const worker = await createProductionIssueDeletionWorker();
+const worker = createProductionIssueDeletionWorker();
 
 const abort = new AbortController();
 process.once("SIGINT", () => abort.abort());

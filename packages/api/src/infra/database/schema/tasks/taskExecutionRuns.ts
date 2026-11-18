@@ -1,6 +1,5 @@
 import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import type { RunActivity } from "../../../../application/database/dao/taskFlowTypes";
 import { users } from "../../schema";
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
@@ -27,7 +26,9 @@ export const taskExecutionRuns = pgTable("task_execution_runs", {
   runtimeTurnId: text("runtime_turn_id"),
   runtimeRunId: text("runtime_run_id"),
   runtimeEventSequence: integer("runtime_event_sequence").notNull().default(0),
-  activity: jsonb("activity").$type<RunActivity | null>(),
+  activity: jsonb("activity").$type<Record<string, unknown> | null>(),
+  reviewResult: jsonb("review_result").$type<Record<string, unknown> | null>(),
+  qaResult: jsonb("qa_result").$type<Record<string, unknown> | null>(),
   createdAt,
   updatedAt,
   finishedAt: timestamp("finished_at", { withTimezone: true }),

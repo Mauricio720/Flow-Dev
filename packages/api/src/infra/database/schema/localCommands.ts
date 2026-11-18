@@ -3,7 +3,6 @@ import { sql } from "drizzle-orm";
 import { localMachines, localProjectLinks } from "./localMachines";
 import { projects, users } from "../schema";
 import { taskExecutionRuns } from "./tasks/taskExecutionRuns";
-import type { LocalCommand } from "../../../application/services/local-execution/localProtocol";
 
 export const localCommands = pgTable("local_commands", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -14,7 +13,7 @@ export const localCommands = pgTable("local_commands", {
   runId: uuid("run_id").references(() => taskExecutionRuns.id, { onDelete: "restrict" }),
   preparationId: uuid("preparation_id"),
   protocolVersion: integer("protocol_version").notNull().default(1),
-  target: jsonb("target").$type<LocalCommand["target"]>().notNull(),
+  target: jsonb("target").$type<Record<string, unknown>>().notNull(),
   requestKey: uuid("request_key").notNull(),
   kind: text("kind").notNull(),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),

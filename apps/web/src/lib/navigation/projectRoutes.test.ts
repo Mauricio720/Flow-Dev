@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { PROJECTS_PATH, projectLocalProjectPath, projectWorkPath, projectWorkTaskPath, repositoryConnectPath, safeReturnPath } from "./projectRoutes";
+import { PROJECTS_PATH, projectWorkPath, projectWorkTaskPath, repositoryConnectPath, safeReturnPath } from "./projectRoutes";
 
 const TASK = "00000000-0000-4000-8000-000000000011";
 
 describe("project routes", () => {
-  it("builds the work and local project paths", () => {
+  it("builds the work paths", () => {
     expect(projectWorkPath("p1")).toBe("/projects/p1/work");
     expect(projectWorkTaskPath("p1", TASK)).toBe(`/projects/p1/work/${TASK}`);
-    expect(projectLocalProjectPath("p1")).toBe("/projects/p1/settings/local-project");
   });
 
   it("UT-159 rejects an external return target", () => {
@@ -20,13 +19,12 @@ describe("project routes", () => {
 
   it("keeps an internal work return target", () => {
     expect(safeReturnPath(`/projects/p1/work/${TASK}`, PROJECTS_PATH)).toBe(`/projects/p1/work/${TASK}`);
-    expect(safeReturnPath("/projects/p1/settings/local-project", PROJECTS_PATH)).toBe("/projects/p1/settings/local-project");
+    expect(safeReturnPath("/projects/p1/settings", PROJECTS_PATH)).toBe("/projects/p1/settings");
   });
 
-  it("allows only a well-formed local machine confirmation return target", () => {
-    expect(safeReturnPath("/settings/local-machine/pairing/Abc_123-", PROJECTS_PATH)).toBe("/settings/local-machine/pairing/Abc_123-");
-    expect(safeReturnPath("/settings/local-machine/pairing/../projects", PROJECTS_PATH)).toBe(PROJECTS_PATH);
-    expect(safeReturnPath("/settings/local-machine/pairing/short", PROJECTS_PATH)).toBe(PROJECTS_PATH);
+  it("rejects the removed local machine and local project return targets", () => {
+    expect(safeReturnPath("/settings/local-machine/pairing/Abc_123-", PROJECTS_PATH)).toBe(PROJECTS_PATH);
+    expect(safeReturnPath("/projects/p1/settings/local-project", PROJECTS_PATH)).toBe(PROJECTS_PATH);
   });
 
   it("never forwards an external return target to the repository authorization", () => {

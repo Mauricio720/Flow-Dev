@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
-import { DRAFT, O, P, R7, T, callerRejection, detailOf, messageOf, publishedDetail, summaryOf } from "@/test/tasks";
+import { DRAFT, O, P, R7, T, callerRejection, detailOf, messageOf, summaryOf } from "@/test/tasks";
 import { loadTaskWorkspace } from "./loadTaskWorkspace";
 
-const caller = vi.hoisted(() => ({ tasks: { list: vi.fn(), byId: vi.fn(), messages: vi.fn() }, taskSpec: { byTask: vi.fn() }, taskFlow: { byTask: vi.fn() } }));
+const caller = vi.hoisted(() => ({ tasks: { list: vi.fn(), byId: vi.fn(), messages: vi.fn() } }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/trpc/server", () => ({ getServerCaller: async () => caller }));
@@ -49,15 +49,5 @@ describe("loadTaskWorkspace", () => {
     caller.tasks.byId.mockRejectedValue(callerRejection("UNAUTHORIZED"));
     await expect(loadTaskWorkspace(P, T)).rejects.toThrow("NEXT_REDIRECT");
     expect(redirect).toHaveBeenCalledWith(`/login?erro=sessao_expirada&next=${encodeURIComponent(`/projects/${P}/issues/${T}`)}`);
-  });
-
-  it("never reads the Spec or flow for a published task", async () => {
-    caller.tasks.list.mockResolvedValue({ items: [summaryOf()], nextCursor: null });
-    caller.tasks.byId.mockResolvedValue(publishedDetail());
-    caller.tasks.messages.mockResolvedValue({ items: [], nextCursor: null });
-    const load = await loadTaskWorkspace(P, T);
-    expect(load.task.kind).toBe("ready");
-    expect(caller.taskSpec.byTask).not.toHaveBeenCalled();
-    expect(caller.taskFlow.byTask).not.toHaveBeenCalled();
   });
 });

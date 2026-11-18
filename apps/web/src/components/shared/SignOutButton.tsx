@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOutIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { clearAllSpecPending } from "@/features/issues/assigned-work/spec/specPendingStore";
 import { authClient } from "@/lib/auth/client";
 
 const LOGIN_PATH = "/login";
@@ -13,7 +12,6 @@ export function SignOutButton() {
   const router = useRouter();
   const [failed, setFailed] = useState(false);
   async function signOut() {
-    clearAllSpecPending();
     const result = await authClient.signOut();
     if (result.error) return setFailed(true);
     router.push(LOGIN_PATH);

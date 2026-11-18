@@ -1,8 +1,8 @@
-import type { StageState } from "./spec/unified/flowStages";
+import type { StageTabState } from "./stageTabs";
 
 export type StateTone = { bar: string; badge: string; headline: string; label: string; count: string };
 
-export const STATE_TONE: Record<StageState, StateTone> = {
+export const STATE_TONE: Record<StageTabState, StateTone> = {
   current: { bar: "bg-project", badge: "border-project/40 bg-project-wash text-project-ink", headline: "text-ink", label: "text-project-ink", count: "bg-project-wash text-project-ink" },
   yours: { bar: "bg-clarify", badge: "border-clarify/50 bg-clarify-wash text-clarify-ink", headline: "text-clarify-ink", label: "text-clarify-ink", count: "bg-clarify-wash text-clarify-ink" },
   failed: { bar: "bg-destructive", badge: "border-destructive/40 bg-github-wash text-destructive", headline: "text-destructive", label: "text-destructive", count: "bg-github-wash text-destructive" },

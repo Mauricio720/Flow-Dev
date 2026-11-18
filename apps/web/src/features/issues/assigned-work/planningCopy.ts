@@ -18,7 +18,7 @@ export const PLANNING_STATUS_LABEL = { awaiting: "Aguardando planejamento", in_p
 export const PLANNING_ANNOUNCEMENT = {
   awaiting: "Issue publicada. O planejamento ainda não começou.",
   in_progress: "O Dev Control está analisando o snapshot da Issue.",
-  review: "Recomendação pronta e worktree desta Issue solicitado. Revise a rota e aprove o planejamento.",
+  review: "Recomendação pronta. Revise a rota e aprove o planejamento.",
   failed: "A análise de planejamento falhou. A Issue publicada não foi alterada.",
   approved: "Planejamento aprovado. Nenhuma atividade seguinte foi iniciada.",
 } as const;
@@ -32,7 +32,7 @@ export const CONFLICT_NOTICE = "A tarefa mudou desde que você abriu esta tela. 
 export const REPLAN_COPY = {
   open: "Refazer planejamento",
   group: "Refazer o planejamento desta Issue",
-  warning: "O Dev Control analisa de novo o texto atual da Issue e recomenda outra rota. Se faltar contexto, atualize a Issue no GitHub antes de confirmar. As ações configuradas no fluxo atual são arquivadas, e o worktree local continua como está.",
+  warning: "O Dev Control analisa de novo o texto atual da Issue e recomenda outra rota. Se faltar contexto, atualize a Issue no GitHub antes de confirmar.",
   confirm: "Confirmar novo planejamento",
   back: "Voltar",
 };
@@ -45,7 +45,7 @@ export const PLANNING_REASON_MESSAGE: Record<string, string> = {
   planning_retry_required: "A análise falhou. Use “Tentar novamente” para uma nova análise.",
   planning_not_failed: "Não há análise com falha para tentar de novo.",
   planning_approved: "O planejamento já foi aprovado e não aceita mudanças.",
-  replan_unavailable: "O planejamento só pode ser refeito quando nada está em execução e a etapa atual parou ou a Issue mudou. Atualize para ver o estado atual.",
+  replan_unavailable: "O planejamento só pode ser refeito quando a Issue mudou depois da aprovação. Atualize para ver o estado atual.",
   planning_not_ready: "A recomendação ainda não está pronta para revisão.",
   decision_unavailable: "A decisão de planejamento não está disponível para esta tarefa.",
   planning_capacity: "Há muitas análises em andamento. Tente de novo em instantes.",
@@ -55,7 +55,6 @@ export const PLANNING_REASON_MESSAGE: Record<string, string> = {
   planning_timeout: "O Dev Control não respondeu a tempo.",
   planning_rate_limited: "O Dev Control limitou as análises por agora.",
   planning_provider_unavailable: "O Dev Control está indisponível no momento.",
-  planning_workspace_unavailable: "Não foi possível preparar o worktree desta Issue. Tente o planejamento novamente.",
   planning_invalid_output: "O Dev Control devolveu um resultado inválido, que foi descartado.",
   planning_execution_mismatch: "O resultado do Dev Control não correspondia a esta análise e foi descartado.",
   planning_access_revoked: "O acesso necessário mudou durante a análise, que foi interrompida.",

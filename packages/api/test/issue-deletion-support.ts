@@ -7,7 +7,6 @@ import { RepositoryDeletionAccess } from "../src/application/services/issue-dele
 import { CoordinatedDeletionStop } from "../src/application/services/issue-deletion/coordinatedDeletionStop";
 import { IssueDeletionService } from "../src/application/services/issue-deletion/issueDeletionService";
 import { IssueDeletionWorker } from "../src/application/services/issue-deletion/issueDeletionWorker";
-import type { RunCancelPort } from "../src/application/services/issue-deletion/deletionStop";
 import { GitHubDeletionProvider } from "../src/infra/issue-deletion/gitHubDeletionProvider";
 import { GitHubHttpIssueDeletionGateway } from "../src/infra/github/githubIssueDeletionGateway";
 import { IssueDeletionController } from "../src/controllers/issueDeletionController";
@@ -17,22 +16,6 @@ import { DeletionWorld } from "./issue-deletion-world";
 
 export const SESSION = "60000000-0000-4000-8000-000000000001";
 export const NOW = new Date("2026-10-13T12:00:00.000Z");
-
-const ACTIVE_RUN_STATES = ["queued", "dispatching", "running", "waiting", "finalizing", "stopping", "reconciling"];
-
-export function runCancelPort(database: Fixture["database"], state: { fail: boolean }) {
-  return {
-    async cancelActiveRuns(taskId: string) {
-      const active = await database.select({ id: taskExecutionRuns.id }).from(taskExecutionRuns).where(and(eq(taskExecutionRuns.taskId, taskId), inArray(taskExecutionRuns.state, ACTIVE_RUN_STATES)));
-      if (state.fail) return active.map((row) => ({ runId: row.id, state: "reconciling", terminalCode: null }));
-      const now = new Date();
-      for (const row of active) {
-        await database.update(taskExecutionRuns).set({ state: "canceled", terminalCode: "user_canceled", leaseOwner: null, leaseFence: sql`${taskExecutionRuns.leaseFence} + 1`, leaseExpiresAt: null, finishedAt: now, updatedAt: now }).where(eq(taskExecutionRuns.id, row.id));
-      }
-      return active.map((row) => ({ runId: row.id, state: "canceled", terminalCode: "user_canceled" }));
-    },
-  } satisfies RunCancelPort;
-}
 
 let current: Fixture | undefined;
 
@@ -52,16 +35,14 @@ export async function issueDeletionFixture() {
   const dao = new DrizzleIssueDeletionDao(base.database);
   const access = new RepositoryDeletionAccess(new ProjectAccessService(base.dao, base.permissions), base.permissions, base.authorization, new RepositoryAccessService(base.dao, base.permissions, base.authorization, base.github));
   const provider = new GitHubDeletionProvider(new GitHubHttpIssueDeletionGateway(world.fetcher), base.authorization);
-  const runState = { fail: false };
-  const runCancel = runCancelPort(base.database, runState);
   const clock = { now: NOW };
-  const stop = new CoordinatedDeletionStop({ dao, runs: runCancel });
+  const stop = new CoordinatedDeletionStop({ dao });
   const service = new IssueDeletionService({ dao, access, provider, clock: () => clock.now });
   const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: "test-worker", clock: () => clock.now, leaseMs: 60_000 });
   const controller = new IssueDeletionController(service);
   const caller = (userId: string, sessionId: string | null = SESSION) => createIssueDeletionRouter(controller).createCaller({ principal: sessionId ? { userId, sessionId } : null, requestId: "issue-deletion-test" });
   const drain = async (limit = 30) => { for (let index = 0; index < limit; index += 1) { if (!(await worker.tick())) break; } };
-  return { ...base, createProject: base.project, second: second!, project, world, dao, provider, runState, clock, worker, caller, drain, stop };
+  return { ...base, createProject: base.project, second: second!, project, world, dao, provider, clock, worker, caller, drain, stop };
 }
 
 export type IssueDeletionFixture = Awaited<ReturnType<typeof issueDeletionFixture>>;
@@ -69,7 +50,6 @@ export type IssueDeletionFixture = Awaited<ReturnType<typeof issueDeletionFixtur
 export async function resetIssueDeletion(f: IssueDeletionFixture) {
   await f.database.execute(sql`truncate issue_deletion_operations`);
   f.world.reset();
-  f.runState.fail = false;
   f.clock.now = NOW;
 }
 

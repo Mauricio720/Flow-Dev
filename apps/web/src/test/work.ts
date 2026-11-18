@@ -14,7 +14,7 @@ export function queuePageOf(items: QueueItem[], patch: Partial<QueuePage> = {}):
 }
 
 export function progressOf(patch: Partial<ActiveItem["progress"]> = {}): ActiveItem["progress"] {
-  return { route: null, flow: "none", actions: [], packages: [], activeRun: null, ...patch };
+  return { route: null, ...patch };
 }
 
 export function activeItemOf(patch: Partial<ActiveItem> = {}): ActiveItem {

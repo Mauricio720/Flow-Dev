@@ -4,7 +4,7 @@ Esta árvore guarda jornadas e cenários de uso real do Flow Dev. Os relatórios
 
 ## Áreas
 
-- `FLOW`: planejamento, especificação, implementação, Review, QA e Pull Request de uma Issue.
+- `FLOW`: planejamento de uma Issue publicada.
 - `ISSUE`: criação e edição de Issues.
 - `WORK`: fila e acompanhamento de trabalho atribuído.
 
@@ -17,10 +17,6 @@ Esta árvore guarda jornadas e cenários de uso real do Flow Dev. Os relatórios
 ## Evidências
 
 Capturas ficam em `docs/qa/evidence/<data>-<escopo>/` e são ignoradas pelo Git. Relatórios referenciam os caminhos; não inclua tokens, credenciais ou logs brutos.
-
-## Ciclo planejado
-
-O ciclo `deterministic-execution` cobre o fluxo da Issue com execução determinística e seus caminhos de retomada e prontidão. Os cenários permanecem `untested` até sessões reais com personas na interface pública.
 
 ## Mapeamento conservador de falhas
 

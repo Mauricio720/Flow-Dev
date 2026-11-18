@@ -38,15 +38,6 @@ test("E2E-008 a malformed work link stays inside the project and shows the work 
   await expect(page.getByRole("button", { name: /Analisar|Aprovar|Iniciar/ })).toHaveCount(0);
 });
 
-test("the private local project page never exposes another user's checkout", async ({ page, seed, signInAs }) => {
-  const member = await seed.user();
-  const project = await seed.project({ assignedTo: [member] });
-  await signInAs(page, member);
-  await page.goto(`/projects/${project.id}/settings/local-project`);
-  await expect(page.getByRole("heading", { name: "Projeto local" })).toBeVisible();
-  await expect(page.getByText(/\/home\/|[A-Z]:\\/)).toHaveCount(0);
-});
-
 for (const journey of FEATURE_GATE_JOURNEYS) {
   test.fixme(journey, () => {
     test.info().annotations.push({ type: "feature-gate", description: CONTROLLED_PROVIDERS_REASON });

@@ -6,7 +6,6 @@ import { IssueDeletionWorker } from "../application/services/issue-deletion/issu
 import { CoordinatedDeletionStop } from "../application/services/issue-deletion/coordinatedDeletionStop";
 import { RepositoryDeletionAccess } from "../application/services/issue-deletion/repositoryDeletionAccess";
 import type { DeletionAccess, DeletionProvider } from "../application/services/issue-deletion/deletionPorts";
-import type { RunCancelPort } from "../application/services/issue-deletion/deletionStop";
 import type { IssueDeletionDao } from "../application/database/dao/issueDeletionDao";
 import { DrizzleAccessDao } from "./database/dao/drizzleAccessDao";
 import { DrizzleProjectDao } from "./database/dao/projects/drizzleProjectDao";
@@ -23,7 +22,6 @@ export type IssueDeletionOverrides = {
   dao?: IssueDeletionDao;
   access?: DeletionAccess;
   provider?: DeletionProvider;
-  runCancel?: RunCancelPort;
   clock?: () => Date;
   leaseMs?: number;
 };
@@ -49,7 +47,7 @@ export function createIssueDeletionServices(database: ReturnType<typeof requireD
   const dao = overrides.dao ?? new DrizzleIssueDeletionDao(database);
   const access = overrides.access ?? createDeletionAccess(database);
   const provider = overrides.provider ?? createDeletionProvider(database);
-  const stop = new CoordinatedDeletionStop({ dao, runs: overrides.runCancel });
+  const stop = new CoordinatedDeletionStop({ dao });
   const service = new IssueDeletionService({ dao, access, provider, clock });
   const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: `deletion:${randomUUID()}`, clock, leaseMs: overrides.leaseMs ?? 60_000 });
   return { dao, access, provider, stop, service, worker };
@@ -60,16 +58,6 @@ export function createProductionIssueDeletionController() {
   return new IssueDeletionController(service);
 }
 
-export async function createProductionIssueDeletionWorker() {
-  const database = requireDatabase();
-  const runCancel = await createDeletionRunCancelPort(database).catch(() => undefined);
-  const { worker } = createIssueDeletionServices(database, { runCancel });
-  return worker;
-}
-
-export async function createDeletionRunCancelPort(database: ReturnType<typeof requireDatabase>): Promise<RunCancelPort> {
-  const { createProductionTaskFlowExecutor } = await import("./taskFlowWorkerComposition");
-  const { executor } = await createProductionTaskFlowExecutor(database, process.env);
-  const { TaskFlowRunCancelPort } = await import("./issue-deletion/taskFlowRunCancelPort");
-  return new TaskFlowRunCancelPort(database, executor);
+export function createProductionIssueDeletionWorker() {
+  return createIssueDeletionServices(requireDatabase()).worker;
 }

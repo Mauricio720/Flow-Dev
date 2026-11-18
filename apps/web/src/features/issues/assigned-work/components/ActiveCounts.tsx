@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 import type { ActiveItem } from "../contract";
 import { STATE_TONE } from "../progressTone";
-import type { StageState } from "../spec/unified/flowStages";
+import type { StageTabState } from "../stageTabs";
 import { progressSummary } from "../workProgress";
 
-const COUNTED: { state: StageState; label: (count: number) => string }[] = [
-  { state: "current", label: (count) => `${count} em execução` },
+const COUNTED: { state: StageTabState; label: (count: number) => string }[] = [
+  { state: "current", label: (count) => `${count} em andamento` },
   { state: "yours", label: (count) => `${count} aguardando ação` },
   { state: "failed", label: (count) => `${count} com falha` },
 ];

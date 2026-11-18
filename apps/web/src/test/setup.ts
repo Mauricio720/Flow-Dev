@@ -1,26 +1,8 @@
 import { cleanup } from "@testing-library/react";
-import { afterEach, beforeEach, vi } from "vitest";
-import { trpc } from "@/lib/trpc/client";
+import { afterEach, vi } from "vitest";
 
 vi.mock("@/lib/trpc/client", () => ({
   trpc: {
-    taskSpec: {
-      byTask: { query: vi.fn() },
-      events: { query: vi.fn() },
-      event: { query: vi.fn() },
-      packages: { query: vi.fn() },
-      package: { query: vi.fn() },
-      document: { query: vi.fn() },
-      submission: { query: vi.fn() },
-      start: { mutate: vi.fn() },
-      adjust: { mutate: vi.fn() },
-      answer: { mutate: vi.fn() },
-      permission: { mutate: vi.fn() },
-      cancel: { mutate: vi.fn() },
-      retry: { mutate: vi.fn() },
-      returnToReview: { mutate: vi.fn() },
-      approve: { mutate: vi.fn() },
-    },
     assignedIssues: {
       list: { query: vi.fn() },
       byIssue: { query: vi.fn() },
@@ -29,42 +11,6 @@ vi.mock("@/lib/trpc/client", () => ({
       reconcileClaim: { mutate: vi.fn() },
       active: { query: vi.fn() },
       byTask: { query: vi.fn() },
-    },
-    taskFlow: {
-      options: { query: vi.fn() },
-      byTask: { query: vi.fn() },
-      runs: { query: vi.fn() },
-      questions: { query: vi.fn() },
-      answerQuestion: { mutate: vi.fn() },
-      package: { query: vi.fn() },
-      savePlan: { mutate: vi.fn() },
-      startAction: { mutate: vi.fn() },
-      cancelRun: { mutate: vi.fn() },
-      concludeReview: { mutate: vi.fn() },
-      acceptPartialDirect: { mutate: vi.fn() },
-      retryAction: { mutate: vi.fn() },
-      moveAction: { mutate: vi.fn() },
-      prepareLocalAction: { mutate: vi.fn() },
-      localPreparationStatus: { query: vi.fn() },
-      openLocalWorktree: { mutate: vi.fn() },
-      openLocalWorktreeStatus: { query: vi.fn() },
-      approvePackage: { mutate: vi.fn() },
-    },
-    software: {
-      compozy: {
-        get: { query: vi.fn() },
-        readiness: { query: vi.fn() },
-        connections: { query: vi.fn() },
-        history: { query: vi.fn() },
-        saveSettings: { mutate: vi.fn() },
-        beginCodexLogin: { mutate: vi.fn() },
-        beginClaudeLogin: { mutate: vi.fn() },
-        cancelRun: { mutate: vi.fn() },
-        pollLogin: { mutate: vi.fn() },
-        confirmAccount: { mutate: vi.fn() },
-        disconnect: { mutate: vi.fn() },
-        renameConnection: { mutate: vi.fn() },
-      },
     },
     projects: {
       list: { query: vi.fn() },
@@ -110,11 +56,6 @@ vi.mock("next/navigation", () => {
     throw new Error(`NEXT_REDIRECT ${path}`);
   });
   return { useRouter: () => router, redirect };
-});
-
-beforeEach(() => {
-  vi.mocked(trpc.taskFlow.questions.query).mockResolvedValue([]);
-  vi.mocked(trpc.taskFlow.package.query).mockReturnValue(new Promise(() => undefined) as never);
 });
 
 afterEach(() => {

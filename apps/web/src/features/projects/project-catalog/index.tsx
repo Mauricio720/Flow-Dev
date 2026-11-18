@@ -15,17 +15,11 @@ import { useCatalog } from "./hooks/useCatalog";
 import { useProjectSelection } from "./hooks/useProjectSelection";
 
 const ACCESS_ADMIN_PATH = "/admin/access";
-const SOFTWARE_ADMIN_PATH = "/admin/software/compozy";
 const MEMBER_INTRO = "Projetos atribuídos à sua conta. Escolha um para abrir os menus no contexto do repositório dele.";
 const ADMIN_INTRO = "Todos os projetos do Flow Dev. Cada um aponta para um único repositório do GitHub.";
 
 function AdminLinks() {
-  return (
-    <>
-      <Button variant="ghost" size="sm" asChild><Link href={ACCESS_ADMIN_PATH}>Acessos</Link></Button>
-      <Button variant="ghost" size="sm" asChild><Link href={SOFTWARE_ADMIN_PATH}>Software</Link></Button>
-    </>
-  );
+  return <Button variant="ghost" size="sm" asChild><Link href={ACCESS_ADMIN_PATH}>Acessos</Link></Button>;
 }
 
 type Props = { initial: CatalogLoad; viewer: CatalogViewer; notice: string | null };
