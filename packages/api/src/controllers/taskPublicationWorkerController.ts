@@ -79,7 +79,8 @@ export class TaskPublicationWorkerController {
     const revision = await this.tasks.findRevision(claim.taskId, claim.revisionId);
     if (!revision) throw new TaskError("invalid_stored_content");
     const draft = parseIssueDraft(revision.canonicalDraft);
-    const draftBody = validatePublicationDraft(draft);
+    const renderedBody = validatePublicationDraft(draft);
+    const draftBody = await this.images?.withAttachments(claim.taskId, renderedBody) ?? renderedBody;
     const bodyMarkdown = await this.images?.resolve(claim.taskId, draftBody, context.repository) ?? draftBody;
     const currentHash = previewHash({ revisionId: claim.revisionId, title: draft.title, body: bodyMarkdown, repositoryId: claim.repositoryId, owner: context.repository.owner, name: context.repository.name, publisherGithubId: claim.publisherGithubId, labels: draft.labels });
     if (draft.title !== claim.title || bodyMarkdown !== claim.bodyMarkdown || currentHash !== claim.previewHash) throw new TaskError("preview_changed");

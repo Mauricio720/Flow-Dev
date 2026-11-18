@@ -1,3 +1,4 @@
+import { validateMessageImages } from "./issueAttachmentRules";
 import { TaskError } from "./taskErrors";
 
 const MAX_MESSAGE_CODE_POINTS = 10_000;
@@ -7,6 +8,10 @@ export function validateUserMessage(message: string) {
   if (!message.trim()) throw new TaskError("blank_message");
   if ([...message].length > MAX_MESSAGE_CODE_POINTS) throw new TaskError("input_limit");
   return message;
+}
+
+export function validateMessageInput(input: { message: string; imageIds?: string[] }) {
+  return { message: validateUserMessage(input.message), imageIds: validateMessageImages(input.imageIds ?? []) };
 }
 
 export function buildGenerationInput<T extends object>(input: T): T {

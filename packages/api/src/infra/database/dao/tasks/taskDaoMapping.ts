@@ -6,7 +6,7 @@ export function toTaskRecord(row: Record<string, unknown>): TaskRecord {
 }
 
 export function toTaskMessage(row: Record<string, unknown>): TaskMessage {
-  return { id: String(row.id), operationId: row.operationId ? String(row.operationId) : null, sequence: Number(row.sequence), role: row.role as TaskMessage["role"], kind: row.kind as TaskMessage["kind"], content: String(row.content), createdAt: (row.createdAt as Date).toISOString() };
+  return { id: String(row.id), operationId: row.operationId ? String(row.operationId) : null, sequence: Number(row.sequence), role: row.role as TaskMessage["role"], kind: row.kind as TaskMessage["kind"], content: String(row.content), imageIds: [], createdAt: (row.createdAt as Date).toISOString() };
 }
 
 export function toTaskRevision(row: Record<string, unknown>): TaskRevisionRecord {

@@ -1,10 +1,12 @@
-import { and, count, eq, inArray, sql } from "drizzle-orm";
-import type { TaskImageDao, TaskImageInput, TaskImageRecord, TaskImageStored } from "../../../../application/database/dao/taskImageDao";
-import { taskImages } from "../../schema";
+import { and, asc, count, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import type { AttachedImage, StagedImageInput, TaskImageDao, TaskImageInput, TaskImageRecord, TaskImageStored } from "../../../../application/database/dao/taskImageDao";
+import { taskImages, taskMessages } from "../../schema";
 import type { Database } from "../../client";
+import { stageImage } from "./stagedTaskImages";
+import { imageRecordColumns } from "./taskImageColumns";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const recordColumns = { id: taskImages.id, taskId: taskImages.taskId, projectId: taskImages.projectId, contentType: taskImages.contentType, byteSize: taskImages.byteSize, sha256: taskImages.sha256, createdAt: taskImages.createdAt };
+const attachedColumns = { id: taskImages.id, taskId: sql<string>`${taskImages.taskId}`, contentType: taskImages.contentType };
 
 export class DrizzleTaskImageDao implements TaskImageDao {
   constructor(private readonly database: Database) {}
@@ -12,18 +14,22 @@ export class DrizzleTaskImageDao implements TaskImageDao {
   async store(input: TaskImageInput, limit: number): Promise<TaskImageStored> {
     return this.database.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${input.taskId}, 2))`);
-      const [existing] = await tx.select(recordColumns).from(taskImages).where(and(eq(taskImages.taskId, input.taskId), eq(taskImages.sha256, input.sha256))).limit(1);
+      const [existing] = await tx.select(imageRecordColumns).from(taskImages).where(and(eq(taskImages.taskId, input.taskId), eq(taskImages.sha256, input.sha256), isNull(taskImages.messageId))).limit(1);
       if (existing) return { status: "stored", image: existing };
       const [stored] = await tx.select({ total: count() }).from(taskImages).where(eq(taskImages.taskId, input.taskId));
       if ((stored?.total ?? 0) >= limit) return { status: "limit_reached" };
-      const [image] = await tx.insert(taskImages).values({ ...input, byteSize: input.content.byteLength }).returning(recordColumns);
+      const [image] = await tx.insert(taskImages).values({ ...input, byteSize: input.content.byteLength }).returning(imageRecordColumns);
       return { status: "stored", image: image! };
     });
   }
 
+  async stage(input: StagedImageInput, limit: number) {
+    return this.database.transaction(async (tx) => stageImage(tx as unknown as Database, input, limit));
+  }
+
   async find(imageId: string): Promise<TaskImageRecord | null> {
     if (!UUID_PATTERN.test(imageId)) return null;
-    const [image] = await this.database.select(recordColumns).from(taskImages).where(eq(taskImages.id, imageId)).limit(1);
+    const [image] = await this.database.select(imageRecordColumns).from(taskImages).where(eq(taskImages.id, imageId)).limit(1);
     return image ?? null;
   }
 
@@ -33,9 +39,13 @@ export class DrizzleTaskImageDao implements TaskImageDao {
     return row?.content ?? null;
   }
 
-  async forTask(taskId: string, imageIds: string[]) {
+  async forTask(taskId: string, imageIds: string[]): Promise<AttachedImage[]> {
     const validIds = imageIds.filter((imageId) => UUID_PATTERN.test(imageId));
     if (!validIds.length) return [];
-    return this.database.select(recordColumns).from(taskImages).where(and(eq(taskImages.taskId, taskId), inArray(taskImages.id, validIds)));
+    return this.database.select(attachedColumns).from(taskImages).where(and(eq(taskImages.taskId, taskId), inArray(taskImages.id, validIds)));
+  }
+
+  async attachments(taskId: string): Promise<AttachedImage[]> {
+    return this.database.select(attachedColumns).from(taskImages).innerJoin(taskMessages, eq(taskMessages.id, taskImages.messageId)).where(and(eq(taskImages.taskId, taskId), isNotNull(taskImages.messageId))).orderBy(asc(taskMessages.sequence), asc(taskImages.createdAt), asc(taskImages.id));
   }
 }

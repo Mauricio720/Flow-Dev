@@ -1,4 +1,4 @@
-export type ImageScope = { projectId: string; taskId: string };
+export type ImageScope = { projectId: string; taskId?: string };
 export type ImageSegment = { kind: "text"; text: string } | { kind: "image"; alt: string; src: string };
 export type TextSelection = { start: number; end: number };
 
@@ -13,9 +13,13 @@ const IMAGE_SYNTAX = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 const ALT_FORBIDDEN = /[[\]()\n\r]+/g;
 const FILE_EXTENSION = /\.[^.]+$/;
 
+export function imageRoute(imageId: string) {
+  return `${IMAGE_ROUTE}${imageId}`;
+}
+
 export function storedImageSource(url: string) {
   const imageId = DRAFT_IMAGE.exec(url)?.[1] ?? PUBLISHED_IMAGE.exec(url)?.[1];
-  return imageId ? `${IMAGE_ROUTE}${imageId}` : null;
+  return imageId ? imageRoute(imageId) : null;
 }
 
 export function imageMarkdown(fileName: string, imageId: string) {

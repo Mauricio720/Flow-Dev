@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ThreadEntry } from "../threadModel";
 import { formatMoment } from "@/lib/tasks/formatMoment";
 import { GraphRow, RichText } from "@/components/tasks/Graph";
+import { MessageImages } from "./MessageImages";
 import { ToolRun } from "./ToolRun";
 
 const AGENT_NAME = "Issue Author";
@@ -29,6 +30,7 @@ export function ThreadRow({ entry, first, authorLabel, trunk }: RowProps) {
       <GraphRow node="user" first={first} trunk={trunk} className="pb-7">
         <Byline who={authorLabel} at={entry.at} />
         <p className="mt-1 max-w-[65ch] text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap"><RichText text={entry.text} /></p>
+        <MessageImages imageIds={entry.imageIds} />
       </GraphRow>
     );
   }

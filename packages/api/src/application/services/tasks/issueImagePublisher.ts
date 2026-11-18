@@ -1,5 +1,6 @@
 import type { TaskImageDao } from "../../database/dao/taskImageDao";
 import type { IssueImageStore } from "../../github/issueImageStore";
+import { withAttachmentSection } from "./issueAttachmentRules";
 import { TaskError } from "./taskErrors";
 import { ISSUE_IMAGE_BRANCH, imageReferenceIds, issueImagePath, resolveImageReferences, type ImageDestination } from "./taskImageRules";
 
@@ -7,6 +8,11 @@ type ImageUpload = { taskId: string; body: string; destination: ImageDestination
 
 export class IssueImagePublisher {
   constructor(private readonly images: TaskImageDao, private readonly store: IssueImageStore) {}
+
+  async withAttachments(taskId: string, body: string) {
+    const attachments = await this.images.attachments(taskId);
+    return withAttachmentSection(body, attachments.map((image) => image.id));
+  }
 
   hasImages(body: string) {
     return imageReferenceIds(body).length > 0;

@@ -40,7 +40,8 @@ export class TaskPublicationController {
     const revision = await this.tasks.findRevision(task.id, input.revisionId);
     if (!revision) throw new TaskError("preview_not_ready");
     const draft = parseIssueDraft(revision.canonicalDraft);
-    const draftBody = validatePublicationDraft(draft);
+    const renderedBody = validatePublicationDraft(draft);
+    const draftBody = await this.images?.withAttachments(task.id, renderedBody) ?? renderedBody;
     const context = await this.repositories.contextCredentials(actor, input.projectId);
     if (context.repository.githubId !== task.repositoryId || context.repository.nodeId !== task.repositoryNodeId) throw new TaskError("destination_unavailable");
     const publisherGithubId = context.publisherGithubId;

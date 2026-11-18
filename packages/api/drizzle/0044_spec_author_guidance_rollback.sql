@@ -1,0 +1,2 @@
+ALTER TABLE "task_execution_plans" DROP CONSTRAINT IF EXISTS "task_execution_plans_author_guidance_check";--> statement-breakpoint
+ALTER TABLE "task_execution_plans" DROP COLUMN IF EXISTS "author_guidance";

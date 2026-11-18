@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { TaskDao } from "../application/database/dao/taskDao";
-import type { TaskImageDao } from "../application/database/dao/taskImageDao";
+import type { StagedImageInput, TaskImageDao } from "../application/database/dao/taskImageDao";
+import { MAX_STAGED_IMAGES } from "../application/services/tasks/issueAttachmentRules";
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import { MAX_TASK_IMAGES, imageContentType } from "../application/services/tasks/taskImageRules";
@@ -9,7 +10,7 @@ import { normalizeTaskError } from "./taskErrorMapper";
 
 const CLOSED_STATUSES = ["publishing", "publication_uncertain", "published"];
 
-type ImageUpload = { projectId: string; taskId: string; content: Uint8Array };
+type ImageUpload = { projectId: string; taskId: string | null; content: Uint8Array };
 
 export class TaskImageController {
   constructor(private readonly tasks: TaskDao, private readonly images: TaskImageDao, private readonly repositories: RepositoryAccessService) {}
@@ -26,12 +27,17 @@ export class TaskImageController {
 
   private async storeImage(actor: SessionPrincipal, input: ImageUpload) {
     if (!actor.sessionId) throw new TaskError("session_required");
-    await this.requireEditableTask(actor, input);
-    const contentType = imageContentType(input.content);
-    const sha256 = createHash("sha256").update(input.content).digest("hex");
-    const stored = await this.images.store({ taskId: input.taskId, projectId: input.projectId, uploadedByUserId: actor.userId, contentType, sha256, content: input.content }, MAX_TASK_IMAGES);
+    await this.requireUploadAccess(actor, input);
+    const image = stagedImage(actor, input);
+    const stored = input.taskId ? await this.images.store({ ...image, taskId: input.taskId }, MAX_TASK_IMAGES) : await this.images.stage(image, MAX_STAGED_IMAGES);
     if (stored.status === "limit_reached") throw new TaskError("image_limit");
     return { imageId: stored.image.id, contentType: stored.image.contentType, byteSize: stored.image.byteSize };
+  }
+
+  private async requireUploadAccess(actor: SessionPrincipal, input: ImageUpload) {
+    if (input.taskId) return this.requireEditableTask(actor, { projectId: input.projectId, taskId: input.taskId });
+    await this.repositories.requireRead(actor, input.projectId);
+    await this.repositories.authoring.requireAdmin(actor);
   }
 
   private async readImage(actor: SessionPrincipal, imageId: string) {
@@ -44,7 +50,7 @@ export class TaskImageController {
     return { contentType: image.contentType, content };
   }
 
-  private async requireEditableTask(actor: SessionPrincipal, input: Pick<ImageUpload, "projectId" | "taskId">) {
+  private async requireEditableTask(actor: SessionPrincipal, input: { projectId: string; taskId: string }) {
     await this.repositories.requireRead(actor, input.projectId);
     await this.repositories.authoring.requireAdmin(actor);
     const task = await this.tasks.findScoped(input.projectId, input.taskId);
@@ -52,4 +58,10 @@ export class TaskImageController {
     if (task.authorUserId !== actor.userId) throw new TaskError("author_required");
     if (CLOSED_STATUSES.includes(task.status)) throw new TaskError("task_complete");
   }
+}
+
+function stagedImage(actor: SessionPrincipal, input: ImageUpload): StagedImageInput {
+  const contentType = imageContentType(input.content);
+  const sha256 = createHash("sha256").update(input.content).digest("hex");
+  return { projectId: input.projectId, uploadedByUserId: actor.userId, contentType, sha256, content: input.content };
 }

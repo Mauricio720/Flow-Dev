@@ -1,0 +1,2 @@
+ALTER TABLE "task_execution_plans" ADD COLUMN "author_guidance" text;--> statement-breakpoint
+ALTER TABLE "task_execution_plans" ADD CONSTRAINT "task_execution_plans_author_guidance_check" CHECK ("task_execution_plans"."author_guidance" IS NULL OR char_length("task_execution_plans"."author_guidance") BETWEEN 1 AND 16000);

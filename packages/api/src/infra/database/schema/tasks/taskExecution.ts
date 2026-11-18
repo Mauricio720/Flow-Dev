@@ -31,7 +31,7 @@ export const taskExecutionActions = pgTable("task_execution_actions", {
 }, (table) => [
   uniqueIndex("task_execution_actions_position_unique").on(table.planId, table.position).where(sql`${table.supersededAt} IS NULL`),
   unique("task_execution_actions_id_task_unique").on(table.id, table.taskId),
-  check("task_execution_actions_kind_check", sql`${table.kind} IN ('create_spec','create_tasks','direct_execute','loop','open_pull_request')`),
+  check("task_execution_actions_kind_check", sql`${table.kind} IN ('create_spec','create_tasks','implement_tasks','review_round','review_fix','qa_plan','qa_execute','qa_fix','qa_retest','direct_execute','loop','open_pull_request')`),
   check("task_execution_actions_loop_check", sql`(${table.kind} = 'loop') = (${table.loopName} IS NOT NULL AND ${table.loopVersion} IS NOT NULL)`),
   check("task_execution_actions_workspace_check", sql`${table.workspaceKind} IN ('isolated','existing','new','local') AND ((${table.workspaceKind} = 'existing') = (${table.worktreeId} IS NOT NULL)) AND ((${table.workspaceKind} = 'new') = (${table.worktreeName} IS NOT NULL)) AND ((${table.workspaceKind} = 'local') = (${table.localMachineId} IS NOT NULL AND ${table.localLinkId} IS NOT NULL AND ${table.localLinkRevision} IS NOT NULL AND ${table.localCheckoutHandle} IS NOT NULL)) AND (${table.workspaceKind} = 'local' OR (${table.localMachineId} IS NULL AND ${table.localLinkId} IS NULL AND ${table.localLinkRevision} IS NULL AND ${table.localCheckoutHandle} IS NULL))`),
   check("task_execution_actions_state_check", sql`${table.state} IN ('planned','queued','running','succeeded','failed','canceled','blocked','reconciling')`),

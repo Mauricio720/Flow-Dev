@@ -7,9 +7,9 @@ const projectId = "00000000-0000-4000-8000-000000000001";
 const requestKey = "00000000-0000-4000-8000-000000000051";
 
 describe("task start contract", () => {
-  it("UT-001 accepts only project, request key, and intention fields", () => {
+  it("UT-001 accepts only project, request key, intention, and attached image fields", () => {
     const parsed = taskStartInputSchema.parse({ projectId, requestKey, message: "Corrigir total do carrinho ao remover item", authorUserId: "forged", repositoryId: "303" });
-    expect(parsed).toEqual({ projectId, requestKey, message: "Corrigir total do carrinho ao remover item" });
+    expect(parsed).toEqual({ projectId, requestKey, message: "Corrigir total do carrinho ao remover item", imageIds: [] });
   });
 
   it("UT-002 returns blank_message without repository or DAO work", async () => {

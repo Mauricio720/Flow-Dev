@@ -10,8 +10,10 @@ export const taskExecutionPlans = pgTable("task_execution_plans", {
   id: uuid("id").defaultRandom().primaryKey(),
   taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "restrict" }),
   kind: text("kind").notNull().default("os_unified"),
+  executionMode: text("execution_mode").notNull().default("loops"),
   revision: integer("revision").notNull().default(1),
   status: text("status").notNull().default("planned"),
+  authorGuidance: text("author_guidance"),
   createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
   createdAt,
   updatedAt,
@@ -19,8 +21,10 @@ export const taskExecutionPlans = pgTable("task_execution_plans", {
   unique("task_execution_plans_task_unique").on(table.taskId),
   unique("task_execution_plans_id_task_unique").on(table.id, table.taskId),
   check("task_execution_plans_kind_check", sql`${table.kind} = 'os_unified'`),
+  check("task_execution_plans_execution_mode_check", sql`${table.executionMode} IN ('loops','deterministic')`),
   check("task_execution_plans_status_check", sql`${table.status} IN ('planned','running','completed','canceled')`),
   check("task_execution_plans_revision_check", sql`${table.revision} > 0`),
+  check("task_execution_plans_author_guidance_check", sql`${table.authorGuidance} IS NULL OR char_length(${table.authorGuidance}) BETWEEN 1 AND 16000`),
 ]);
 
 export const taskExecutionPlanSaves = pgTable("task_execution_plan_saves", {

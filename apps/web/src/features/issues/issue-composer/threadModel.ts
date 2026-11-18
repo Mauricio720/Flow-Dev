@@ -1,7 +1,7 @@
 import type { TaskMessage, ToolActivity } from "./contract";
 
 export type ThreadEntry =
-  | { kind: "user"; id: string; text: string; at: string }
+  | { kind: "user"; id: string; text: string; imageIds: string[]; at: string }
   | { kind: "question"; id: string; text: string; at: string }
   | { kind: "draft-note"; id: string; title: string; at: string }
   | { kind: "activity"; id: string; calls: ToolActivity[] };
@@ -19,7 +19,7 @@ function generatedTitle(content: string) {
 }
 
 function messageEntry(message: TaskMessage): ThreadEntry {
-  if (message.role === USER_ROLE) return { kind: "user", id: message.id, text: message.content, at: message.createdAt };
+  if (message.role === USER_ROLE) return { kind: "user", id: message.id, text: message.content, imageIds: message.imageIds, at: message.createdAt };
   const title = generatedTitle(message.content);
   if (title === null) return { kind: "question", id: message.id, text: message.content, at: message.createdAt };
   return { kind: "draft-note", id: message.id, title, at: message.createdAt };

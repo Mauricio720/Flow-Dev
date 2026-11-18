@@ -1,7 +1,7 @@
 import { mapTaskSummary, type TaskDao } from "../application/database/dao/taskDao";
 import type { SessionPrincipal } from "../context";
 import { parseIssueDraft, renderIssueBody, storedDraftLabels } from "../application/services/tasks/draftRules";
-import { validateHistorySearch, validateUserMessage } from "../application/services/tasks/inputRules";
+import { validateHistorySearch, validateMessageInput } from "../application/services/tasks/inputRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
 import { buildManualEvidenceBindings } from "../application/services/tasks/draftSourceBindings";
@@ -45,18 +45,18 @@ export class TasksController {
     return { ...page, items: page.items.map(revisionDto) };
   }
 
-  async start(actor: SessionPrincipal, input: { projectId: string; requestKey: string; message: string }) {
-    const message = validateUserMessage(input.message);
+  async start(actor: SessionPrincipal, input: { projectId: string; requestKey: string; message: string; imageIds?: string[] }) {
+    const { message, imageIds } = validateMessageInput(input);
     const repository = await this.repositories.requireRead(actor, input.projectId);
     await this.repositories.authoring.requireAdmin(actor);
-    return this.dao.start({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor), repositoryId: repository.githubId, repositoryNodeId: repository.nodeId, message });
+    return this.dao.start({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor), repositoryId: repository.githubId, repositoryNodeId: repository.nodeId, message, imageIds });
   }
 
-  async send(actor: SessionPrincipal, input: { projectId: string; taskId: string; requestKey: string; expectedVersion: number; message: string }) {
-    const message = validateUserMessage(input.message);
+  async send(actor: SessionPrincipal, input: { projectId: string; taskId: string; requestKey: string; expectedVersion: number; message: string; imageIds?: string[] }) {
+    const { message, imageIds } = validateMessageInput(input);
     const task = await this.requireAuthoredTask(actor, input.projectId, input.taskId);
     const kind = task.status === "awaiting_clarification" ? "clarification" : "refinement";
-    return this.dao.send({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor), message }, kind);
+    return this.dao.send({ ...input, actorUserId: actor.userId, sessionId: requireSessionId(actor), message, imageIds }, kind);
   }
 
   async submission(actor: SessionPrincipal, input: { projectId: string; action: string; requestKey: string }) {

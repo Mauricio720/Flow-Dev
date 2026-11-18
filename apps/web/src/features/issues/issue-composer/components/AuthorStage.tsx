@@ -8,6 +8,7 @@ import type { TaskSnapshot } from "../contract";
 import { draftSources } from "../draftSources";
 import type { ActionContext } from "../hooks/actionContext";
 import { useDictation } from "../hooks/useDictation";
+import { useMessageAttachments } from "../hooks/useMessageAttachments";
 import { useTaskActions, type TaskActions } from "../hooks/useTaskActions";
 import { failedOperationId, threadEntries } from "../threadModel";
 import { Composer } from "./Composer";
@@ -49,10 +50,12 @@ export function AuthorStage({ project, snapshot, lock, grid, controls }: Props) 
   const task = detail?.task ?? null;
   const guard = composerGuard(detail, lock);
   const input = useDictation({ projectId: project.id, taskId: task?.id ?? null, expectedVersion: task?.version ?? null }, guard === null);
-  const context: ActionContext = { projectId: project.id, task, input, onAccepted: controls.onAccepted, onChanged: controls.refresh, onFailure: controls.onFailure };
+  const attachments = useMessageAttachments(project.id);
+  const clear = (sent: string) => { input.clear(sent); attachments.clear(); };
+  const context: ActionContext = { projectId: project.id, task, input: { clear }, onAccepted: controls.onAccepted, onChanged: controls.refresh, onFailure: controls.onFailure };
   const actions = useTaskActions(context);
   const published = task?.status === "published";
   const thread = snapshot ? <AuthorThread project={project} snapshot={snapshot} actions={actions} context={context} capturing={input.capturing} locked={lock !== null} controls={controls} /> : <EmptyIntent />;
-  const footer = published ? <CompletedNotice onNewIntent={controls.onNewIntent} /> : <Composer input={input} guard={guard} placeholder={composerPlaceholder(detail)} submission={actions.submission} first={!snapshot} onSend={(text) => void actions.send(text)} onCheckSubmission={() => void actions.checkSubmission()} />;
+  const footer = published ? <CompletedNotice onNewIntent={controls.onNewIntent} /> : <Composer input={input} attachments={attachments} guard={guard} placeholder={composerPlaceholder(detail)} submission={actions.submission} first={!snapshot} onSend={(text) => void actions.send(text, attachments.imageIds)} onCheckSubmission={() => void actions.checkSubmission()} />;
   return <StageFrame grid={grid} merged={published} growth={`${snapshot?.messages.length ?? 0}:${task?.status ?? ""}`} trunk={snapshot !== null} thread={thread} footer={footer} />;
 }

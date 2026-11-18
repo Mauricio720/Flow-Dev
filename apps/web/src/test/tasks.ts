@@ -39,7 +39,7 @@ export function detailOf(patch: Partial<TaskDetail> = {}): TaskDetail {
 }
 
 export function messageOf(sequence: number, role: TaskMessage["role"], content: string): TaskMessage {
-  return { id: `00000000-0000-4000-8000-0000000001${String(sequence).padStart(2, "0")}`, operationId: O, sequence, role, kind: role === "user" ? "intent" : "result", content, createdAt: NOW };
+  return { id: `00000000-0000-4000-8000-0000000001${String(sequence).padStart(2, "0")}`, operationId: O, sequence, role, kind: role === "user" ? "intent" : "result", content, imageIds: [], createdAt: NOW };
 }
 
 export function loadOf(detail: TaskDetail | null, messages: TaskMessage[] = []): WorkspaceLoad {

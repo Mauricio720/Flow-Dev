@@ -8,14 +8,18 @@ import { isUnconfirmed, taskFailure } from "@/lib/tasks/taskFailure";
 import type { ActionContext } from "./actionContext";
 
 export type Submission = { phase: "idle" | "sending" | "unconfirmed" | "not_accepted" } | { phase: "rejected"; failure: TaskFailure };
-type SentCommand = { action: "start" | "send"; requestKey: string; message: string };
+type SentCommand = { action: "start" | "send"; requestKey: string; message: string; imageIds: string[] };
 
 const IDLE: Submission = { phase: "idle" };
 
 function dispatchCommand(context: ActionContext, sent: SentCommand) {
-  const base = { projectId: context.projectId, requestKey: sent.requestKey, message: sent.message };
+  const base = { projectId: context.projectId, requestKey: sent.requestKey, message: sent.message, imageIds: sent.imageIds };
   if (!context.task) return trpc.tasks.start.mutate(base);
   return trpc.tasks.send.mutate({ ...base, taskId: context.task.id, expectedVersion: context.task.version });
+}
+
+function sameCommand(sent: SentCommand | null, message: string, imageIds: string[]) {
+  return sent?.message === message && sent.imageIds.join(",") === imageIds.join(",");
 }
 
 function useSubmissionOutcome(context: ActionContext) {
@@ -54,10 +58,10 @@ export function useMessageActions(context: ActionContext) {
       reject(error);
     }
   }
-  async function send(message: string) {
+  async function send(message: string, imageIds: string[] = []) {
     if (submission.phase === "sending") return;
-    if (submission.phase === "unconfirmed" && lastSent()?.message === message) return checkSubmission();
-    const sent: SentCommand = { action: context.task ? "send" : "start", requestKey: keys.keyFor(`${context.task?.id ?? ""}:${message}`), message };
+    if (submission.phase === "unconfirmed" && sameCommand(lastSent(), message, imageIds)) return checkSubmission();
+    const sent: SentCommand = { action: context.task ? "send" : "start", requestKey: keys.keyFor(`${context.task?.id ?? ""}:${message}:${imageIds.join(",")}`), message, imageIds };
     begin(sent);
     try {
       await accept(await dispatchCommand(context, sent), sent);

@@ -4,6 +4,7 @@ import { vi } from "vitest";
 import { Composer } from "@/features/issues/issue-composer/components/Composer";
 import type { CaptureScope } from "@/features/issues/issue-composer/hooks/dictationApi";
 import { useDictation } from "@/features/issues/issue-composer/hooks/useDictation";
+import { useMessageAttachments } from "@/features/issues/issue-composer/hooks/useMessageAttachments";
 import { P } from "./tasks";
 
 export const NEW_INTENT_SCOPE: CaptureScope = { projectId: P, taskId: null, expectedVersion: null };
@@ -13,7 +14,8 @@ type Props = { scope?: CaptureScope; enabled?: boolean; onSend?: (text: string) 
 
 export function DictationHarness({ scope = NEW_INTENT_SCOPE, enabled = true, onSend = () => undefined }: Props) {
   const input = useDictation(scope, enabled);
-  return <Composer input={input} guard={enabled ? null : BLOCKED_GUARD} placeholder="" submission={{ phase: "idle" }} first onSend={onSend} onCheckSubmission={() => undefined} />;
+  const attachments = useMessageAttachments(scope.projectId);
+  return <Composer input={input} attachments={attachments} guard={enabled ? null : BLOCKED_GUARD} placeholder="" submission={{ phase: "idle" }} first onSend={onSend} onCheckSubmission={() => undefined} />;
 }
 
 export function messageBox() {

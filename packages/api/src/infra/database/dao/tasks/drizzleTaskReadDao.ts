@@ -4,6 +4,7 @@ import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskDraftRevisions, taskEvidence, taskMessages, taskOperations, taskPublicationAttempts, tasks, users } from "../../schema";
 import type { Database } from "../../client";
 import { toTaskMessage, toTaskRecord, toTaskRevision } from "./taskDaoMapping";
+import { messageImageIds } from "./stagedTaskImages";
 import type { TaskEvidenceRecord } from "../../../../application/database/dao/taskDao";
 import { planningListStatus } from "../../../../application/services/tasks/planningRules";
 import { parseIssueDraft, storedDraftLabels } from "../../../../application/services/tasks/draftRules";
@@ -72,7 +73,8 @@ export class DrizzleTaskReadDao {
     const cursor = decodeTaskCursor(value, "messages", taskId);
     const sequence = cursor ? Number(cursor.position) : null;
     const rows = await this.database.select().from(taskMessages).where(sequence ? and(eq(taskMessages.taskId, taskId), gt(taskMessages.sequence, sequence)) : eq(taskMessages.taskId, taskId)).orderBy(asc(taskMessages.sequence)).limit(limit + 1);
-    return page(rows.map((row) => toTaskMessage(row)), rows.length > limit, limit, (item) => encodeTaskCursor({ kind: "messages", scope: taskId, position: String(item.sequence) }));
+    const images = await messageImageIds(this.database, rows.map((row) => row.id));
+    return page(rows.map((row) => ({ ...toTaskMessage(row), imageIds: images.get(row.id) ?? [] })), rows.length > limit, limit, (item) => encodeTaskCursor({ kind: "messages", scope: taskId, position: String(item.sequence) }));
   }
 
   async revisions(taskId: string, value: string | undefined, limit: number) {

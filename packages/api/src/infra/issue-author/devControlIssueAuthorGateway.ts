@@ -8,6 +8,7 @@ import { patientFetch } from "../http/patientFetch";
 const MAX_RESPONSE_BYTES = 256 * 1024;
 const REQUEST_TIMEOUT_MS = 600_000;
 const USAGE_LIMIT_STATUS = 429;
+const GATEWAY_TIMEOUT_STATUS = 504;
 type Fetcher = typeof fetch;
 type KnownToolCall = (executionId: string, toolCallId: string) => Promise<boolean>;
 
@@ -30,6 +31,7 @@ export class DevControlIssueAuthorGateway implements IssueAuthorGateway {
     try { response = await this.fetcher(new URL("/flow-dev/issue-author/v1", this.baseUrl), { method: "POST", headers: { authorization: `Bearer ${this.apiKey}`, "x-flow-context-capability": contextCapability, "content-type": "application/json" }, body, signal, redirect: "error" }); }
     catch (error) { throw new TaskError("provider_unavailable", undefined, error); }
     if (response.status === USAGE_LIMIT_STATUS) throw new TaskError("provider_usage_limit", undefined, new Error("Issue Author model provider reached its usage limit"));
+    if (response.status === GATEWAY_TIMEOUT_STATUS) throw new TaskError("generation_timeout", undefined, new Error("Issue Author server timed out before the draft was ready"));
     if (!response.ok) throw new TaskError("provider_unavailable", undefined, new Error(`Issue Author responded with status ${response.status}`));
     const text = await readResponseText(response, MAX_RESPONSE_BYTES);
     return await validateEnvelope(text, input, this.knownToolCall);
@@ -66,7 +68,7 @@ async function validateEnvelope(text: string, input: GenerationInput, knownToolC
 function asEnvelope(value: unknown): GenerationEnvelope {
   if (!value || typeof value !== "object") throw new TaskError("invalid_agent_output");
   const candidate = value as Record<string, unknown>;
-  if (candidate.protocolVersion !== 1 || typeof candidate.operationId !== "string" || typeof candidate.executionId !== "string" || !Array.isArray(candidate.activity) || candidate.activity.length > 12) throw new TaskError("invalid_agent_output");
+  if (candidate.protocolVersion !== 1 || typeof candidate.operationId !== "string" || typeof candidate.executionId !== "string" || !Array.isArray(candidate.activity)) throw new TaskError("invalid_agent_output");
   return { protocolVersion: 1, operationId: candidate.operationId, executionId: candidate.executionId, result: parseResult(candidate.result), activity: candidate.activity.map(parseActivity) };
 }
 

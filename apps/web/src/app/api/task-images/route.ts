@@ -23,7 +23,7 @@ async function uploadInput(request: Request, body: Uint8Array<ArrayBuffer>) {
   const projectId = form.get("projectId");
   const taskId = form.get("taskId");
   const file = form.get("file");
-  if (!isUuid(projectId) || !isUuid(taskId) || !(file instanceof File)) return null;
+  if (!isUuid(projectId) || !(taskId === null || isUuid(taskId)) || !(file instanceof File)) return null;
   return { projectId, taskId, content: new Uint8Array(await file.arrayBuffer()) };
 }
 

@@ -30,7 +30,7 @@ describe("useTaskActions", () => {
     taskApi.send.mutate.mockReturnValue(accepted.promise);
     await writeAnswer();
     await userEvent.click(sendButton());
-    expect(taskApi.send.mutate).toHaveBeenCalledExactlyOnceWith({ projectId: P, taskId: T, expectedVersion: 7, requestKey: K, message: ANSWER });
+    expect(taskApi.send.mutate).toHaveBeenCalledExactlyOnceWith({ projectId: P, taskId: T, expectedVersion: 7, requestKey: K, message: ANSWER, imageIds: [] });
     expect(messageBox().value).toBe(ANSWER);
     expect(sendButton().disabled).toBe(true);
     taskApi.messages.query.mockResolvedValue({ items: [...QUESTION, messageOf(3, "user", ANSWER)], nextCursor: null });
@@ -72,7 +72,7 @@ describe("useTaskActions", () => {
     renderWorkspace(loadOf(null));
     await userEvent.type(messageBox(), ANSWER);
     await userEvent.click(sendButton());
-    expect(taskApi.start.mutate).toHaveBeenCalledExactlyOnceWith({ projectId: P, requestKey: K, message: ANSWER });
+    expect(taskApi.start.mutate).toHaveBeenCalledExactlyOnceWith({ projectId: P, requestKey: K, message: ANSWER, imageIds: [] });
     await waitFor(() => expect(window.location.pathname).toBe(`/projects/${P}/issues/${T}`));
     expect(await screen.findByText("Consultando o contexto e escrevendo o draft…")).toBeTruthy();
   });

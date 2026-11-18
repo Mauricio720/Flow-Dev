@@ -15,7 +15,7 @@ const record = { id: imageId, taskId, projectId, contentType: "image/png", byteS
 
 function setup(options: { status?: string; authorUserId?: string; stored?: TaskImageStored; readable?: boolean } = {}) {
   const tasks = { findScoped: vi.fn(async () => ({ id: taskId, projectId, authorUserId: options.authorUserId ?? userId, status: options.status ?? "draft_ready" })) };
-  const images = { store: vi.fn(async () => options.stored ?? { status: "stored", image: record }), find: vi.fn(async () => record), content: vi.fn(async () => png) };
+  const images = { store: vi.fn(async () => options.stored ?? { status: "stored", image: record }), stage: vi.fn(async () => options.stored ?? { status: "stored", image: { ...record, taskId: null } }), find: vi.fn(async () => record), content: vi.fn(async () => png) };
   const requireRead = vi.fn(async () => { if (options.readable === false) throw new ProjectUnavailableError(); });
   const repositories = { requireRead, authoring: { requireAdmin: async () => {} } };
   return { controller: new TaskImageController(tasks as unknown as TaskDao, images as unknown as TaskImageDao, repositories as never), images };
@@ -38,6 +38,14 @@ describe("TaskImageController", () => {
     await expect(controller.upload(actor, { projectId, taskId, content: new Uint8Array([0x3c, 0x73, 0x76, 0x67]) })).rejects.toThrowError(new TaskError("unsupported_image_type"));
     expect(images.store).not.toHaveBeenCalled();
     await expect(setup({ stored: { status: "limit_reached" } }).controller.upload(actor, { projectId, taskId, content: png })).rejects.toThrowError(new TaskError("image_limit"));
+  });
+
+  it("stages an image for the next message when no task exists yet", async () => {
+    const { controller, images } = setup();
+    await expect(controller.upload(actor, { projectId, taskId: null, content: png })).resolves.toEqual({ imageId, contentType: "image/png", byteSize: png.byteLength });
+    expect(images.stage).toHaveBeenCalledWith(expect.objectContaining({ projectId, uploadedByUserId: userId, contentType: "image/png" }), 30);
+    expect(images.store).not.toHaveBeenCalled();
+    await expect(setup({ readable: false }).controller.upload(actor, { projectId, taskId: null, content: png })).rejects.toThrowError(new TaskError("project_unavailable"));
   });
 
   it("serves image bytes only to people who can read the project", async () => {

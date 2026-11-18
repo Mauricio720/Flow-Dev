@@ -7,13 +7,14 @@ import type { Database } from "../../client";
 import { assertWritable, findReceipt, findTask, payloadHash, saveReceipt } from "./taskCommandHelpers";
 import { assertGenerationCapacity } from "./taskGenerationCapacity";
 import { assertTaskAdmissionAllowed } from "../issue-deletion/deletionFence";
+import { attachMessageImages, withImageIds } from "./stagedTaskImages";
 
 export class DrizzleTaskCommandDao {
   constructor(private readonly database: Database) {}
 
   async start(input: TaskStartInput) {
     return this.database.transaction(async (tx) => {
-      const hash = payloadHash([input.projectId, input.repositoryId, input.repositoryNodeId, input.message]);
+      const hash = payloadHash(withImageIds([input.projectId, input.repositoryId, input.repositoryNodeId, input.message], input.imageIds));
       const saved = await findReceipt(tx as unknown as Database, input, "start", hash);
       if (saved) return saved as TaskReceipt;
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${input.actorUserId}, 1))`);
@@ -25,6 +26,7 @@ export class DrizzleTaskCommandDao {
       const [task] = await tx.insert(tasks).values({ id: taskId, projectId: input.projectId, authorUserId: input.actorUserId, repositoryId: input.repositoryId, repositoryNodeId: input.repositoryNodeId }).returning();
       if (!task) throw new TaskError("service_unavailable");
       await tx.insert(taskMessages).values({ id: messageId, taskId, operationId, sequence: 1, role: "user", kind: "intent", content: input.message });
+      await attachMessageImages(tx as unknown as Database, { projectId: input.projectId, taskId, messageId, actorUserId: input.actorUserId }, input.imageIds);
       await tx.insert(taskOperations).values({ id: operationId, taskId, kind: "generate", state: "queued", initiatedSessionId: input.sessionId, baseTaskVersion: 1, inputMessageId: messageId });
       await tx.update(tasks).set({ activeOperationId: operationId, title: input.message.slice(0, 256), updatedAt: new Date() }).where(eq(tasks.id, taskId));
       const receipt = { taskId, operationId, acceptedMessageId: messageId, version: 1 };
@@ -35,7 +37,7 @@ export class DrizzleTaskCommandDao {
 
   async send(input: TaskCommandInput, kind: "clarification" | "refinement") {
     return this.database.transaction(async (tx) => {
-      const hash = payloadHash([input.projectId, input.taskId, input.expectedVersion, input.message]);
+      const hash = payloadHash(withImageIds([input.projectId, input.taskId, input.expectedVersion, input.message], input.imageIds));
       const saved = await findReceipt(tx as unknown as Database, input, "send", hash);
       if (saved) return saved as TaskReceipt;
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${input.actorUserId}, 1))`);
@@ -48,6 +50,7 @@ export class DrizzleTaskCommandDao {
       const operationId = crypto.randomUUID();
       const messageId = crypto.randomUUID();
       await tx.insert(taskMessages).values({ id: messageId, taskId: task.id, operationId, sequence: (last?.sequence ?? 0) + 1, role: "user", kind, content: input.message });
+      await attachMessageImages(tx as unknown as Database, { projectId: input.projectId, taskId: task.id, messageId, actorUserId: input.actorUserId }, input.imageIds);
       await tx.insert(taskOperations).values({ id: operationId, taskId: task.id, kind: "generate", state: "queued", initiatedSessionId: input.sessionId, baseTaskVersion: input.expectedVersion + 1, baseRevisionId: task.currentRevisionId, inputMessageId: messageId });
       await updateTaskForCommand(tx as unknown as Database, task.id, input, operationId);
       const receipt = { taskId: task.id, operationId, acceptedMessageId: messageId, version: input.expectedVersion + 1 };

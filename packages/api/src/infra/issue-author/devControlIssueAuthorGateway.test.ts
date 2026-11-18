@@ -50,6 +50,11 @@ describe("DevControlIssueAuthorGateway", () => {
     const failing = new DevControlIssueAuthorGateway("https://dev-control.example", "service-key", async () => Response.json({ error: "bad gateway" }, { status: 502 }));
     await expect(failing.generate(input)).rejects.toMatchObject({ reason: "provider_unavailable" });
   });
+
+  it("reports a server timeout as a slow generation instead of an unavailable service", async () => {
+    const timedOut = new DevControlIssueAuthorGateway("https://dev-control.example", "service-key", async () => Response.json({ error: "Gateway Timeout" }, { status: 504 }));
+    await expect(timedOut.generate(input)).rejects.toMatchObject({ reason: "generation_timeout" });
+  });
   it("UT-046 fails closed when the service endpoint is not configured", async () => {
     const fetcher = vi.fn();
     const gateway = new DevControlIssueAuthorGateway(undefined, undefined, fetcher);

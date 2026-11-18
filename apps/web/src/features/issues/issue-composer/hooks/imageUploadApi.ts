@@ -25,7 +25,7 @@ export async function uploadIssueImage(scope: ImageScope, file: File) {
   assertUploadable(file);
   const form = new FormData();
   form.set("projectId", scope.projectId);
-  form.set("taskId", scope.taskId);
+  if (scope.taskId) form.set("taskId", scope.taskId);
   form.set("file", file, file.name);
   const response = await fetch(UPLOAD_PATH, { method: "POST", body: form }).catch(() => null);
   if (!response) throw new ImageUploadFailure(UNKNOWN_REASON);

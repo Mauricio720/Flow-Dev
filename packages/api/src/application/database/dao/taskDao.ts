@@ -7,7 +7,7 @@ export type TaskReceipt = { taskId: string; operationId: string; acceptedMessage
 export type TaskRevisionRecord = { id: string; taskId: string; revisionNumber: number; parentRevisionId: string | null; operationId: string | null; canonicalDraft: unknown; evidenceBindings: unknown[]; manuallyEditedPaths: string[]; createdAt: Date };
 export type TaskEvidenceRecord = { id: string; repositoryId: string; operationId: string; type: "project-file" | "github-issue"; path: string | null; commitSha: string | null; fromLine: number | null; toLine: number | null; issueId: string | null; issueNumber: number | null; url: string | null };
 export type TaskListQuery = { projectId: string; search?: string; cursor?: string; limit: number };
-export type TaskCommandInput = { projectId: string; taskId: string; actorUserId: string; sessionId: string; requestKey: string; expectedVersion: number; message: string };
+export type TaskCommandInput = { projectId: string; taskId: string; actorUserId: string; sessionId: string; requestKey: string; expectedVersion: number; message: string; imageIds: string[] };
 export type TaskStartInput = Omit<TaskCommandInput, "taskId" | "expectedVersion"> & { repositoryId: string; repositoryNodeId: string; sessionId: string };
 
 export interface TaskDao {
@@ -26,7 +26,7 @@ export interface TaskDao {
   revisions(taskId: string, cursor: string | undefined, limit: number): Promise<{ items: TaskRevisionRecord[]; nextCursor: string | null }>;
   start(input: TaskStartInput): Promise<TaskReceipt>;
   send(input: TaskCommandInput, kind: "clarification" | "refinement"): Promise<TaskReceipt>;
-  retryGeneration(input: Omit<TaskCommandInput, "message"> & { failedOperationId: string }): Promise<TaskReceipt>;
+  retryGeneration(input: Omit<TaskCommandInput, "message" | "imageIds"> & { failedOperationId: string }): Promise<TaskReceipt>;
   submission(input: { projectId: string; actorUserId: string; action: string; requestKey: string }): Promise<TaskReceipt | null>;
   resolveRefinement(input: { taskId: string; projectId: string; actorUserId: string; expectedVersion: number; requestKey: string; proposalOperationId: string; decision: "apply" | "discard"; selectedPaths: string[] }): Promise<{ revision: TaskRevisionRecord | null; version: number }>;
   saveDraft(input: { taskId: string; actorUserId: string; projectId: string; expectedVersion: number; baseRevisionId: string; requestKey: string; draft: IssueDraft; evidenceBindings: unknown[] }): Promise<TaskRevisionRecord>;
