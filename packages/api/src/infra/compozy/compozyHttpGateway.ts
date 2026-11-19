@@ -1,0 +1,92 @@
+import type { Compozy } from "@compozy/client";
+import type { CompozyFileInput, CompozyGateway, CompozyRunInput, CompozySessionInput, CompozyTaskSpec, CompozyWorktreeInput } from "../../application/compozy/compozyGateway";
+import { CompozyCallError } from "../../application/compozy/compozyErrors";
+import { CompozyConnection, type CompozyConnectionOptions } from "./compozyConnection";
+import { isDaemonNotFound } from "./compozyErrorTranslation";
+import { createTaskRequest, executionProfileRequest } from "./compozyTaskRequests";
+import { readResultText, readTaskState } from "./compozyTaskReads";
+
+const IDENTIFIER_SEARCH_LIMIT = 50;
+const CANCEL_REASON = "Canceled from Flow Dev";
+const DEPENDENCY_KIND = "blocks";
+
+export class CompozyHttpGateway implements CompozyGateway {
+  private readonly connection: CompozyConnection;
+
+  constructor(options: CompozyConnectionOptions = {}) {
+    this.connection = new CompozyConnection(options);
+  }
+
+  async health() {
+    try {
+      const identity = await this.connection.call({ operation: "health" }, (client) => client.diagnostics.getRuntimeIdentity());
+      return { reachable: true, version: identity.daemon.version };
+    } catch (error) {
+      if (error instanceof CompozyCallError && error.reason === "compozy_unavailable") return { reachable: false, version: null };
+      throw error;
+    }
+  }
+
+  async resolveWorkspace(path: string) {
+    const { workspace } = await this.connection.call({ operation: "resolveWorkspace" }, (client) => client.workspaces.resolveWorkspace({ body: { path } }));
+    return { workspaceId: workspace.id };
+  }
+
+  async createWorktree(input: CompozyWorktreeInput) {
+    const body = { name: input.name, branch: input.branch, base_ref: input.baseRef };
+    const { worktree } = await this.connection.call({ operation: "createWorktree" }, (client) => client.worktrees.createWorktree({ path: { workspace_id: input.workspaceId }, body }));
+    return { worktreeId: worktree.id, path: worktree.path };
+  }
+
+  async createTask(workspaceId: string, spec: CompozyTaskSpec) {
+    const taskId = await this.connection.call({ operation: "createTask" }, async (client) => (await findTaskId(client, workspaceId, spec.identifier)) ?? (await client.tasks.createTask({ body: createTaskRequest(workspaceId, spec) })).task.id);
+    const profile = executionProfileRequest(taskId, spec.profile);
+    await this.connection.call({ operation: "setTaskExecutionProfile", taskScoped: true }, (client) => client.tasks.setTaskExecutionProfile({ path: { id: taskId }, body: profile }));
+    return { taskId };
+  }
+
+  async addDependency(input: { taskId: string; dependsOnTaskId: string }) {
+    const body = { depends_on_task_id: input.dependsOnTaskId, kind: DEPENDENCY_KIND } as const;
+    await this.connection.call({ operation: "addTaskDependency", taskScoped: true }, (client) => client.tasks.addTaskDependency({ path: { id: input.taskId }, body }));
+  }
+
+  async enqueueRun(input: CompozyRunInput) {
+    const body = { idempotency_key: input.idempotencyKey, ...(input.metadata ? { metadata: input.metadata } : {}) };
+    const { run } = await this.connection.call({ operation: "enqueueTaskRun", taskScoped: true }, (client) => client.tasks.enqueueTaskRun({ path: { id: input.taskId }, body }));
+    return { runId: run.id };
+  }
+
+  async approveTask(input: { taskId: string; idempotencyKey: string }) {
+    await this.connection.call({ operation: "approveTask", taskScoped: true }, (client) => client.tasks.approveTask({ path: { id: input.taskId }, body: { idempotency_key: input.idempotencyKey } }));
+  }
+
+  async cancelTask(taskId: string) {
+    await this.connection.call({ operation: "cancelTask", taskScoped: true }, (client) => client.tasks.cancelTask({ path: { id: taskId }, body: { reason: CANCEL_REASON } }));
+  }
+
+  readTask(taskId: string) {
+    return this.connection.call({ operation: "readTask", taskScoped: true }, (client) => readTaskState(client, taskId));
+  }
+
+  readRunResult(runId: string) {
+    return this.connection.call({ operation: "readTaskRunResult" }, (client) => readResultText(client, runId));
+  }
+
+  async readFile(input: CompozyFileInput) {
+    const query = { worktree_id: input.worktreeId, path: input.path };
+    const file = await this.connection.call({ operation: "readFileContent" }, (client) => client.workspaces.readFileContent({ path: { workspace_id: input.workspaceId }, query }));
+    return file.sensitive ? { sensitive: true as const } : { content: file.text ?? "" };
+  }
+
+  async sessionPullRequest(input: CompozySessionInput) {
+    const path = { workspace_id: input.workspaceId, session_id: input.sessionId };
+    const session = await this.connection.call({ operation: "getSession" }, (client) => client.sessions.getSession({ path }).catch((error: unknown) => { if (isDaemonNotFound(error)) return null; throw error; }));
+    const pullRequest = session?.session.pull_request;
+    return pullRequest ? { url: pullRequest.url, state: pullRequest.state } : null;
+  }
+}
+
+async function findTaskId(client: Compozy, workspaceId: string, identifier: string) {
+  const { tasks } = await client.tasks.listTasks({ query: { workspace: workspaceId, query: identifier, include_drafts: true, limit: IDENTIFIER_SEARCH_LIMIT } });
+  return tasks.find((task) => task.identifier === identifier)?.id ?? null;
+}
