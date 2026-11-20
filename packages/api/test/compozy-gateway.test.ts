@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { CompozyTaskSpec } from "../src/application/compozy/compozyGateway";
+import { EXECUTION_REVIEW_BRIEFING } from "../src/infra/compozy/executionBriefing";
 import { fakeDaemon, taskPayload } from "./compozy-daemon-fake";
 
 type Daemon = Awaited<ReturnType<typeof fakeDaemon>>;
@@ -28,6 +29,18 @@ describe("CompozyHttpGateway against a fake daemon", () => {
     expect(fake.calls("GET /api/tasks")[0]?.query.get("query")).toBe(spec.identifier);
     expect(fake.calls("POST /api/tasks")[0]?.body).toEqual({ scope: "workspace", workspace: "ws_1", identifier: spec.identifier, title: spec.title, description: "Briefing", metadata: spec.metadata, max_attempts: 3, approval_policy: "manual", auto_enqueue_on_ready: true, wake_creator: false });
     expect(fake.calls("PUT /api/tasks/task_new/execution-profile")[0]?.body).toMatchObject({ task_id: "task_new", worker: { mode: "select", agent_name: "code_implementer" }, review: { agent_name: "reviewer" }, worktree: { mode: "per_run" } });
+  });
+
+  it("IT-017 requests review with the execution verdict briefing", async () => {
+    const fake = await daemonWithTasks([]);
+    fake.on("POST /api/task-runs/run_1/reviews", () => ({ status: 201, body: { review: {} } }));
+    await fake.gateway().requestReview({ taskId: "task_new", runId: "run_1" });
+    expect(fake.calls("POST /api/task-runs/run_1/reviews")[0]?.body).toMatchObject({
+      run_id: "run_1",
+      task_id: "task_new",
+      policy: "always",
+      reason: `Revisão pedida pelo Flow Dev\n\n${EXECUTION_REVIEW_BRIEFING}`,
+    });
   });
 
   it("IT-018 reuses a task found by exact identifier instead of creating another", async () => {

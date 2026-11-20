@@ -4,11 +4,16 @@ import type { CompozyTaskSpec } from "../src/application/compozy/compozyGateway"
 import { parseExecutionRuntime } from "../src/application/compozy/compozyExecutionRuntime";
 import { CompozyHttpGateway } from "../src/infra/compozy/compozyHttpGateway";
 import { removeSmokeSessions, removeSmokeTask, removeSmokeWorkspace, removeSmokeWorktrees } from "./compozy-smoke-cleanup";
+import { readSmokeReviewSessions } from "./compozy-smoke-review";
 import { disposableRepository, poll, record, smokeEnabled } from "./compozy-smoke-support";
 
 const STEP_TIMEOUT_MS = 12 * 60_000;
 const PROBE_TIMEOUT_MS = 30 * 60_000;
 const TERMINAL_RUN_STATES = ["completed", "failed", "canceled", "needs_attention"];
+const DEFAULT_REVIEW_AGENT = "reviewer";
+const REVIEW_AGENT_ENV = "COMPOZY_EXECUTION_REVIEW_AGENT";
+const VALID_REVIEW_OUTCOMES = ["approved", "rejected"];
+const reviewAgentName = process.env[REVIEW_AGENT_ENV] ?? DEFAULT_REVIEW_AGENT;
 const gateway = new CompozyHttpGateway();
 const suffix = randomUUID().slice(0, 8);
 const state: { repository?: Awaited<ReturnType<typeof disposableRepository>>; workspaceId?: string; taskId?: string } = {};
@@ -23,7 +28,7 @@ const description = [
 const smokeTask = (): CompozyTaskSpec => ({
   identifier: `FD-SMOKE-${suffix}-impl`, title: `Implementar: sonda IT-021 ${suffix}`, description,
   metadata: { "flow_dev.smoke": "IT-021" }, maxAttempts: 2, requiresApproval: false, autoEnqueueOnReady: false,
-  profile: { worker: { agentName: "code_implementer" }, review: { agentName: "reviewer" }, worktree: { mode: "per_run" }, runtime: parseExecutionRuntime(process.env) },
+  profile: { worker: { agentName: "code_implementer" }, review: { agentName: reviewAgentName }, worktree: { mode: "per_run" }, runtime: parseExecutionRuntime(process.env) },
 });
 
 afterAll(async () => {
@@ -50,7 +55,8 @@ describe.runIf(smokeEnabled)("IT-021 native execution through the task profile r
     const run = (await gateway.readTask(state.taskId!)).latestRun!;
     await gateway.requestReview({ taskId: state.taskId!, runId: run.runId });
     const reviewed = await poll(() => gateway.readTask(state.taskId!), (task) => Boolean(task.latestReview?.outcome), STEP_TIMEOUT_MS);
-    record("review", { reviewed });
-    expect(reviewed.latestReview?.outcome).not.toBeNull();
+    const sessions = await readSmokeReviewSessions(state.workspaceId!, run.runId).catch((error: unknown) => ({ error: String(error) }));
+    record("review", { reviewed, sessions });
+    expect(VALID_REVIEW_OUTCOMES).toContain(reviewed.latestReview?.outcome);
   }, PROBE_TIMEOUT_MS);
 });

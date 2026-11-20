@@ -1,5 +1,6 @@
 import type { CreateTaskRequest, ExecutionProfile, WorktreePolicy } from "@compozy/client";
 import type { CompozyAgentRuntime, CompozyReviewInput, CompozyTaskSpec, CompozyWorktreePolicy } from "../../application/compozy/compozyGateway";
+import { EXECUTION_REVIEW_BRIEFING } from "./executionBriefing";
 
 const WORKSPACE_SCOPE = "workspace";
 const MANUAL_APPROVAL = "manual";
@@ -42,7 +43,7 @@ export function executionProfileRequest(taskId: string, profile: CompozyTaskSpec
 }
 
 export function reviewRequest(input: CompozyReviewInput, now = new Date()) {
-  return { run_id: input.runId, task_id: input.taskId, policy: REVIEW_POLICY, reason: REVIEW_REASON, deadline_at: new Date(now.getTime() + REVIEW_DEADLINE_MS).toISOString() } as const;
+  return { run_id: input.runId, task_id: input.taskId, policy: REVIEW_POLICY, reason: `${REVIEW_REASON}\n\n${EXECUTION_REVIEW_BRIEFING}`, deadline_at: new Date(now.getTime() + REVIEW_DEADLINE_MS).toISOString() } as const;
 }
 
 function runtimeFields(runtime: CompozyAgentRuntime | null) {
