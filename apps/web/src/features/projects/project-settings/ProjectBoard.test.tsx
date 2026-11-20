@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
-import { P1, trpcFailure } from "@/test/projects";
+import { P1, pendingForever, trpcFailure } from "@/test/projects";
 import { ProjectSettings } from "./index";
 
 const updateBoard = vi.mocked(trpc.projects.updateBoard.mutate);
@@ -16,6 +16,8 @@ function boardForm(project = P1) {
 }
 
 describe("project board settings", () => {
+  beforeEach(() => vi.mocked(trpc.projectCompozy.get.query).mockReturnValue(pendingForever()));
+
   it("saves the trimmed board link and shows the linked board", async () => {
     updateBoard.mockResolvedValue(LINKED);
     const form = boardForm();

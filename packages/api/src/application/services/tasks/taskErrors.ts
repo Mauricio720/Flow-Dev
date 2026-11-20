@@ -21,7 +21,11 @@ export type TaskErrorReason =
   | "planning_deadline" | "planning_access_revoked" | "planning_timeout"
   | "admin_required" | "operator_required" | "claim_unresolved" | "issue_ineligible" | "board_status_changed"
   | "source_changed" | "work_unavailable" | "deletion_fenced"
-  | "image_too_large" | "unsupported_image_type" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable";
+  | "image_too_large" | "unsupported_image_type" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable"
+  | "forbidden" | "compozy_unconfigured" | "compozy_unavailable" | "compozy_rejected" | "compozy_task_missing" | "binding_conflict"
+  | "worktree_branch_conflict" | "spec_round_stale" | "spec_missing_main_file" | "spec_note_invalid" | "spec_round_limit" | "spec_not_reviewable"
+  | "checkout_path_not_absolute" | "checkout_not_found" | "checkout_not_git_root" | "checkout_remote_mismatch" | "default_branch_unknown"
+  | "binding_not_ready" | "planning_not_approved" | "execution_blocked_uncertainty" | "claim_required" | "execution_active" | "execution_not_found";
 
 export class TaskError extends Error {
   constructor(readonly reason: TaskErrorReason, readonly fieldErrors?: Record<string, string>, cause?: unknown, readonly retryAfterSeconds?: number) {

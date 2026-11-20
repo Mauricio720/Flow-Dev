@@ -1,5 +1,6 @@
 export const planningRoutes = ["direct_execution", "tech_spec", "prd"] as const;
 export const planningStatuses = ["awaiting", "in_progress", "failed", "review", "approved"] as const;
+export const BLOCKING_UNCERTAINTY_PREFIX = "Bloqueante: ";
 export const planningComplexities = ["low", "medium", "high"] as const;
 
 export type PlanningRoute = (typeof planningRoutes)[number];

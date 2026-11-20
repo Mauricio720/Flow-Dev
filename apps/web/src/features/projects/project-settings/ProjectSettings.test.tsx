@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
-import { P1, projectConflict } from "@/test/projects";
+import { P1, pendingForever, projectConflict } from "@/test/projects";
 import { ProjectSettings } from "./index";
 
 const update = vi.mocked(trpc.projects.updateDetails.mutate);
@@ -21,6 +21,8 @@ async function rename(field: HTMLElement, value: string) {
 }
 
 describe("project settings", () => {
+  beforeEach(() => vi.mocked(trpc.projectCompozy.get.query).mockReturnValue(pendingForever()));
+
   it("UT-041 sends only the identifier, details and expected version, with the repository read-only", async () => {
     update.mockResolvedValue({ ...VERSION_3, name: "Beta", detailsVersion: 4 });
     const form = editor();

@@ -47,7 +47,7 @@ test("E2E-005 an administrator edits the details and a member only reads them", 
   await signInAs(page, admin);
   await page.goto(`/projects/${project.id}/settings`);
   await expect(page.getByText(project.repository, { exact: true }).last()).toBeVisible();
-  await expect(page.getByRole("textbox")).toHaveCount(2);
+  await expect(page.getByRole("textbox")).toHaveCount(4);
   await page.getByLabel("Nome do projeto").fill(renamed);
   await page.getByLabel("Descrição (opcional)").fill("");
   await page.getByRole("button", { name: "Salvar detalhes" }).click();

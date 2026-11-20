@@ -122,3 +122,5 @@ export { localCheckoutLocks } from "./schema/localCheckoutLocks";
 export { taskRunEvidence, taskRunGates } from "./schema/localExecutionEvidence";
 export { localLinkRequests } from "./schema/localLinkRequests";
 export { issueDeletionOperations } from "./schema/issueDeletion";
+export { projectCompozyBindings } from "./schema/projectCompozy";
+export { taskCompozyExecutions, taskCompozySpecReviews } from "./schema/tasks/compozyExecution";
