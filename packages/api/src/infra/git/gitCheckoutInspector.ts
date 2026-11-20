@@ -56,5 +56,5 @@ async function readableDirectory(path: string) {
 }
 
 function gitEnvironment() {
-  return { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", LANG: "C", GIT_TERMINAL_PROMPT: "0" };
+  return Object.assign({} as NodeJS.ProcessEnv, { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", LANG: "C", GIT_TERMINAL_PROMPT: "0" });
 }

@@ -24,6 +24,11 @@ vi.mock("@/lib/trpc/client", () => ({
       updateDetails: { mutate: vi.fn() },
       updateBoard: { mutate: vi.fn() },
     },
+    projectCompozy: {
+      get: { query: vi.fn() },
+      save: { mutate: vi.fn() },
+      check: { mutate: vi.fn() },
+    },
     tasks: {
       list: { query: vi.fn() },
       byId: { query: vi.fn() },
