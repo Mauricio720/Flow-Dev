@@ -13,7 +13,7 @@ export default async function ProjectWorkTaskPage({ params }: PageProps<"/projec
   const [initial, viewer] = await Promise.all([loadWorkDetail(context.project.id, taskId), loadViewer()]);
   return (
     <ProjectShell project={context.project} section="work" isAdmin={viewer.isAdmin}>
-      <WorkDetail project={context.project} initial={initial} />
+      <WorkDetail project={context.project} initial={initial} isAdmin={viewer.isAdmin} />
     </ProjectShell>
   );
 }

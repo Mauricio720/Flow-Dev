@@ -24,6 +24,14 @@ describe("ActiveRow", () => {
     expect(row.textContent).toContain("Execução direta");
     expect(row.textContent).toContain("Rota do planejamento aprovada");
   });
+
+  it("prefers the stored execution state over the approved planning state", () => {
+    const execution = { executionId: "execution-1", state: "needs_attention", pullRequestUrl: null };
+    const row = renderRow(activeItemOf({ stage: "approved", progress: progressOf({ route: "direct_execution", execution }) }));
+    expect(row.textContent).toContain("Execução · Precisa de atenção");
+    expect(row.textContent).toContain("Resolva a pendência no CompozyOS.");
+    expect(row.textContent).not.toContain("Planejamento · Concluída");
+  });
 });
 
 describe("ActiveCounts", () => {

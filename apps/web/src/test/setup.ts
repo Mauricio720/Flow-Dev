@@ -29,6 +29,11 @@ vi.mock("@/lib/trpc/client", () => ({
       save: { mutate: vi.fn() },
       check: { mutate: vi.fn() },
     },
+    taskExecution: {
+      status: { query: vi.fn() },
+      start: { mutate: vi.fn() },
+      cancel: { mutate: vi.fn() },
+    },
     tasks: {
       list: { query: vi.fn() },
       byId: { query: vi.fn() },
@@ -69,6 +74,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
   window.localStorage.clear();
+  window.sessionStorage.clear();
   window.history.replaceState(null, "", "/");
   Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
 });
