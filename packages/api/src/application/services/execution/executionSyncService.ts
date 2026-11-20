@@ -5,6 +5,7 @@ import { activeExecutionStates, isTerminalExecution } from "./executionContracts
 import { logExecutionEvent } from "./executionLog";
 import { EXECUTION_MAX_ATTEMPTS, WORKER_AGENT } from "./executionPlan";
 import { projectExecution, type Projection } from "./executionProjection";
+import { projectSpecExecution } from "./executionSpecProjection";
 import { ExecutionPullRequests } from "./executionPullRequests";
 
 export type SyncOutcome = { execution: ExecutionRecord; reachable: boolean };
@@ -24,7 +25,8 @@ export class ExecutionSyncService {
     if (!execution.workTaskId || isTerminalExecution(execution.state)) return { execution, reachable: true };
     try {
       const task = await this.deps.gateway.readTask(execution.workTaskId);
-      return { execution: await this.apply(execution, task), reachable: true };
+      const specTask = execution.specTaskId ? await this.deps.gateway.readTask(execution.specTaskId) : null;
+      return { execution: await this.apply(execution, task, specTask), reachable: true };
     } catch (error) {
       if (error instanceof TaskError && error.reason === MISSING_TASK) return { execution: await this.save(execution, missingTask()), reachable: true };
       if (error instanceof TaskError && error.reason === UNAVAILABLE) return { execution, reachable: false };
@@ -32,10 +34,11 @@ export class ExecutionSyncService {
     }
   }
 
-  private async apply(execution: ExecutionRecord, task: CompozyTaskState) {
+  private async apply(execution: ExecutionRecord, task: CompozyTaskState, specTask: CompozyTaskState | null) {
     const pullRequestUrl = await this.pullRequests.resolve(execution, task);
-    const projection = projectExecution({ task, maxAttempts: EXECUTION_MAX_ATTEMPTS, agent: WORKER_AGENT, pullRequestUrl });
-    await this.runAction(execution, task, projection);
+    const projection = specTask ? projectSpecExecution({ specTask, deliveryTask: task, pullRequestUrl, currentState: execution.state, specRound: execution.specRound }) : projectExecution({ task, maxAttempts: EXECUTION_MAX_ATTEMPTS, agent: WORKER_AGENT, pullRequestUrl });
+    const actionTask = specTask && projection.state === "spec_in_progress" ? specTask : task;
+    await this.runAction(execution, actionTask, projection);
     return this.save(execution, projection);
   }
 

@@ -37,8 +37,11 @@ export type CompozyTaskState = {
 };
 
 export type CompozyWorktreeInput = { workspaceId: string; name: string; branch: string; baseRef: string };
+export type CompozyWorktreeRef = { worktreeId: string; name: string; branch: string; path: string };
 export type CompozyRunInput = { taskId: string; idempotencyKey: string; metadata?: Record<string, string> };
 export type CompozyFileInput = { workspaceId: string; worktreeId: string; path: string };
+export type CompozyFileListInput = CompozyFileInput;
+export type CompozyFileEntry = { path: string; kind: string; sensitive?: boolean; symlink?: boolean };
 export type CompozyFileContent = { content: string } | { sensitive: true };
 export type CompozySessionInput = { workspaceId: string; sessionId: string };
 export type CompozyPullRequest = { url: string; state: string };
@@ -48,6 +51,7 @@ export interface CompozyGateway {
   health(): Promise<{ reachable: boolean; version: string | null }>;
   resolveWorkspace(path: string): Promise<{ workspaceId: string }>;
   createWorktree(input: CompozyWorktreeInput): Promise<{ worktreeId: string; path: string }>;
+  findWorktree(input: { workspaceId: string; name: string }): Promise<CompozyWorktreeRef | null>;
   createTask(workspaceId: string, spec: CompozyTaskSpec): Promise<{ taskId: string }>;
   addDependency(input: { taskId: string; dependsOnTaskId: string }): Promise<void>;
   enqueueRun(input: CompozyRunInput): Promise<{ runId: string }>;
@@ -56,6 +60,7 @@ export interface CompozyGateway {
   requestReview(input: CompozyReviewInput): Promise<void>;
   readTask(taskId: string): Promise<CompozyTaskState>;
   readRunResult(runId: string): Promise<string>;
+  listFileEntries(input: CompozyFileListInput): Promise<CompozyFileEntry[]>;
   readFile(input: CompozyFileInput): Promise<CompozyFileContent>;
   sessionPullRequest(input: CompozySessionInput): Promise<CompozyPullRequest | null>;
 }

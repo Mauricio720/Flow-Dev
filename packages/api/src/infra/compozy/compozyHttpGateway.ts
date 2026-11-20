@@ -1,10 +1,11 @@
 import type { Compozy } from "@compozy/client";
-import type { CompozyFileInput, CompozyGateway, CompozyReviewInput, CompozyRunInput, CompozySessionInput, CompozyTaskSpec, CompozyWorktreeInput } from "../../application/compozy/compozyGateway";
+import type { CompozyFileInput, CompozyFileListInput, CompozyGateway, CompozyReviewInput, CompozyRunInput, CompozySessionInput, CompozyTaskSpec, CompozyWorktreeInput } from "../../application/compozy/compozyGateway";
 import { CompozyCallError } from "../../application/compozy/compozyErrors";
 import { CompozyConnection, type CompozyConnectionOptions } from "./compozyConnection";
 import { isDaemonNotFound } from "./compozyErrorTranslation";
 import { createTaskRequest, executionProfileRequest, reviewRequest } from "./compozyTaskRequests";
 import { readResultText, readTaskState } from "./compozyTaskReads";
+import { CompozyWorkspaceGateway } from "./compozyWorkspaceGateway";
 
 const IDENTIFIER_SEARCH_LIMIT = 50;
 const CANCEL_REASON = "Canceled from Flow Dev";
@@ -12,9 +13,11 @@ const DEPENDENCY_KIND = "blocks";
 
 export class CompozyHttpGateway implements CompozyGateway {
   private readonly connection: CompozyConnection;
+  private readonly workspaces: CompozyWorkspaceGateway;
 
   constructor(options: CompozyConnectionOptions = {}) {
     this.connection = new CompozyConnection(options);
+    this.workspaces = new CompozyWorkspaceGateway(this.connection);
   }
 
   async health() {
@@ -28,16 +31,17 @@ export class CompozyHttpGateway implements CompozyGateway {
   }
 
   async resolveWorkspace(path: string) {
-    const { workspace } = await this.connection.call({ operation: "resolveWorkspace" }, (client) => client.workspaces.resolveWorkspace({ body: { path } }));
-    return { workspaceId: workspace.id };
+    return this.workspaces.resolveWorkspace(path);
   }
-
   async createWorktree(input: CompozyWorktreeInput) {
-    const body = { name: input.name, branch: input.branch, base_ref: input.baseRef };
-    const { worktree } = await this.connection.call({ operation: "createWorktree" }, (client) => client.worktrees.createWorktree({ path: { workspace_id: input.workspaceId }, body }));
-    return { worktreeId: worktree.id, path: worktree.path };
+    return this.workspaces.createWorktree(input);
   }
-
+  findWorktree(input: { workspaceId: string; name: string }) {
+    return this.workspaces.findWorktree(input);
+  }
+  listFileEntries(input: CompozyFileListInput) {
+    return this.workspaces.listFileEntries(input);
+  }
   async createTask(workspaceId: string, spec: CompozyTaskSpec) {
     const taskId = await this.connection.call({ operation: "createTask" }, async (client) => (await findTaskId(client, workspaceId, spec.identifier)) ?? (await client.tasks.createTask({ body: createTaskRequest(workspaceId, spec) })).task.id);
     const profile = executionProfileRequest(taskId, spec.profile);
@@ -75,11 +79,8 @@ export class CompozyHttpGateway implements CompozyGateway {
   readRunResult(runId: string) {
     return this.connection.call({ operation: "readTaskRunResult" }, (client) => readResultText(client, runId));
   }
-
   async readFile(input: CompozyFileInput) {
-    const query = { worktree_id: input.worktreeId, path: input.path };
-    const file = await this.connection.call({ operation: "readFileContent" }, (client) => client.workspaces.readFileContent({ path: { workspace_id: input.workspaceId }, query }));
-    return file.sensitive ? { sensitive: true as const } : { content: file.text ?? "" };
+    return this.workspaces.readFile(input);
   }
 
   async sessionPullRequest(input: CompozySessionInput) {

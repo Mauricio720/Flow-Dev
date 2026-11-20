@@ -1,8 +1,8 @@
-import type { ExecutionRecord } from "../../application/database/dao/taskExecutionDao";
+import type { ExecutionRecord, SpecReviewRecord } from "../../application/database/dao/taskExecutionDao";
 import type { SyncOutcome } from "../../application/services/execution/executionSyncService";
 import type { StartBlocker } from "../../application/services/execution/executionStartRules";
 
-type StatusRecord = { canStart: boolean; startBlockedBy: StartBlocker | null; current: SyncOutcome | null; history: ExecutionRecord[] };
+type StatusRecord = { canStart: boolean; startBlockedBy: StartBlocker | null; current: SyncOutcome | null; history: ExecutionRecord[]; specReviews: SpecReviewRecord[] };
 type Review = { outcome: string; summary: string | null };
 type Block = { kind: string; reason: string };
 
@@ -10,12 +10,12 @@ export function executionStatusDto(record: StatusRecord) {
   return {
     canStart: record.canStart,
     startBlockedBy: record.startBlockedBy,
-    current: record.current ? currentDto(record.current.execution, record.current.reachable) : null,
+    current: record.current ? currentDto(record.current.execution, record.current.reachable, record.specReviews) : null,
     history: record.history.map(historyDto),
   };
 }
 
-function currentDto(execution: ExecutionRecord, reachable: boolean) {
+function currentDto(execution: ExecutionRecord, reachable: boolean, specReviews: SpecReviewRecord[]) {
   const detail = execution.detail;
   return {
     executionId: execution.id,
@@ -31,11 +31,20 @@ function currentDto(execution: ExecutionRecord, reachable: boolean) {
     failureCode: execution.failureCode,
     failureDetail: textOrNull(detail.failureDetail),
     specRound: execution.specRound,
+    specReviews: specReviews.map(specReviewDto),
     pullRequestUrl: execution.pullRequestUrl,
-    compozyTaskIdentifiers: typeof detail.workIdentifier === "string" ? [detail.workIdentifier] : [],
+    compozyTaskIdentifiers: taskIdentifiers(detail),
     lastSyncedAt: execution.lastSyncedAt?.toISOString() ?? null,
     compozyReachable: reachable,
   };
+}
+
+function taskIdentifiers(detail: Record<string, unknown>) {
+  return [detail.specIdentifier, detail.workIdentifier].filter((identifier): identifier is string => typeof identifier === "string");
+}
+
+function specReviewDto(review: SpecReviewRecord) {
+  return { round: review.round, decision: review.decision, note: review.note, actorName: review.actorName, createdAt: review.createdAt.toISOString() };
 }
 
 function historyDto(execution: ExecutionRecord) {

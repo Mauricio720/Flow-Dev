@@ -5,7 +5,7 @@ import type { CompozyGateway } from "../../compozy/compozyGateway";
 import { ExecutionSyncService } from "./executionSyncService";
 import { pullRequestFromResult } from "./pullRequestResult";
 
-const record: ExecutionRecord = { id: "execution", taskId: "task", planningDecisionId: "decision", route: "direct_execution", state: "in_progress", attempt: 1, idempotencyKey: "key", compozyWorkspaceId: "workspace", workTaskId: "remote-task", branch: "branch", specRound: 0, pullRequestUrl: null, detail: {}, failureCode: null, lastSyncedAt: null, startedBy: "actor", createdAt: new Date(), finishedAt: null };
+const record: ExecutionRecord = { id: "execution", taskId: "task", planningDecisionId: "decision", route: "direct_execution", state: "in_progress", attempt: 1, idempotencyKey: "key", compozyWorkspaceId: "workspace", specTaskId: null, specWorktreeId: null, specDir: null, workTaskId: "remote-task", branch: "branch", specRound: 0, pullRequestUrl: null, detail: {}, failureCode: null, lastSyncedAt: null, startedBy: "actor", createdAt: new Date(), finishedAt: null };
 const setup = (reason: string) => {
   const transition = vi.fn(async ({ patch }: { patch: Partial<ExecutionRecord> }) => ({ ...record, ...patch }));
   const dao = { transition, findById: vi.fn() } as unknown as TaskExecutionDao;

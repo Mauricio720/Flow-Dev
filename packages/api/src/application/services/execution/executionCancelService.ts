@@ -4,8 +4,9 @@ import { TaskError } from "../tasks/taskErrors";
 import { activeExecutionStates, isTerminalExecution } from "./executionContracts";
 import { logExecutionEvent } from "./executionLog";
 import type { ExecutionSyncService } from "./executionSyncService";
+import { cancelExecutionTasks } from "./executionTaskCancellation";
 
-type CancelDeps = { dao: TaskExecutionDao; gateway: Pick<CompozyGateway, "cancelTask">; sync: Pick<ExecutionSyncService, "reconcile">; clock: () => Date };
+type CancelDeps = { dao: TaskExecutionDao; gateway: Pick<CompozyGateway, "cancelTask" | "readTask">; sync: Pick<ExecutionSyncService, "reconcile">; clock: () => Date };
 type CancelScope = { taskId: string; executionId: string };
 const CANCELED = "canceled";
 const REJECTED = "compozy_rejected";
@@ -17,7 +18,7 @@ export class ExecutionCancelService {
     const execution = await this.deps.dao.findById(scope.taskId, scope.executionId);
     if (!execution) throw new TaskError("execution_not_found");
     if (isTerminalExecution(execution.state)) return { state: execution.state, replayed: execution.state === CANCELED };
-    if (!execution.workTaskId) return this.markCanceled(execution);
+    if (!execution.workTaskId && !execution.specTaskId) return this.markCanceled(execution);
     const current = await this.reconciled(execution);
     if (isTerminalExecution(current.state)) return { state: current.state, replayed: false };
     const settled = await this.cancelRemote(current);
@@ -27,7 +28,7 @@ export class ExecutionCancelService {
 
   private async cancelRemote(execution: ExecutionRecord): Promise<ExecutionRecord | null> {
     try {
-      await this.deps.gateway.cancelTask(execution.workTaskId!);
+      await cancelExecutionTasks(this.deps.gateway, execution);
       return null;
     } catch (error) {
       if (!(error instanceof TaskError) || error.reason !== REJECTED) throw error;

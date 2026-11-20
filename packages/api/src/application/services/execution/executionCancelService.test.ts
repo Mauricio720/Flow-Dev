@@ -2,14 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import type { ExecutionRecord, TaskExecutionDao } from "../../database/dao/taskExecutionDao";
 import { ExecutionCancelService } from "./executionCancelService";
 
-const record: ExecutionRecord = { id: "execution", taskId: "task", planningDecisionId: "decision", route: "direct_execution", state: "in_progress", attempt: 1, idempotencyKey: "key", compozyWorkspaceId: "workspace", workTaskId: "remote-task", branch: "branch", specRound: 0, pullRequestUrl: null, detail: {}, failureCode: null, lastSyncedAt: null, startedBy: "actor", createdAt: new Date(), finishedAt: null };
+const record: ExecutionRecord = { id: "execution", taskId: "task", planningDecisionId: "decision", route: "direct_execution", state: "in_progress", attempt: 1, idempotencyKey: "key", compozyWorkspaceId: "workspace", specTaskId: null, specWorktreeId: null, specDir: null, workTaskId: "remote-task", branch: "branch", specRound: 0, pullRequestUrl: null, detail: {}, failureCode: null, lastSyncedAt: null, startedBy: "actor", createdAt: new Date(), finishedAt: null };
 const setup = (persisted: ExecutionRecord, reconciled = persisted) => {
   const findById = vi.fn(async () => persisted);
   const transition = vi.fn(async ({ patch }: { patch: Partial<ExecutionRecord> }) => ({ ...persisted, ...patch }));
   const dao = { findById, transition } as unknown as TaskExecutionDao;
   const cancelTask = vi.fn(async () => {});
+  const readTask = vi.fn(async () => ({ taskId: "remote-task", status: "running", latestRun: null, latestReview: null, openBlocks: [] }));
   const reconcile = vi.fn(async () => ({ execution: reconciled, reachable: true }));
-  const service = new ExecutionCancelService({ dao, gateway: { cancelTask }, sync: { reconcile } as never, clock: () => new Date() });
+  const service = new ExecutionCancelService({ dao, gateway: { cancelTask, readTask }, sync: { reconcile } as never, clock: () => new Date() });
   return { service, cancelTask, reconcile, transition };
 };
 

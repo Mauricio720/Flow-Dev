@@ -36,4 +36,16 @@ describe("CompozyHttpGateway against a fake daemon", () => {
     expect(fake.calls("POST /api/tasks")).toHaveLength(0);
     expect(fake.calls("PUT /api/tasks/task_old/execution-profile")).toHaveLength(1);
   });
+
+  it("resolves existing spec worktrees and reads files from the selected tree", async () => {
+    const fake = await daemonWithTasks([]);
+    fake.on("GET /api/workspaces/ws_1/worktrees", () => ({ status: 200, body: { worktrees: [{ id: "worktree_1", name: "fd-spec", branch: "flow-dev/spec", path: "/tmp/spec" }], discovered: [], repo: { git_available: true, git_backed: true } } }));
+    fake.on("GET /api/workspaces/ws_1/files/entries", () => ({ status: 200, body: { entries: [{ path: ".compozy/tasks/fd-spec/_spec.md", kind: "file" }], path: ".compozy/tasks/fd-spec", root: {}, truncated: false } }));
+    fake.on("GET /api/workspaces/ws_1/files/content", () => ({ status: 200, body: { text: "# Spec", sensitive: false } }));
+    const gateway = fake.gateway();
+    await expect(gateway.findWorktree({ workspaceId: "ws_1", name: "fd-spec" })).resolves.toMatchObject({ worktreeId: "worktree_1", branch: "flow-dev/spec" });
+    await expect(gateway.listFileEntries({ workspaceId: "ws_1", worktreeId: "worktree_1", path: ".compozy/tasks/fd-spec" })).resolves.toEqual([{ path: ".compozy/tasks/fd-spec/_spec.md", kind: "file" }]);
+    await expect(gateway.readFile({ workspaceId: "ws_1", worktreeId: "worktree_1", path: ".compozy/tasks/fd-spec/_spec.md" })).resolves.toEqual({ content: "# Spec" });
+    expect(fake.calls("GET /api/workspaces/ws_1/files/entries")[0]?.query.get("worktree_id")).toBe("worktree_1");
+  });
 });

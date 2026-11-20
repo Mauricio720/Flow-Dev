@@ -4,6 +4,8 @@ import { AssignedIssueError } from "../application/services/assigned-issues/assi
 import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import type { ExecutionCancelService } from "../application/services/execution/executionCancelService";
 import type { ExecutionStartService } from "../application/services/execution/executionStartService";
+import type { ExecutionSpecFilesService } from "../application/services/execution/executionSpecFilesService";
+import type { ExecutionSpecReviewService } from "../application/services/execution/executionSpecReviewService";
 import type { ExecutionStatusService } from "../application/services/execution/executionStatusService";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import { executionStatusDto } from "./mappers/executionDtoMapper";
@@ -11,7 +13,9 @@ import { executionStatusDto } from "./mappers/executionDtoMapper";
 type Scope = { projectId: string; taskId: string };
 type StartInput = Scope & { decisionId: string; expectedDecisionVersion: number; idempotencyKey: string };
 type CancelInput = Scope & { executionId: string; idempotencyKey: string };
-type ControllerDeps = { start: ExecutionStartService; status: ExecutionStatusService; cancel: ExecutionCancelService; authorization: WorkAuthorization; permissions: Pick<AccessDao, "isAdmin"> };
+type SpecFilesInput = Scope & { executionId: string };
+type ReviewSpecInput = Scope & { executionId: string; round: number; decision: "approve" | "request_changes" | "reject"; note?: string; idempotencyKey: string };
+type ControllerDeps = { start: ExecutionStartService; status: ExecutionStatusService; cancel: ExecutionCancelService; specFiles: ExecutionSpecFilesService; reviewSpec: ExecutionSpecReviewService; authorization: WorkAuthorization; permissions: Pick<AccessDao, "isAdmin"> };
 const CLAIM_REASONS = ["operator_required", "claim_unresolved"];
 
 export class TaskExecutionController {
@@ -25,6 +29,17 @@ export class TaskExecutionController {
   async start(actor: SessionPrincipal, input: StartInput) {
     const claimed = await this.operatorStanding(actor, input);
     return this.deps.start.start({ ...input, actorId: actor.userId, claimed });
+  }
+
+  async specFiles(actor: SessionPrincipal, input: SpecFilesInput) {
+    await this.deps.authorization.requireRead({ ...input, actorId: actor.userId });
+    return this.deps.specFiles.list(input);
+  }
+
+  async reviewSpec(actor: SessionPrincipal, input: ReviewSpecInput) {
+    const claimed = await this.operatorStanding(actor, input);
+    if (!claimed) throw new TaskError("claim_required");
+    return this.deps.reviewSpec.review({ ...input, actorId: actor.userId });
   }
 
   async cancel(actor: SessionPrincipal, input: CancelInput) {

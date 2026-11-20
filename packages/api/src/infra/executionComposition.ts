@@ -5,6 +5,8 @@ import { ExecutionCancelService } from "../application/services/execution/execut
 import { ExecutionDispatcher } from "../application/services/execution/executionDispatcher";
 import { ExecutionFactsReader } from "../application/services/execution/executionFactsReader";
 import { ExecutionStartService } from "../application/services/execution/executionStartService";
+import { ExecutionSpecFilesService } from "../application/services/execution/executionSpecFilesService";
+import { ExecutionSpecReviewService } from "../application/services/execution/executionSpecReviewService";
 import { EXECUTION_SYNC_INTERVAL_MS, ExecutionStatusService } from "../application/services/execution/executionStatusService";
 import { ExecutionSyncService, type SyncOutcome } from "../application/services/execution/executionSyncService";
 import type { ExecutionRecord } from "../application/database/dao/taskExecutionDao";
@@ -32,8 +34,10 @@ export function createTaskExecutionController(database: Database, overrides: Exe
   const start = new ExecutionStartService({ dao, facts, dispatcher: new ExecutionDispatcher({ dao, gateway, clock }), runtime, ids: overrides.ids });
   const status = new ExecutionStatusService({ dao, facts, claims: new DrizzleIssueClaimDao(database), reconcile: throttledReconcile(sync, clock), clock });
   const cancel = new ExecutionCancelService({ dao, gateway, sync, clock });
+  const specFiles = new ExecutionSpecFilesService({ dao, gateway });
+  const reviewSpec = new ExecutionSpecReviewService({ dao, gateway, clock });
   const authorization = overrides.authorization ?? createWorkAuthorization(database);
-  return new TaskExecutionController({ start, status, cancel, authorization, permissions: new DrizzleAccessDao(database) });
+  return new TaskExecutionController({ start, status, cancel, specFiles, reviewSpec, authorization, permissions: new DrizzleAccessDao(database) });
 }
 
 export function createProductionTaskExecutionController() {

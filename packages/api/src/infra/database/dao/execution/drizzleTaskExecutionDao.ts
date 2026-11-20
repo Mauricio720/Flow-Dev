@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Database } from "../../client";
-import { taskCompozyExecutions, taskPlanningDecisions } from "../../schema";
-import type { DispatchInsert, ExecutionTransition, TaskExecutionDao } from "../../../../application/database/dao/taskExecutionDao";
+import { taskCompozyExecutions, taskCompozySpecReviews, taskPlanningDecisions, users } from "../../schema";
+import type { DispatchInsert, ExecutionTransition, SpecReviewInsert, SpecReviewRecord, TaskExecutionDao } from "../../../../application/database/dao/taskExecutionDao";
 import type { PlanningRoute } from "../../../../application/services/tasks/planningContracts";
 import { toExecution } from "./executionRows";
 
@@ -37,6 +37,21 @@ export class DrizzleTaskExecutionDao implements TaskExecutionDao {
     return rows.map(toExecution);
   }
 
+  async findSpecReviewByKey(idempotencyKey: string) {
+    const [row] = await this.database.select().from(taskCompozySpecReviews).where(eq(taskCompozySpecReviews.idempotencyKey, idempotencyKey)).limit(1);
+    return row ? toSpecReview(row) : null;
+  }
+
+  async listSpecReviews(executionId: string) {
+    const rows = await this.database.select({ review: taskCompozySpecReviews, displayName: users.displayName, name: users.name }).from(taskCompozySpecReviews).innerJoin(users, eq(taskCompozySpecReviews.actorId, users.id)).where(eq(taskCompozySpecReviews.executionId, executionId)).orderBy(taskCompozySpecReviews.round);
+    return rows.map(({ review, displayName, name }) => toSpecReview(review, displayName ?? name));
+  }
+
+  async insertSpecReview(review: SpecReviewInsert) {
+    const [row] = await this.database.insert(taskCompozySpecReviews).values(review).onConflictDoNothing().returning();
+    return row ? toSpecReview(row) : null;
+  }
+
   async insertDispatching(insert: DispatchInsert) {
     const nextAttempt = sql<number>`(select coalesce(max(${taskCompozyExecutions.attempt}), 0) + 1 from ${taskCompozyExecutions} where ${taskCompozyExecutions.planningDecisionId} = ${insert.planningDecisionId})`;
     const [row] = await this.database.insert(taskCompozyExecutions).values({ ...insert, state: DISPATCHING_STATE, attempt: nextAttempt }).onConflictDoNothing().returning();
@@ -47,4 +62,8 @@ export class DrizzleTaskExecutionDao implements TaskExecutionDao {
     const [row] = await this.database.update(taskCompozyExecutions).set({ ...transition.patch, updatedAt: sql`now()` }).where(and(eq(taskCompozyExecutions.id, transition.id), inArray(taskCompozyExecutions.state, transition.from))).returning();
     return row ? toExecution(row) : null;
   }
+}
+
+function toSpecReview(row: typeof taskCompozySpecReviews.$inferSelect, actorName: string | null = null): SpecReviewRecord {
+  return { id: row.id, executionId: row.executionId, round: row.round, decision: row.decision as SpecReviewRecord["decision"], note: row.note, actorId: row.actorId, actorName, idempotencyKey: row.idempotencyKey, createdAt: row.createdAt };
 }

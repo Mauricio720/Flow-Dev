@@ -18,6 +18,7 @@ export class ExecutionStatusService {
   async status(scope: StatusScope) {
     const synced = await this.currentExecution(scope.taskId);
     const history = await this.deps.dao.history(scope.taskId, synced?.execution.id ?? null);
+    const specReviews = synced ? await this.deps.dao.listSpecReviews(synced.execution.id) : [];
     const blocker = executionStartBlocker(await this.deps.facts.read({ ...scope, claimed: await this.isClaimed(scope) }));
     const active = synced ? !isTerminalExecution(synced.execution.state) : false;
     return {
@@ -25,6 +26,7 @@ export class ExecutionStatusService {
       startBlockedBy: active ? null : blocker,
       current: synced,
       history,
+      specReviews,
     };
   }
 
