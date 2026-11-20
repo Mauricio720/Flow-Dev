@@ -30,6 +30,8 @@ type TaskErrorCode = "BAD_REQUEST" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "P
 const COMPOZY_ERROR_CODES: Partial<Record<TaskError["reason"], TaskErrorCode>> = {
   forbidden: "FORBIDDEN", binding_conflict: "CONFLICT", compozy_unavailable: "SERVICE_UNAVAILABLE", compozy_unconfigured: "INTERNAL_SERVER_ERROR",
   compozy_rejected: "PRECONDITION_FAILED", compozy_task_missing: "NOT_FOUND", checkout_path_not_absolute: "BAD_REQUEST",
+  binding_not_ready: "PRECONDITION_FAILED", planning_not_approved: "PRECONDITION_FAILED", execution_blocked_uncertainty: "PRECONDITION_FAILED",
+  claim_required: "FORBIDDEN", execution_active: "CONFLICT", execution_not_found: "NOT_FOUND",
 };
 
 function taskErrorCode(reason: TaskError["reason"]): TaskErrorCode {

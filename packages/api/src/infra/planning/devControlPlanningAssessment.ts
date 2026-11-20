@@ -1,9 +1,8 @@
-import type { PlanningComplexity, PlanningRoute } from "../../application/services/tasks/planningContracts";
+import { BLOCKING_UNCERTAINTY_PREFIX, type PlanningComplexity, type PlanningRoute } from "../../application/services/tasks/planningContracts";
 
 const ROUTES: Record<string, PlanningRoute> = { DIRECT: "direct_execution", TECH_SPEC: "tech_spec", PRD: "prd" };
 const COMPLEXITIES: Record<string, PlanningComplexity> = { LOW: "low", MEDIUM: "medium", HIGH: "high" };
 const DESCRIPTION_SEPARATOR = " — ";
-const BLOCKING_PREFIX = "Bloqueante: ";
 const UNREADABLE_TEXT = "";
 
 export function toAssessmentCandidate(value: unknown) {
@@ -28,7 +27,7 @@ function uncertaintyText(uncertainty: Record<string, unknown>) {
   if (typeof uncertainty.question !== "string" || typeof uncertainty.blocking !== "boolean") return UNREADABLE_TEXT;
   const question = uncertainty.question.trim();
   if (!question) return UNREADABLE_TEXT;
-  return uncertainty.blocking ? BLOCKING_PREFIX + question : question;
+  return uncertainty.blocking ? BLOCKING_UNCERTAINTY_PREFIX + question : question;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

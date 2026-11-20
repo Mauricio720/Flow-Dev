@@ -23,7 +23,8 @@ export type TaskErrorReason =
   | "source_changed" | "work_unavailable" | "deletion_fenced"
   | "image_too_large" | "unsupported_image_type" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable"
   | "forbidden" | "compozy_unconfigured" | "compozy_unavailable" | "compozy_rejected" | "compozy_task_missing" | "binding_conflict"
-  | "checkout_path_not_absolute" | "checkout_not_found" | "checkout_not_git_root" | "checkout_remote_mismatch" | "default_branch_unknown";
+  | "checkout_path_not_absolute" | "checkout_not_found" | "checkout_not_git_root" | "checkout_remote_mismatch" | "default_branch_unknown"
+  | "binding_not_ready" | "planning_not_approved" | "execution_blocked_uncertainty" | "claim_required" | "execution_active" | "execution_not_found";
 
 export class TaskError extends Error {
   constructor(readonly reason: TaskErrorReason, readonly fieldErrors?: Record<string, string>, cause?: unknown, readonly retryAfterSeconds?: number) {

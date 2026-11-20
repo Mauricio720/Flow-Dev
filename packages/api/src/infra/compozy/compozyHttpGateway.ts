@@ -1,9 +1,9 @@
 import type { Compozy } from "@compozy/client";
-import type { CompozyFileInput, CompozyGateway, CompozyRunInput, CompozySessionInput, CompozyTaskSpec, CompozyWorktreeInput } from "../../application/compozy/compozyGateway";
+import type { CompozyFileInput, CompozyGateway, CompozyReviewInput, CompozyRunInput, CompozySessionInput, CompozyTaskSpec, CompozyWorktreeInput } from "../../application/compozy/compozyGateway";
 import { CompozyCallError } from "../../application/compozy/compozyErrors";
 import { CompozyConnection, type CompozyConnectionOptions } from "./compozyConnection";
 import { isDaemonNotFound } from "./compozyErrorTranslation";
-import { createTaskRequest, executionProfileRequest } from "./compozyTaskRequests";
+import { createTaskRequest, executionProfileRequest, reviewRequest } from "./compozyTaskRequests";
 import { readResultText, readTaskState } from "./compozyTaskReads";
 
 const IDENTIFIER_SEARCH_LIMIT = 50;
@@ -62,6 +62,10 @@ export class CompozyHttpGateway implements CompozyGateway {
 
   async cancelTask(taskId: string) {
     await this.connection.call({ operation: "cancelTask", taskScoped: true }, (client) => client.tasks.cancelTask({ path: { id: taskId }, body: { reason: CANCEL_REASON } }));
+  }
+
+  async requestReview(input: CompozyReviewInput) {
+    await this.connection.call({ operation: "requestTaskRunReview", taskScoped: true }, (client) => client.tasks.requestTaskRunReview({ path: { id: input.runId }, body: reviewRequest(input) }));
   }
 
   readTask(taskId: string) {

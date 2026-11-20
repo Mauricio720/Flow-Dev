@@ -1,4 +1,5 @@
 export type CompozyAgentRef = { agentName: string };
+export type CompozyAgentRuntime = { provider: string; model: string; reasoningEffort: string };
 
 export type CompozyWorktreePolicy = { mode: "per_run" } | { mode: "ref"; worktreeId: string } | { mode: "none" };
 
@@ -14,6 +15,7 @@ export type CompozyTaskSpec = {
     worker: CompozyAgentRef;
     review: CompozyAgentRef | null;
     worktree: CompozyWorktreePolicy;
+    runtime: CompozyAgentRuntime | null;
   };
 };
 
@@ -23,11 +25,14 @@ export type CompozyReviewOutcome = (typeof compozyReviewOutcomes)[number];
 export const compozyBlockKinds = ["needs_input", "capability", "transient"] as const;
 export type CompozyBlockKind = (typeof compozyBlockKinds)[number];
 
+export type CompozyRunState = { runId: string; status: string; attempt: number; sessionId: string | null; error: string | null };
+export type CompozyReviewState = { reviewId: string; runId: string; status: string; outcome: CompozyReviewOutcome | null; summary: string | null };
+
 export type CompozyTaskState = {
   taskId: string;
   status: string;
-  latestRun: { runId: string; status: string; attempt: number; sessionId: string | null } | null;
-  latestReview: { outcome: CompozyReviewOutcome; summary: string | null } | null;
+  latestRun: CompozyRunState | null;
+  latestReview: CompozyReviewState | null;
   openBlocks: { kind: CompozyBlockKind; reason: string }[];
 };
 
@@ -37,6 +42,7 @@ export type CompozyFileInput = { workspaceId: string; worktreeId: string; path: 
 export type CompozyFileContent = { content: string } | { sensitive: true };
 export type CompozySessionInput = { workspaceId: string; sessionId: string };
 export type CompozyPullRequest = { url: string; state: string };
+export type CompozyReviewInput = { taskId: string; runId: string };
 
 export interface CompozyGateway {
   health(): Promise<{ reachable: boolean; version: string | null }>;
@@ -47,6 +53,7 @@ export interface CompozyGateway {
   enqueueRun(input: CompozyRunInput): Promise<{ runId: string }>;
   approveTask(input: { taskId: string; idempotencyKey: string }): Promise<void>;
   cancelTask(taskId: string): Promise<void>;
+  requestReview(input: CompozyReviewInput): Promise<void>;
   readTask(taskId: string): Promise<CompozyTaskState>;
   readRunResult(runId: string): Promise<string>;
   readFile(input: CompozyFileInput): Promise<CompozyFileContent>;
