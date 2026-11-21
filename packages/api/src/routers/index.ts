@@ -5,8 +5,6 @@ import { accessRouter } from "./access";
 import { tasksRouter } from "./tasks";
 import { assignedIssuesRouter } from "./assignedIssues";
 import { issueDeletionRouter } from "./issueDeletion";
-import { projectCompozyRouter } from "./projectCompozy";
-import { taskExecutionRouter } from "./taskExecution";
 
-export const appRouter = router({ health: healthRouter, projects: projectsRouter, access: accessRouter, tasks: tasksRouter, assignedIssues: assignedIssuesRouter, issueDeletion: issueDeletionRouter, projectCompozy: projectCompozyRouter, taskExecution: taskExecutionRouter });
+export const appRouter = router({ health: healthRouter, projects: projectsRouter, access: accessRouter, tasks: tasksRouter, assignedIssues: assignedIssuesRouter, issueDeletion: issueDeletionRouter });
 export type AppRouter = typeof appRouter;

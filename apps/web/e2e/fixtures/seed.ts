@@ -1,6 +1,5 @@
 import { randomInt, randomUUID } from "node:crypto";
 import type { Sql } from "postgres";
-import { seedDirectExecution, type SeededExecution } from "./executionSeed";
 
 const GITHUB_PROVIDER = "github";
 const SESSION_HOURS = 1;
@@ -21,7 +20,6 @@ function githubId() {
 export class ProjectSeed {
   private readonly userIds: string[] = [];
   private readonly projectIds: string[] = [];
-  private readonly executionUserIds = new Set<string>();
   private readonly adminGithubIds: string[] = [];
 
   constructor(private readonly sql: Sql) {}
@@ -59,19 +57,13 @@ export class ProjectSeed {
     await this.sql`delete from project_assignments where user_id = ${user.id} and project_id = ${project.id}`;
   }
 
-  async directExecutionTask(user: SeededUser): Promise<SeededExecution> {
-    this.executionUserIds.add(user.id);
-    return seedDirectExecution(this.sql, user);
-  }
-
   async renameAsAnotherAdministrator(project: SeededProject, name: string) {
     await this.sql`update projects set name = ${name}, details_version = details_version + 1 where id = ${project.id}`;
   }
 
   async cleanup() {
     if (this.projectIds.length) await this.sql`delete from projects where id in ${this.sql(this.projectIds)}`;
-    const removableUsers = this.userIds.filter((id) => !this.executionUserIds.has(id));
-    if (removableUsers.length) await this.sql`delete from users where id in ${this.sql(removableUsers)}`;
+    if (this.userIds.length) await this.sql`delete from users where id in ${this.sql(this.userIds)}`;
     if (this.adminGithubIds.length) await this.sql`delete from admin_designations where github_user_id in ${this.sql(this.adminGithubIds)}`;
   }
 

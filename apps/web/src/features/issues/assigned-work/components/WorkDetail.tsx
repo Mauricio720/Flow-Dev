@@ -13,9 +13,9 @@ import { WorkAccessNotice } from "./WorkAccessNotice";
 import { WorkHeader } from "./WorkHeader";
 import { NotStartedNote, SourceChangedNotice } from "./WorkNotices";
 
-type Props = { project: Project; initial: WorkDetailLoad; isAdmin?: boolean };
+type Props = { project: Project; initial: WorkDetailLoad };
 
-export function WorkDetail({ project, initial, isAdmin = false }: Props) {
+export function WorkDetail({ project, initial }: Props) {
   const work = useWorkDetail({ projectId: project.id, taskId: initial.taskId }, initial.work);
   const { snapshot, failure } = work;
   const returnPath = projectWorkTaskPath(project.id, initial.taskId);
@@ -29,7 +29,7 @@ export function WorkDetail({ project, initial, isAdmin = false }: Props) {
         {snapshot && <WorkHeader snapshot={snapshot} projectId={project.id} />}
         {snapshot?.view.sourceChanged && <SourceChangedNotice />}
         {snapshot && !workStarted(snapshot) && <NotStartedNote />}
-        {snapshot && <OperatorStages project={project} snapshot={snapshot} refresh={work.refresh} onFailure={work.report} isAdmin={isAdmin} />}
+        {snapshot && <OperatorStages project={project} snapshot={snapshot} refresh={work.refresh} onFailure={work.report} />}
       </div>
     </main>
   );
