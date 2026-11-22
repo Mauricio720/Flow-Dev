@@ -12,7 +12,7 @@ Desenvolvedores do próprio time. Chegam com uma intenção ainda crua (uma feat
 
 ## Product Purpose
 
-Flow Dev é um console onde o dev conversa com o agente **Issue Author** (Mastra). O agente entende a intenção, consulta contexto do projeto e do GitHub quando precisa, pede clarificação quando falta informação e produz um **draft de Issue** com os campos canônicos: Título, Contexto, Objetivo, Restrições, Contexto relevante com fontes, Considerações de produto e Referências. O dev revisa, edita e aprova; só então o backend publica a Issue no GitHub. Sucesso: issue publicada com contexto correto, em poucas trocas, sem retrabalho.
+Flow Dev é um console onde o dev conversa com o agente **Issue Author**, que roda com a assinatura do Claude Code ou do Codex desta máquina e é configurável por projeto. O agente entende a intenção, consulta contexto do projeto e do GitHub quando precisa, pede clarificação quando falta informação e produz um **draft de Issue** com os campos canônicos: Título, Contexto, Objetivo, Restrições, Contexto relevante com fontes, Considerações de produto e Referências. O dev revisa, edita e aprova; só então o backend publica a Issue no GitHub. Sucesso: issue publicada com contexto correto, em poucas trocas, sem retrabalho.
 
 ## Positioning
 
@@ -45,4 +45,4 @@ Nenhum cliente, métrica ou depoimento real. Não inventar números, logos de cl
 2. Mostrar de onde o agente tirou o contexto (quais tools, quais arquivos/issues).
 3. Perguntar antes de supor: clarificação é parte do fluxo, não falha.
 4. O draft é editável e é a fonte da verdade até a publicação.
-5. A publicação encerra a primeira etapa, não a tarefa: a mesma tarefa segue para o **planejamento**. O Dev Control analisa somente o snapshot da Issue publicada e recomenda uma rota (Execução direta, Tech Spec ou PRD) com complexidade, motivos e pendências. A pessoa autora pode salvar outra rota e aprova exatamente a rota salva; a aprovação é final e não inicia nenhuma atividade seguinte nem escreve no GitHub. Se a Issue mudar depois da aprovação, a pessoa operadora pode pedir um novo planejamento.
+5. A publicação encerra a primeira etapa, não a tarefa: a mesma tarefa segue para o **planejamento**. O agente de planejamento analisa o snapshot da Issue publicada (e só consulta o repositório vinculado quando isso pode mudar a rota) e recomenda uma rota (Execução direta, Tech Spec ou PRD) com complexidade, motivos e pendências. A pessoa autora pode salvar outra rota e aprova exatamente a rota salva; a aprovação é final e não inicia nenhuma atividade seguinte nem escreve no GitHub. Se a Issue mudar depois da aprovação, a pessoa operadora pode pedir um novo planejamento.
