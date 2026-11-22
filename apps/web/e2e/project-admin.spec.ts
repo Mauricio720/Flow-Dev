@@ -19,7 +19,7 @@ test("E2E-003 an administrator without repository consent gets the authorization
   expect(started.status()).toBe(SEE_OTHER);
   const consent = new URL(started.headers().location);
   expect(consent.origin + consent.pathname).toBe(GITHUB_CONSENT_URL);
-  expect(consent.searchParams.get("scope")).toBe("repo offline_access");
+  expect(consent.searchParams.get("scope")).toBe("repo project offline_access");
   expect(consent.searchParams.get("code_challenge_method")).toBe("S256");
   await page.goto(`/api/github-repositories/callback?error=access_denied&state=${consent.searchParams.get("state")}`);
   await expect(page).toHaveURL(/\/projects\/new\?connection=acesso_negado$/);
@@ -47,7 +47,7 @@ test("E2E-005 an administrator edits the details and a member only reads them", 
   await signInAs(page, admin);
   await page.goto(`/projects/${project.id}/settings`);
   await expect(page.getByText(project.repository, { exact: true }).last()).toBeVisible();
-  await expect(page.getByRole("textbox")).toHaveCount(2);
+  await expect(page.getByRole("textbox")).toHaveCount(3);
   await page.getByLabel("Nome do projeto").fill(renamed);
   await page.getByLabel("Descrição (opcional)").fill("");
   await page.getByRole("button", { name: "Salvar detalhes" }).click();

@@ -16,7 +16,7 @@ describe("ActiveRow", () => {
   it("shows the planning state and what happens next", () => {
     const row = renderRow();
     expect(row.textContent).toContain("Planejamento · Em andamento");
-    expect(row.textContent).toContain("O Dev Control está analisando a Issue");
+    expect(row.textContent).toContain("O agente de planejamento está analisando a Issue");
   });
 
   it("shows the approved route", () => {

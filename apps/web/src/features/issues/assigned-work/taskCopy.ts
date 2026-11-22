@@ -1,3 +1,4 @@
+import { agentFailureMessage } from "@/lib/tasks/agentFailureCopy";
 import type { TaskFailure } from "./contract";
 import { PLANNING_REASON_MESSAGE } from "./planningCopy";
 import { WORK_REASON_MESSAGE } from "./workReasons";
@@ -5,8 +6,9 @@ import { WORK_REASON_MESSAGE } from "./workReasons";
 const FALLBACK_MESSAGE = "Não foi possível concluir a operação. O que já estava salvo continua disponível; tente novamente.";
 const CONNECTION_MESSAGE = "Sem resposta do servidor. Confira a conexão e tente novamente.";
 
-export function reasonMessage(reason: string | null) {
-  return (reason && (WORK_REASON_MESSAGE[reason] ?? PLANNING_REASON_MESSAGE[reason])) || FALLBACK_MESSAGE;
+export function reasonMessage(reason: string | null, detail?: string | null) {
+  if (!reason) return FALLBACK_MESSAGE;
+  return agentFailureMessage(reason, detail) ?? WORK_REASON_MESSAGE[reason] ?? PLANNING_REASON_MESSAGE[reason] ?? FALLBACK_MESSAGE;
 }
 
 export function failureMessage(failure: TaskFailure) {

@@ -5,6 +5,10 @@ export type Project = ProjectPage["items"][number];
 export type ConnectionState = RouterOutputs["projects"]["connectionStates"][number];
 export type ConnectionKind = ConnectionState["kind"] | "checking" | "unverified";
 
+export type AgentSettings = RouterOutputs["projects"]["agentSettings"]["get"];
+export type AgentSettingView = AgentSettings["agents"][number];
+export type AgentCatalog = AgentSettings["catalog"];
+
 export type RepositoryCandidatePage = RouterOutputs["projects"]["repositoryCandidates"];
 export type RepositoryCandidate = RepositoryCandidatePage["items"][number];
 

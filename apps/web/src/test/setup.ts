@@ -23,6 +23,7 @@ vi.mock("@/lib/trpc/client", () => ({
       create: { mutate: vi.fn() },
       updateDetails: { mutate: vi.fn() },
       updateBoard: { mutate: vi.fn() },
+      agentSettings: { get: { query: vi.fn() }, update: { mutate: vi.fn() } },
     },
     tasks: {
       list: { query: vi.fn() },

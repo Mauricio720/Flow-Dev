@@ -1,4 +1,4 @@
-import type { ConnectionState, Project, ProjectPage, RepositoryCandidate, RepositoryCandidatePage } from "@/lib/projects/contract";
+import type { AgentSettingView, AgentSettings, ConnectionState, Project, ProjectPage, RepositoryCandidate, RepositoryCandidatePage } from "@/lib/projects/contract";
 
 type RepositoryFixture = { githubId: string; owner: string; name: string; visibility: string };
 
@@ -47,4 +47,14 @@ export function candidatePage(items: RepositoryCandidate[], nextCursor: string |
 
 export function projectConflict(conflict: string, existingProjectId?: string) {
   return Object.assign(new Error("CONFLICT"), { data: { code: "CONFLICT", conflict, existingProjectId } });
+}
+
+export const AGENT_CATALOG_FIXTURE = { claude: ["sonnet", "opus", "haiku"], codex: ["gpt-6.1-sol"] };
+
+export function agentViewOf(agent: AgentSettingView["agent"], patch: Partial<AgentSettingView> = {}): AgentSettingView {
+  return { agent, provider: "claude", model: "sonnet", effort: "low", version: 0, isDefault: true, modelAvailable: true, ...patch };
+}
+
+export function agentSettingsOf(patch: Partial<Record<AgentSettingView["agent"], Partial<AgentSettingView>>> = {}): AgentSettings {
+  return { agents: [agentViewOf("issue_author", patch.issue_author), agentViewOf("planning", patch.planning)], catalog: AGENT_CATALOG_FIXTURE };
 }

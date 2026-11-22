@@ -6,7 +6,7 @@ import { WorkingRow } from "./ThreadRows";
 
 const GENERATING_LABEL = "Consultando o contexto e escrevendo o draft…";
 const FAILED_STATUS = "generation_failed";
-const GENERATION_REASONS = ["generation_timeout", "provider_unavailable", "provider_usage_limit", "invalid_agent_output", "invalid_agent_activity", "invalid_agent_source", "execution_mismatch", "context_limit", "service_unavailable"];
+const GENERATION_REASONS = ["generation_timeout", "provider_unavailable", "provider_usage_limit", "local_agent_unavailable", "agent_settings_invalid", "invalid_agent_output", "invalid_agent_activity", "invalid_agent_source", "execution_mismatch", "context_limit", "service_unavailable"];
 const PRIOR_WORK_NOTE = "O que já estava confirmado nesta tarefa continua salvo.";
 
 type Props = { detail: TaskDetail; busy: boolean; onRetry: (() => void) | null };
@@ -23,7 +23,7 @@ export function TaskProgress({ detail, busy, onRetry }: Props) {
       <GraphRow node="agent" className="pb-7">
         <div role="alert" className="space-y-2">
           <p className="text-sm font-medium text-destructive">A última operação não foi concluída</p>
-          <p className="max-w-[65ch] text-[15px] leading-relaxed text-ink-2">{reasonMessage(detail.lastError.reason)} {PRIOR_WORK_NOTE}</p>
+          <p className="max-w-[65ch] text-[15px] leading-relaxed text-ink-2">{reasonMessage(detail.lastError.reason, detail.lastError.detail)} {PRIOR_WORK_NOTE}</p>
           {onRetry && canRetryGeneration(detail) && <Button type="button" variant="outline" size="sm" disabled={busy} onClick={onRetry}>Tentar a geração de novo</Button>}
         </div>
       </GraphRow>

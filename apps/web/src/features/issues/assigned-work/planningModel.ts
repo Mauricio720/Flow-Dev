@@ -7,7 +7,7 @@ export type TimelineEntry = { key: string; label: string; actor: string; state: 
 
 const KNOWN: string[] = Object.keys(PLANNING_STATUS_LABEL);
 const ISSUE_AUTHOR = "Issue Author";
-const DEV_CONTROL = "Dev Control";
+const PLANNING_AGENT = "Agente de planejamento";
 const OPERATOR_ROLE = "Pessoa operadora";
 const GITHUB = "GitHub";
 
@@ -20,11 +20,11 @@ function planningEntries(detail: TaskDetail, authorName: string): TimelineEntry[
   const { planning } = detail;
   const decision = planning.decision;
   const author = authorName || OPERATOR_ROLE;
-  if (planning.status === "awaiting") return [{ key: "planning", label: "Planejamento", actor: DEV_CONTROL, state: "pending", at: null, action: "Analisar a próxima etapa" }];
-  if (planning.status === "in_progress") return [{ key: "planning", label: "Análise em andamento", actor: DEV_CONTROL, state: "current", at: planning.operation?.createdAt ?? null, action: "Aguardar a recomendação" }];
-  if (planning.status === "failed") return [{ key: "planning", label: "Análise falhou", actor: DEV_CONTROL, state: "failed", at: planning.operation?.createdAt ?? null, action: "Tentar novamente" }];
+  if (planning.status === "awaiting") return [{ key: "planning", label: "Planejamento", actor: PLANNING_AGENT, state: "pending", at: null, action: "Analisar a próxima etapa" }];
+  if (planning.status === "in_progress") return [{ key: "planning", label: "Análise em andamento", actor: PLANNING_AGENT, state: "current", at: planning.operation?.createdAt ?? null, action: "Aguardar a recomendação" }];
+  if (planning.status === "failed") return [{ key: "planning", label: "Análise falhou", actor: PLANNING_AGENT, state: "failed", at: planning.operation?.createdAt ?? null, action: "Tentar novamente" }];
   if (!decision) return [];
-  const produced: TimelineEntry = { key: "recommendation", label: "Recomendação produzida", actor: DEV_CONTROL, state: "done", at: decision.createdAt, action: null };
+  const produced: TimelineEntry = { key: "recommendation", label: "Recomendação produzida", actor: PLANNING_AGENT, state: "done", at: decision.createdAt, action: null };
   if (decision.status === "approved") return [produced, { key: "approval", label: "Rota aprovada", actor: author, state: "done", at: decision.approvedAt, action: null }];
   return [produced, { key: "approval", label: "Aprovação pendente", actor: author, state: "current", at: null, action: "Revisar e aprovar a rota" }];
 }

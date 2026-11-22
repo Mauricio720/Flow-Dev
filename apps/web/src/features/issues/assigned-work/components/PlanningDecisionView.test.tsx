@@ -6,9 +6,9 @@ import { PlanningDecisionView } from "./PlanningDecisionView";
 const show = (patch = {}) => render(<PlanningDecisionView decision={decisionOf(patch)} />);
 
 describe("PlanningDecisionView", () => {
-  it("UT-057 renders named pt-BR fields with Dev Control attribution", () => {
+  it("UT-057 renders named pt-BR fields with planning agent attribution", () => {
     show();
-    expect(screen.getByText("Dev Control")).toBeTruthy();
+    expect(screen.getByText("Agente de planejamento")).toBeTruthy();
     expect(screen.getByText("Complexidade").nextElementSibling?.textContent).toBe("Média");
     expect(screen.getByText("Recomendação original").nextElementSibling?.textContent).toBe("Tech Spec");
     expect(screen.getByText("Rota salva").nextElementSibling?.textContent).toContain("Recomendada pela análise");

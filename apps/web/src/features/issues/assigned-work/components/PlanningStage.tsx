@@ -20,7 +20,7 @@ const OPEN_FRAME = "border border-line";
 function OperationNote({ detail }: { detail: TaskDetail }) {
   const { operation, status } = detail.planning;
   if (!operation || status === "review" || status === "approved") return null;
-  const failure = operation.state === "failed" ? reasonMessage(operation.reason) : null;
+  const failure = operation.state === "failed" ? reasonMessage(operation.reason, operation.detail) : null;
   return (
     <div role="status" className="space-y-1 text-sm">
       <p className="flex items-center gap-2 text-[15px] font-medium text-ink">{ACTIVE_OPERATION_STATES.includes(operation.state) && <span aria-hidden="true" className="node-running size-2 rounded-full bg-ink" />}{OPERATION_STATE_LABEL[operation.state] ?? "Estado da análise desconhecido"}</p>

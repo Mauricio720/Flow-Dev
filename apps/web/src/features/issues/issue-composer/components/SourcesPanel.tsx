@@ -47,7 +47,7 @@ export function SourcesPanel({ activity, sources, hasDraft, planningBasis = null
       {planningBasis !== null && (
         <section aria-label="Base do planejamento">
           <h2 className="text-sm font-semibold">Base do planejamento</h2>
-          <p className="mt-1 text-xs leading-relaxed text-ink-3">O Dev Control analisou somente o snapshot da Issue publicada (#{planningBasis}). Não houve consultas ao repositório nem citações adicionais.</p>
+          <p className="mt-1 text-xs leading-relaxed text-ink-3">O agente de planejamento analisou o snapshot da Issue publicada (#{planningBasis}) e consultou o repositório só quando isso podia mudar a rota.</p>
         </section>
       )}
       <section>

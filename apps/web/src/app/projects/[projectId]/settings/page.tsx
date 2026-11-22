@@ -3,15 +3,17 @@ import { ProjectShell, ProjectUnavailable } from "@/features/projects/project-sh
 import { loadProjectContext } from "@/features/projects/project-shell/server/loadProjectContext";
 import { loadViewer } from "@/lib/auth/viewer";
 import { projectSettingsPath } from "@/lib/navigation/projectRoutes";
+import { getServerCaller } from "@/lib/trpc/server";
 
 export default async function ProjectSettingsPage({ params }: PageProps<"/projects/[projectId]/settings">) {
   const { projectId } = await params;
   const context = await loadProjectContext(projectId, projectSettingsPath(projectId));
   if (context.kind === "unavailable") return <ProjectUnavailable />;
   const viewer = await loadViewer();
+  const agentSettings = await (await getServerCaller()).projects.agentSettings.get({ projectId });
   return (
     <ProjectShell project={context.project} section="settings" isAdmin={viewer.isAdmin}>
-      <ProjectSettings project={context.project} canEdit={viewer.isAdmin} />
+      <ProjectSettings project={context.project} canEdit={viewer.isAdmin} agentSettings={agentSettings} />
     </ProjectShell>
   );
 }

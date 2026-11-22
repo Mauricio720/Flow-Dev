@@ -1,3 +1,4 @@
+import { agentFailureMessage } from "@/lib/tasks/agentFailureCopy";
 import type { TaskFailure, TaskStatus } from "./contract";
 
 export { TASK_STATUS_LABEL as STATUS_LABEL } from "@/components/tasks/taskStatus";
@@ -44,7 +45,6 @@ const REASON_MESSAGE: Record<string, string> = {
   invalid_stored_content: "O conteúdo salvo desta tarefa não pôde ser lido com segurança. Nada foi inventado no lugar.",
   provider_rate_limited: "O GitHub limitou as consultas por agora. Tente de novo em alguns minutos.",
   provider_unavailable: "O Issue Author está indisponível no momento.",
-  provider_usage_limit: "O provedor do modelo do Issue Author atingiu o limite de uso. Tente de novo mais tarde.",
   generation_timeout: "O Issue Author não respondeu a tempo.",
   invalid_agent_output: "O Issue Author devolveu um resultado inválido, que foi descartado.",
   invalid_agent_source: "O Issue Author citou uma fonte que não foi consultada; o resultado foi descartado.",
@@ -56,8 +56,9 @@ const REASON_MESSAGE: Record<string, string> = {
   repository_authorization_needed: "Entrar no Flow Dev não libera repositórios. Autorize a leitura com a sua conta do GitHub para continuar.",
 };
 
-export function reasonMessage(reason: string | null) {
-  return (reason && REASON_MESSAGE[reason]) || FALLBACK_MESSAGE;
+export function reasonMessage(reason: string | null, detail?: string | null) {
+  if (!reason) return FALLBACK_MESSAGE;
+  return agentFailureMessage(reason, detail) ?? REASON_MESSAGE[reason] ?? FALLBACK_MESSAGE;
 }
 
 export function failureMessage(failure: TaskFailure) {

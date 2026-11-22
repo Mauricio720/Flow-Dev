@@ -4,7 +4,7 @@ import { progressSummary } from "./workProgress";
 
 describe("progressSummary", () => {
   it("follows the planning while it is being analyzed", () => {
-    expect(progressSummary(activeItemOf({ stage: "in_progress" }), true)).toEqual({ state: "current", badge: "Planejamento · Em andamento", headline: "O Dev Control está analisando a Issue" });
+    expect(progressSummary(activeItemOf({ stage: "in_progress" }), true)).toEqual({ state: "current", badge: "Planejamento · Em andamento", headline: "O agente de planejamento está analisando a Issue" });
   });
 
   it("asks the operator to review the route", () => {

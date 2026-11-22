@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
-import { P1, trpcFailure } from "@/test/projects";
+import { P1, agentSettingsOf, trpcFailure } from "@/test/projects";
 import { ProjectSettings } from "./index";
 
 const updateBoard = vi.mocked(trpc.projects.updateBoard.mutate);
@@ -11,7 +11,7 @@ const BOARD = { url: BOARD_URL, title: "Roadmap Acme" };
 const LINKED = { ...P1, board: BOARD };
 
 function boardForm(project = P1) {
-  render(<ProjectSettings project={project} canEdit />);
+  render(<ProjectSettings project={project} canEdit agentSettings={agentSettingsOf()} />);
   return { url: screen.getByLabelText<HTMLInputElement>("Link do GitHub Project"), save: screen.getByRole("button", { name: "Salvar quadro" }) };
 }
 
@@ -58,7 +58,7 @@ describe("project board settings", () => {
   });
 
   it("shows a member the board without any edit control", () => {
-    render(<ProjectSettings project={LINKED} canEdit={false} />);
+    render(<ProjectSettings project={LINKED} canEdit={false} agentSettings={agentSettingsOf()} />);
     expect(screen.getByRole("link", { name: "Roadmap Acme" })).toBeTruthy();
     expect(screen.queryByLabelText("Link do GitHub Project")).toBeNull();
   });

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
-import { P1, projectConflict } from "@/test/projects";
+import { P1, agentSettingsOf, projectConflict } from "@/test/projects";
 import { ProjectSettings } from "./index";
 
 const update = vi.mocked(trpc.projects.updateDetails.mutate);
@@ -11,7 +11,7 @@ const VERSION_3 = { ...P1, detailsVersion: 3 };
 const VERSION_4 = { ...P1, name: "Renomeado por outra pessoa", description: "Descrita por outra pessoa", detailsVersion: 4 };
 
 function editor() {
-  render(<ProjectSettings project={VERSION_3} canEdit />);
+  render(<ProjectSettings project={VERSION_3} canEdit agentSettings={agentSettingsOf()} />);
   return { name: screen.getByLabelText<HTMLInputElement>("Nome do projeto"), description: screen.getByLabelText<HTMLTextAreaElement>("Descrição (opcional)"), save: screen.getByRole<HTMLButtonElement>("button", { name: "Salvar detalhes" }) };
 }
 
@@ -70,7 +70,7 @@ describe("project settings", () => {
   });
 
   it("shows a member the details without any edit control", () => {
-    render(<ProjectSettings project={VERSION_3} canEdit={false} />);
+    render(<ProjectSettings project={VERSION_3} canEdit={false} agentSettings={agentSettingsOf()} />);
     expect(screen.getByText("Projeto Alfa")).toBeTruthy();
     expect(screen.getByText("acme/private")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
