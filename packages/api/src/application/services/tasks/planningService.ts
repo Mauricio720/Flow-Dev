@@ -4,7 +4,7 @@ import { planningPayloadHash } from "./planningRules";
 
 type Scope = { projectId: string; taskId: string; actorUserId: string };
 type Command = Scope & { requestKey: string; expectedVersion: number };
-type Accepting = Command & { sessionId: string; beforeAccept: () => void };
+type Accepting = Command & { sessionId: string };
 type Review = Command & { decisionId: string; expectedDecisionVersion: number };
 
 export class PlanningService {

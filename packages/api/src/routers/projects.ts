@@ -1,12 +1,20 @@
+import { AgentSettingsController, mapAgentSettingsError } from "../controllers/agentSettingsController";
 import { ProjectsController, mapProjectError } from "../controllers/projectsController";
+import { agentSettingsUpdateInputSchema } from "../schemas/agentSettings";
 import { connectionStatesInputSchema, createProjectInputSchema, projectIdSchema, projectListInputSchema, repositoryCandidatesInputSchema, repositoryPreviewInputSchema, updateProjectBoardInputSchema, updateProjectDetailsInputSchema } from "../schemas/projects";
 import { protectedProcedure, router } from "../trpc";
-import { createProductionProjectsController } from "../infra/composition";
+import { createProductionAgentSettingsController, createProductionProjectsController } from "../infra/composition";
 
-export function createProjectsRouter(controller?: ProjectsController) {
+export function createProjectsRouter(controller?: ProjectsController, agentSettingsController?: AgentSettingsController) {
   let production: ProjectsController | undefined;
+  let productionAgentSettings: AgentSettingsController | undefined;
   const getController = () => controller ?? (production ??= createProductionProjectsController());
+  const getAgentSettings = () => agentSettingsController ?? (productionAgentSettings ??= createProductionAgentSettingsController());
   return router({
+    agentSettings: router({
+      get: protectedProcedure.input(projectIdSchema).query(({ ctx, input }) => getAgentSettings().get(ctx.principal, input.projectId).catch(mapAgentSettingsError)),
+      update: protectedProcedure.input(agentSettingsUpdateInputSchema).mutation(({ ctx, input }) => getAgentSettings().update(ctx.principal, input).catch(mapAgentSettingsError)),
+    }),
     list: protectedProcedure.input(projectListInputSchema).query(({ ctx, input }) => getController().list(ctx.principal, input).catch(mapProjectError)),
     byId: protectedProcedure.input(projectIdSchema).query(({ ctx, input }) => getController().byId(ctx.principal, input.projectId).catch(mapProjectError)),
     select: protectedProcedure.input(projectIdSchema).mutation(({ ctx, input }) => getController().select(ctx.principal, input.projectId).catch(mapProjectError)),

@@ -1,4 +1,6 @@
 import { AccessController } from "../controllers/accessController";
+import { AgentSettingsController } from "../controllers/agentSettingsController";
+import { createAgentRuntime, createAgentSettingsService, type AgentRuntime } from "./agentComposition";
 import { ProjectsController } from "../controllers/projectsController";
 import { AssignmentService } from "../application/services/access/assignmentService";
 import { requireDatabase } from "./database/client";
@@ -19,11 +21,7 @@ import { AudioValidator } from "./transcription/audioValidator";
 import { GroqTranscriptionGateway } from "./transcription/groqTranscriptionGateway";
 import { DrizzleWorkerOperationDao } from "./database/dao/tasks/drizzleTaskOperationDao";
 import { TaskWorkerController } from "../controllers/taskWorkerController";
-import { DevControlIssueAuthorGateway } from "./issue-author/devControlIssueAuthorGateway";
-import { patientFetch } from "./http/patientFetch";
-import { DrizzleIssueContextDao } from "./database/dao/tasks/drizzleIssueContextDao";
-import { GitHubScopedContextGateway } from "./github/scopedContextGateway";
-import { IssueContextController } from "../controllers/issueContextController";
+import { LocalIssueAuthorGateway } from "./issue-author/localIssueAuthorGateway";
 import { TaskPublicationController } from "../controllers/taskPublicationController";
 import { DrizzleTaskPublicationDao } from "./database/dao/tasks/drizzleTaskPublicationDao";
 import { GitHubHttpIssueGateway } from "./github/githubIssueGateway";
@@ -43,6 +41,10 @@ export function createProductionProjectsController() {
   return new ProjectsController(new DrizzleProjectDao(database), access, { github, authorization, boards: new GitHubHttpProjectBoardGateway() });
 }
 
+export function createProductionAgentSettingsController() {
+  return new AgentSettingsController(createAgentSettingsService(requireDatabase()));
+}
+
 export function createProductionAccessController() {
   const database = requireDatabase();
   const access = new DrizzleAccessDao(database);
@@ -59,17 +61,13 @@ export function createProductionTranscriptionController() {
   return new TranscriptionController(new DrizzleTaskDao(database), new DrizzleTaskCaptureDao(database), createRepositoryAccessService(database), new AudioValidator(), new GroqTranscriptionGateway());
 }
 
-export function createProductionTaskWorkerController() {
+export function createProductionTaskWorkerController(runtime?: AgentRuntime) {
   const database = requireDatabase();
+  const agents = runtime ?? createAgentRuntime(database);
   const operations = new DrizzleWorkerOperationDao(database);
   const publications = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(database), new DrizzleTaskDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), crypto.randomUUID(), createBacklogPlacementService(database), new GitHubHttpIssueGateway(), createIssueImagePublisher(database));
-  const planning = createPlanningWorkerController(database);
-  return new TaskWorkerController(operations, new DevControlIssueAuthorGateway(undefined, undefined, patientFetch, (executionId, toolCallId) => operations.hasActivity(executionId, toolCallId)), crypto.randomUUID(), publications, planning);
-}
-
-export function createProductionIssueContextController() {
-  const database = requireDatabase();
-  return new IssueContextController(new DrizzleIssueContextDao(database), createRepositoryAccessService(database), new GitHubScopedContextGateway());
+  const planning = createPlanningWorkerController(database, agents.deps);
+  return new TaskWorkerController(operations, new LocalIssueAuthorGateway(agents.deps), crypto.randomUUID(), publications, planning);
 }
 
 export function createProductionTaskPublicationController() {

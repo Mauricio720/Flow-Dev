@@ -1,5 +1,5 @@
-import { and, count, eq, gt, isNull, ne, or } from "drizzle-orm";
-import type { ContextCall, ContextExecution, IssueContextDao } from "../../../../application/database/dao/issueContextDao";
+import { and, asc, count, eq, gt, isNull, ne, or } from "drizzle-orm";
+import type { ContextCall, ContextExecution, IssueContextDao, RecordedContextCall } from "../../../../application/database/dao/issueContextDao";
 import { tasks, taskContextCapabilities, taskEvidence, taskOperations, taskToolActivity, taskToolCalls, projects, sessions } from "../../schema";
 import type { Database } from "../../client";
 import { persistContextCall } from "./issueContextPersistence";
@@ -34,6 +34,11 @@ export class DrizzleIssueContextDao implements IssueContextDao {
   findCall(executionId: string, toolCallId: string) { return findContextCall(this.database, executionId, toolCallId); }
   saveCall(context: ContextExecution, call: ContextCall) { return persistContextCall(this.database, context, call); }
   async activityCount(executionId: string) { return (await this.database.select({ value: count() }).from(taskToolActivity).where(eq(taskToolActivity.executionId, executionId)))[0]?.value ?? 0; }
+
+  async listCalls(executionId: string): Promise<RecordedContextCall[]> {
+    const rows = await this.database.select().from(taskToolActivity).where(eq(taskToolActivity.executionId, executionId)).orderBy(asc(taskToolActivity.sequence));
+    return rows.map((row) => ({ toolCallId: row.toolCallId, status: row.status as RecordedContextCall["status"], evidenceIds: row.evidenceIds, durationMs: row.durationMs, ...(row.reason ? { reason: row.reason } : {}) }));
+  }
 
   async hasActivity(executionId: string, toolCallId: string) {
     return (await this.database.select({ id: taskToolActivity.id }).from(taskToolActivity).where(and(eq(taskToolActivity.executionId, executionId), eq(taskToolActivity.toolCallId, toolCallId))).limit(1)).length > 0;

@@ -122,3 +122,4 @@ export { localCheckoutLocks } from "./schema/localCheckoutLocks";
 export { taskRunEvidence, taskRunGates } from "./schema/localExecutionEvidence";
 export { localLinkRequests } from "./schema/localLinkRequests";
 export { issueDeletionOperations } from "./schema/issueDeletion";
+export { projectAgentSettings } from "./schema/projectAgentSettings";

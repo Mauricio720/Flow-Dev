@@ -3,6 +3,7 @@ import type { WorkerClaim, WorkerOperationDao } from "../application/database/da
 import { keepLabels, keepPriorityPoints } from "../application/services/tasks/draftMerge";
 import type { IssueDraft } from "../application/services/tasks/taskContracts";
 import { TaskError } from "../application/services/tasks/taskErrors";
+import { agentFailureDetail, withFailureDetail } from "../application/services/tasks/failureCode";
 import type { TaskPublicationWorkerController } from "./taskPublicationWorkerController";
 import type { TaskPlanningWorkerController } from "./taskPlanningWorkerController";
 
@@ -68,5 +69,5 @@ function withAuthorChoices(envelope: GenerationEnvelope, currentDraft: IssueDraf
   return { ...envelope, result: { ...envelope.result, draft: keepLabels(keepPriorityPoints(envelope.result.draft, currentDraft), currentDraft) } };
 }
 function failureDetail(error: unknown) { return error instanceof TaskError ? `${error.reason}${error.cause instanceof Error ? `: ${error.cause.message}` : ""}` : error; }
-function safeReason(error: unknown) { return error instanceof TaskError ? error.reason : "provider_unavailable"; }
+function safeReason(error: unknown) { return error instanceof TaskError ? withFailureDetail(error.reason, agentFailureDetail(error)) : "provider_unavailable"; }
 function delay(milliseconds: number, signal: AbortSignal) { return new Promise<void>((resolve) => { const timer = setTimeout(resolve, milliseconds); signal.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true }); }); }

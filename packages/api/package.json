@@ -25,6 +25,7 @@
     "issue-deletion:worker": "tsx --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@trpc/server": "^11.19.0",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",

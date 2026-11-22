@@ -3,7 +3,6 @@ import type { PlanningService } from "../application/services/tasks/planningServ
 import type { OperateOptions, WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import type { SessionPrincipal } from "../context";
-import { requirePlanningConfiguration } from "./planningInputGuard";
 import { finishPlanningCommand } from "./planningEvents";
 
 type Scope = { projectId: string; taskId: string };
@@ -12,23 +11,23 @@ type Review = Command & { decisionId: string; expectedDecisionVersion: number };
 const REANALYZE_SOURCE: OperateOptions = { currentSource: true, refreshSource: true };
 
 export class TaskPlanningController {
-  constructor(private readonly planning: PlanningService, private readonly authorization: WorkAuthorization, private readonly configuration: () => void = requirePlanningConfiguration) {}
+  constructor(private readonly planning: PlanningService, private readonly authorization: WorkAuthorization) {}
 
   async start(actor: SessionPrincipal, input: Command) {
     await this.requireOperator(actor, input, REANALYZE_SOURCE);
-    const result = await this.planning.start({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor), beforeAccept: this.configuration });
+    const result = await this.planning.start({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor) });
     return finishPlanningCommand("planning.accepted", input.requestKey, result);
   }
 
   async retry(actor: SessionPrincipal, input: Command & { failedOperationId: string }) {
     await this.requireOperator(actor, input);
-    const result = await this.planning.retry({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor), beforeAccept: this.configuration });
+    const result = await this.planning.retry({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor) });
     return finishPlanningCommand("planning.accepted", input.requestKey, result);
   }
 
   async replan(actor: SessionPrincipal, input: Command) {
     await this.requireOperator(actor, input, REANALYZE_SOURCE);
-    const result = await this.planning.replan({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor), beforeAccept: this.configuration });
+    const result = await this.planning.replan({ ...input, actorUserId: actor.userId, sessionId: requireSession(actor) });
     return finishPlanningCommand("planning.accepted", input.requestKey, result);
   }
 

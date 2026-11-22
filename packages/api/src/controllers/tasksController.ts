@@ -1,12 +1,12 @@
-import { mapTaskSummary, type TaskDao } from "../application/database/dao/taskDao";
+import type { TaskDao } from "../application/database/dao/taskDao";
 import type { SessionPrincipal } from "../context";
-import { parseIssueDraft, renderIssueBody, storedDraftLabels } from "../application/services/tasks/draftRules";
+import { parseIssueDraft, renderIssueBody } from "../application/services/tasks/draftRules";
 import { validateHistorySearch, validateMessageInput } from "../application/services/tasks/inputRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
 import { buildManualEvidenceBindings } from "../application/services/tasks/draftSourceBindings";
-import { publicationDto, revisionDto, summaryDto } from "./mappers/taskDtoMapper";
-import { planningDto } from "./mappers/planningDtoMapper";
+import { revisionDto, summaryDto } from "./mappers/taskDtoMapper";
+import { workspaceDto } from "./mappers/taskWorkspaceDtoMapper";
 export { mapTaskError } from "./taskErrorMapper";
 
 export class TasksController {
@@ -31,7 +31,7 @@ export class TasksController {
     if (!task) throw new TaskError("task_unavailable");
     const [revision, pendingProposal, publication, activity, authorNames, planning] = await Promise.all([dao.currentRevision(task.id), dao.pendingProposal(task.id), dao.publication(task.id), dao.activity(task.id), dao.authorNames([task.authorUserId]), dao.planning(task.id)]);
     const canAuthor = viewer.isAdmin && task.authorUserId === viewer.userId;
-    return { task: summaryDto(mapTaskSummary(task, revision ? storedDraftLabels(revision.canonicalDraft) : []), authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal, publication: publicationDto(publication), activity, planning: planningDto(planning, { canOperate: false }), permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? { reason: task.lastError } : null };
+    return workspaceDto({ task, revision, pendingProposal, publication, activity, authorNames, planning, canAuthor });
   }
 
   async messages(actor: SessionPrincipal, input: { projectId: string; taskId: string; cursor?: string; limit: number }) {

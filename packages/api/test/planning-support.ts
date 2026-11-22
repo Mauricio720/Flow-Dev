@@ -7,7 +7,6 @@ import { PlanningService } from "../src/application/services/tasks/planningServi
 import { TaskPlanningController } from "../src/controllers/taskPlanningController";
 import { TasksController } from "../src/controllers/tasksController";
 import { createTasksRouter } from "../src/routers/tasks";
-import { TaskError } from "../src/application/services/tasks/taskErrors";
 import { seedTask, taskFixture } from "./task-api-support";
 import { operatorAuthorization, operatorWorld, seedOperatorClaim } from "./operator-support";
 
@@ -38,8 +37,8 @@ export async function seedReview(setup: PlanningSetup, overrides: Record<string,
   await setup.database.insert(taskPlanningDecisions).values({ taskId: setup.taskId, publicationAttemptId: ATTEMPT_ID, operationId: PLAN_OPERATION_ID, executionId: crypto.randomUUID(), ...REVIEW_ASSESSMENT, ...overrides } as never);
 }
 
-export function planningCaller(setup: PlanningSetup, userId: string | null = setup.ownerId, configured = true, planningDao: TaskPlanningDao = new DrizzleTaskPlanningDao(setup.database)) {
-  const planning = new TaskPlanningController(new PlanningService(planningDao), operatorAuthorization(setup.database, setup.repositoryAccess, setup.world), configured ? () => {} : requireMissing);
+export function planningCaller(setup: PlanningSetup, userId: string | null = setup.ownerId, planningDao: TaskPlanningDao = new DrizzleTaskPlanningDao(setup.database)) {
+  const planning = new TaskPlanningController(new PlanningService(planningDao), operatorAuthorization(setup.database, setup.repositoryAccess, setup.world));
   const tasksController = new TasksController(setup.taskDao, setup.repositoryAccess);
   return createTasksRouter(tasksController, undefined, planning).createCaller({ principal: userId ? { userId, sessionId: setup.sessionId } : null, requestId: "planning-test" });
 }
@@ -62,10 +61,6 @@ export function expectRejected(results: PromiseSettledResult<unknown>[], code: s
 }
 
 export const rejection = (promise: Promise<unknown>) => promise.then(() => null, (error: { code: string; cause?: { reason: string; retryAfterSeconds?: number } }) => ({ code: error.code, reason: error.cause?.reason, retryAfterSeconds: error.cause?.retryAfterSeconds }));
-
-function requireMissing() {
-  throw new TaskError("planning_unconfigured");
-}
 
 export async function addPublishedTask(setup: PlanningSetup, snapshot: { title?: string; body?: string; authorId?: string; operatorId?: string } = {}) {
   const authorId = snapshot.authorId ?? setup.ownerId;

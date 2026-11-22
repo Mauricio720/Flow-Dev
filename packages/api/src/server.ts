@@ -7,6 +7,5 @@ export * from "./infra/database/schema";
 export { destinationProjectId, normalizeDestination } from "./application/auth/destination";
 export { createProductionRepositoryOAuthController } from "./infra/composition";
 export { createProductionTasksController, createProductionTranscriptionController } from "./infra/composition";
-export { createProductionIssueContextController } from "./infra/composition";
 export { createProductionTaskImageController } from "./infra/taskImageComposition";
 export { oauthFailure } from "./controllers/repositoryOAuthController";

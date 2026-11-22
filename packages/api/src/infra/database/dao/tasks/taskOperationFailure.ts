@@ -1,10 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import type { WorkerClaim } from "../../../../application/database/dao/taskOperationDao";
+import { splitFailureCode, withFailureDetail } from "../../../../application/services/tasks/failureCode";
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskContextCapabilities, taskOperations, tasks } from "../../schema";
 import type { Database } from "../../client";
 
-const SAFE_FAILURES = ["generation_timeout", "provider_unavailable", "provider_usage_limit", "invalid_agent_output", "invalid_agent_activity", "invalid_agent_source", "execution_mismatch", "input_capacity", "access_revoked", "context_limit", "service_unavailable"];
+const SAFE_FAILURES = ["local_agent_unavailable", "agent_settings_invalid", "generation_timeout", "provider_unavailable", "provider_usage_limit", "invalid_agent_output", "invalid_agent_activity", "invalid_agent_source", "execution_mismatch", "input_capacity", "access_revoked", "context_limit", "service_unavailable"];
 
 export async function requeueFailedOperation(database: Database, claim: WorkerClaim, operation: typeof taskOperations.$inferSelect, delays: number[], reason: string) {
   const seconds = delays[operation.attempts - 1] ?? delays.at(-1) ?? 45;
@@ -19,4 +20,7 @@ export async function finishFailedOperation(database: Database, claim: WorkerCla
   await database.delete(taskContextCapabilities).where(and(eq(taskContextCapabilities.operationId, claim.operationId), eq(taskContextCapabilities.executionId, claim.executionId)));
 }
 
-function safeFailure(reason: string) { return SAFE_FAILURES.includes(reason) ? reason : "provider_unavailable"; }
+function safeFailure(code: string) {
+  const { reason, detail } = splitFailureCode(code);
+  return SAFE_FAILURES.includes(reason) ? withFailureDetail(reason, detail) : "provider_unavailable";
+}

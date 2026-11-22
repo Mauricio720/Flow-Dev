@@ -4,6 +4,7 @@ import { decisionMatchesSource, planningSourceEligibility } from "../../applicat
 import { PlanningDomainError } from "../../application/services/tasks/planningContracts";
 import { canReplan } from "../../application/services/tasks/planningReplanRules";
 import { TaskError } from "../../application/services/tasks/taskErrors";
+import { splitFailureCode } from "../../application/services/tasks/failureCode";
 
 type Viewer = { canOperate: boolean };
 const PLANNABLE_STATUSES = ["published", "imported"];
@@ -53,5 +54,11 @@ function operationDto(record: PlanningProjectionRecord, now: Date) {
   const operation = record.operation;
   if (!operation) return null;
   const retryAt = operation.state === "queued" && operation.attempts > 0 && operation.nextRunAt > now ? operation.nextRunAt.toISOString() : null;
-  return { id: operation.id, state: operation.state, createdAt: operation.createdAt.toISOString(), reason: operation.state === "failed" ? operation.lastError : null, retryAt };
+  return { id: operation.id, state: operation.state, createdAt: operation.createdAt.toISOString(), ...failureFields(operation), retryAt };
+}
+
+function failureFields(operation: { state: string; lastError: string | null }) {
+  if (operation.state !== "failed" || !operation.lastError) return { reason: null, detail: null };
+  const { reason, detail } = splitFailureCode(operation.lastError);
+  return { reason, detail: detail ?? null };
 }

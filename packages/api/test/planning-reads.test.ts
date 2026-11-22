@@ -131,7 +131,7 @@ describe("planning authorization and error boundaries", () => {
     const setup = await publishedTask();
     const broken = { ...setup, taskDao: new Proxy(setup.taskDao, { get: (_target, key) => key === "findScoped" ? async () => ({ authorUserId: setup.ownerId }) : async () => { throw new Error("connection reset"); } }) } as PlanningSetup;
     const brokenPlanning = new Proxy({}, { get: () => async () => { throw new Error("connection reset"); } }) as TaskPlanningDao;
-    const results = await Promise.allSettled(allPlanningCalls(broken, planningCaller(broken, setup.ownerId, true, brokenPlanning)));
+    const results = await Promise.allSettled(allPlanningCalls(broken, planningCaller(broken, setup.ownerId, brokenPlanning)));
     expectAll(results, "INTERNAL_SERVER_ERROR", "service_unavailable");
   });
 

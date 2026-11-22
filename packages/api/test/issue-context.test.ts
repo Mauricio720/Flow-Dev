@@ -70,6 +70,22 @@ describe("scoped task context with PostgreSQL", () => {
   });
 });
 
+describe("recorded context calls", () => {
+  it("V-06g lists the calls of one execution in recording order and nothing before the first call", async () => {
+    const setup = await taskFixture();
+    await setup.caller.start({ projectId: setup.project.id, requestKey: "00000000-0000-4000-8000-000000000094", message: "Corrigir total" });
+    const claim = await new DrizzleWorkerOperationDao(setup.database).claim("worker-1");
+    const dao = new DrizzleIssueContextDao(setup.database);
+    const context = new IssueContextController(dao, setup.repositoryAccess, scopedGateway());
+    expect(await dao.listCalls(claim!.executionId)).toEqual([]);
+    await context.handle({ executionId: claim!.executionId, toolCallId: "call-a", request: { tool: "searchProject", query: "cart" } }, claim!.contextCapability);
+    await context.handle({ executionId: claim!.executionId, toolCallId: "call-b", request: { tool: "readProjectFile", path: "src/cart.ts", fromLine: 8, toLine: 12 } }, claim!.contextCapability);
+    const calls = await dao.listCalls(claim!.executionId);
+    expect(calls.map((call) => call.toolCallId)).toEqual(["call-a", "call-b"]);
+    expect(calls[0]).toMatchObject({ status: "done", evidenceIds: [expect.any(String)], durationMs: expect.any(Number) });
+  });
+});
+
 function scopedGateway() {
   return { pinCommit: vi.fn(async () => "a".repeat(40)), execute: vi.fn(async () => ({ status: "done" as const, data: { path: "src/cart.ts" }, evidence: [{ type: "project-file" as const, path: "src/cart.ts", commitSha: "a".repeat(40), fromLine: 8, toLine: 12, issueId: null, issueNumber: null, url: null, sourceHash: "b".repeat(64), excerpt: "total = subtotal + tax" }] })) };
 }

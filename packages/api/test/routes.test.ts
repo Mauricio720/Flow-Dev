@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixture, type Fixture } from "./fixture";
 import { RepositoryAuthorizationService } from "../src/application/github/repositoryAuthorizationService";
@@ -43,5 +45,9 @@ describe("OAuth Route Handlers and durable storage", () => {
     const [row] = await current.client`SELECT access_token_ciphertext FROM github_repository_authorizations WHERE user_id=${current.admin.id}`;
     expect(row.access_token_ciphertext).not.toContain("oauth_test");
     expect((await current.store.findCredential(current.admin.id))?.accessToken).toBe("oauth_test");
+  });
+  it("V-10c no longer serves the internal context route that only Dev Control used", () => {
+    const route = fileURLToPath(new URL("../../../apps/web/src/app/api/internal/issue-context/route.ts", import.meta.url));
+    expect(existsSync(route)).toBe(false);
   });
 });

@@ -1,0 +1,6 @@
+{
+  "synthetic": true,
+  "exitCode": 1,
+  "stdout": "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":true,\"api_error_status\":429,\"terminal_reason\":\"api_error\",\"result\":\"You've hit your limit · resets 3pm (America/Sao_Paulo)\",\"num_turns\":1,\"total_cost_usd\":0}",
+  "stderr": ""
+}

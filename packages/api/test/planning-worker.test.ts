@@ -4,37 +4,32 @@ import { DrizzleWorkerOperationDao } from "../src/infra/database/dao/tasks/drizz
 import { DrizzleTaskPublicationWorkerDao } from "../src/infra/database/dao/tasks/drizzleTaskPublicationWorkerDao";
 import { sessions, taskOperations, taskPlanningDecisions, tasks } from "../src/infra/database/schema";
 import { closeTaskFixture } from "./task-api-support";
-import { ASSESSMENT, DECISION, keepSessionAlive, movableClock, plannerFor, providerFixture, respondStatus, respondValid, SERVICE_KEY } from "./planning-provider-fixture";
+import { TaskError } from "../src/application/services/tasks/taskErrors";
+import { ASSESSMENT, FakePlanningGateway, keepSessionAlive, movableClock, plannerFor, validEnvelope } from "./planning-provider-fixture";
 import { currentTask, planningBase, planningCaller, publishedTask, readPlanning, startPlanning } from "./planning-support";
 
-let closeProvider: (() => Promise<void>) | undefined;
 beforeEach(() => vi.spyOn(console, "info").mockImplementation(() => {}));
-afterEach(async () => { vi.restoreAllMocks(); await closeProvider?.(); closeProvider = undefined; await closeTaskFixture(); });
+afterEach(async () => { vi.restoreAllMocks(); await closeTaskFixture(); });
 
-async function withProvider(handler?: Parameters<typeof providerFixture>[0]) {
-  const provider = await providerFixture(handler);
-  closeProvider = provider.close;
-  return provider;
-}
+const failing = (reason: ConstructorParameters<typeof TaskError>[0]) => () => { throw new TaskError(reason); };
 
 const decisions = (setup: Awaited<ReturnType<typeof publishedTask>>) => setup.database.select().from(taskPlanningDecisions);
 const planOperation = async (setup: Awaited<ReturnType<typeof publishedTask>>) => (await setup.database.select().from(taskOperations).where(eq(taskOperations.kind, "plan")))[0]!;
 
 describe("planning worker", () => {
-  it("IT-003 and IT-070 save one review from a snapshot-only provider request", async () => {
+  it("IT-003 and IT-070 save one review from a snapshot-only analysis request", async () => {
     const setup = await publishedTask();
-    const provider = await withProvider();
+    const gateway = new FakePlanningGateway();
     const receipt = await startPlanning(setup);
-    expect(await plannerFor(setup, provider.url).worker.tick()).toBe(true);
+    expect(await plannerFor(setup, gateway).worker.tick()).toBe(true);
     const planning = await readPlanning(setup);
     expect(planning).toMatchObject({ status: "review", decision: { recommendedRoute: "tech_spec", selectedRoute: "tech_spec", decisionSource: "AI" } });
     expect(await decisions(setup)).toHaveLength(1);
-    const [request] = provider.requests;
-    expect(request).toMatchObject({ path: "/flow-dev/planning/v1", headers: { authorization: `Bearer ${SERVICE_KEY}`, "idempotency-key": receipt.operationId } });
-    expect(Object.keys(request!.body)).toEqual(["protocolVersion", "operationId", "executionId", "issueRevisionId", "issue"]);
-    expect(request!.body.issue).toMatchObject({ publicationStatus: "published", repository: "acme/private", issueNumber: 41, url: "https://github.com/acme/private/issues/41", labels: [], structuredDraft: null });
-    expect(String(request!.headers["x-flow-context-capability"]).length).toBeGreaterThanOrEqual(32);
-    expect(JSON.stringify(request!.body)).not.toMatch(/session|token|capability/i);
+    const [input] = gateway.calls;
+    expect(input).toMatchObject({ operationId: receipt.operationId, issueUrl: "https://github.com/acme/private/issues/41", publication: { issueNumber: 41 } });
+    expect(Object.keys(input!).sort()).toEqual(["contextCapability", "executionId", "inputHash", "issueUrl", "operationId", "protocolVersion", "publication", "taskId"]);
+    expect(input!.contextCapability.length).toBeGreaterThanOrEqual(32);
+    expect(JSON.stringify(input!.publication)).not.toMatch(/session|token|capability/i);
   });
 
   it("IT-021 gives one claim to concurrent workers with fence 1 and a 60 second lease", async () => {
@@ -67,18 +62,18 @@ describe("planning worker", () => {
   it("IT-024 retries transient failures after the bounded waits and saves one review", async () => {
     const setup = await publishedTask();
     await keepSessionAlive(setup);
-    const provider = await withProvider((request, response, index) => index < 2 ? respondStatus(500)(request, response) : respondValid(request, response));
+    const gateway = new FakePlanningGateway((input, index) => { if (index < 2) throw new TaskError("planning_provider_unavailable"); return validEnvelope(input); });
     await startPlanning(setup);
     const clock = movableClock();
-    const { worker } = plannerFor(setup, provider.url, { clock: clock.now });
+    const { worker } = plannerFor(setup, gateway, { clock: clock.now });
     await worker.tick();
     expect(await worker.tick()).toBe(false);
     clock.advance(6_000);
     await worker.tick();
     clock.advance(16_000);
     await worker.tick();
-    expect(provider.requests).toHaveLength(3);
-    expect(new Set(provider.requests.map((request) => request.headers["idempotency-key"])).size).toBe(1);
+    expect(gateway.calls).toHaveLength(3);
+    expect(new Set(gateway.calls.map((call) => call.operationId)).size).toBe(1);
     expect((await readPlanning(setup)).status).toBe("review");
     expect(await decisions(setup)).toHaveLength(1);
   });
@@ -86,35 +81,35 @@ describe("planning worker", () => {
   it("IT-025 stops after three transient failures without a decision", async () => {
     const setup = await publishedTask();
     await keepSessionAlive(setup);
-    const provider = await withProvider(respondStatus(503));
+    const gateway = new FakePlanningGateway(failing("planning_provider_unavailable"));
     await startPlanning(setup);
     const clock = movableClock();
-    const { worker } = plannerFor(setup, provider.url, { clock: clock.now });
+    const { worker } = plannerFor(setup, gateway, { clock: clock.now });
     for (let attempt = 0; attempt < 3; attempt += 1) { await worker.tick(); clock.advance(20_000); }
     expect(await readPlanning(setup)).toMatchObject({ status: "failed", operation: { state: "failed", reason: "planning_provider_unavailable" }, decision: null });
     expect((await currentTask(setup)).activeOperationId).toBeNull();
-    expect(provider.requests).toHaveLength(3);
+    expect(gateway.calls).toHaveLength(3);
   });
 
   it("IT-026 fails queued work past the 15 minute deadline on the next sweep", async () => {
     const setup = await publishedTask();
-    const provider = await withProvider();
+    const gateway = new FakePlanningGateway();
     await startPlanning(setup);
     await setup.database.update(taskOperations).set({ createdAt: new Date(Date.now() - 900_000) }).where(eq(taskOperations.kind, "plan"));
-    await plannerFor(setup, provider.url).worker.tick();
+    await plannerFor(setup, gateway).worker.tick();
     expect(await readPlanning(setup)).toMatchObject({ status: "failed", operation: { reason: "planning_deadline" } });
-    expect(provider.requests).toHaveLength(0);
+    expect(gateway.calls).toHaveLength(0);
   });
 
-  it("IT-027 replays the provider key after a failed settlement and stores one decision", async () => {
+  it("IT-027 replays the operation after a failed settlement and stores one decision", async () => {
     const setup = await publishedTask();
     await keepSessionAlive(setup);
-    const provider = await withProvider();
+    const gateway = new FakePlanningGateway();
     await startPlanning(setup);
     await setup.database.execute(`CREATE FUNCTION fail_decision() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'disconnect'; END; $$` as never);
     await setup.database.execute(`CREATE TRIGGER fail_decision BEFORE INSERT ON task_planning_decisions FOR EACH ROW EXECUTE FUNCTION fail_decision()` as never);
     const clock = movableClock();
-    const { worker } = plannerFor(setup, provider.url, { clock: clock.now });
+    const { worker } = plannerFor(setup, gateway, { clock: clock.now });
     await worker.tick();
     expect(await decisions(setup)).toHaveLength(0);
     expect((await planOperation(setup)).state).toBe("running");
@@ -122,38 +117,35 @@ describe("planning worker", () => {
     clock.advance(61_000);
     await worker.tick();
     expect(await decisions(setup)).toHaveLength(1);
-    expect(new Set(provider.requests.map((request) => request.headers["idempotency-key"])).size).toBe(1);
+    expect(new Set(gateway.calls.map((call) => call.operationId)).size).toBe(1);
   });
 
   it("IT-028 and IT-029 save safe failures for invalid or mismatched output", async () => {
-    for (const [handler, reason] of [[(request: never, response: never) => respondValid(request, response, { result: { ...DECISION, reasons: undefined } }), "planning_invalid_output"], [(request: never, response: never) => respondValid(request, response, { result: { ...DECISION, route: "TASKS" } }), "planning_invalid_output"], [(request: never, response: never) => respondValid(request, response, { issueRevisionId: "70000000-0000-4000-8000-00000000ffff" }), "planning_execution_mismatch"]] as const) {
+    for (const reason of ["planning_invalid_output", "planning_execution_mismatch"] as const) {
       const setup = await publishedTask();
-      const provider = await providerFixtureWith(handler);
       await startPlanning(setup);
-      await plannerFor(setup, provider.url).worker.tick();
+      await plannerFor(setup, new FakePlanningGateway(failing(reason))).worker.tick();
       expect(await readPlanning(setup)).toMatchObject({ status: "failed", operation: { reason }, decision: null });
       expect(await decisions(setup)).toHaveLength(0);
-      await provider.close();
-      closeProvider = undefined;
       await closeTaskFixture();
     }
   });
 
-  it("IT-030 fails without outbound traffic when the session or access is revoked", async () => {
+  it("IT-030 fails without calling the agent when the session or access is revoked", async () => {
     const setup = await publishedTask();
-    const provider = await withProvider();
+    const gateway = new FakePlanningGateway();
     await startPlanning(setup);
     await setup.database.delete(sessions).where(eq(sessions.id, setup.sessionId));
-    await plannerFor(setup, provider.url).worker.tick();
+    await plannerFor(setup, gateway).worker.tick();
     expect(await readPlanning(setup)).toMatchObject({ status: "failed", operation: { reason: "planning_access_revoked" } });
-    expect(provider.requests).toHaveLength(0);
+    expect(gateway.calls).toHaveLength(0);
   });
 
-  it("IT-031 keeps a valid current result when the session expires during dispatch", async () => {
+  it("IT-031 keeps a valid current result when the session expires during analysis", async () => {
     const setup = await publishedTask();
-    const provider = await withProvider(async (request, response) => { await setup.database.delete(sessions).where(eq(sessions.id, setup.sessionId)); respondValid(request, response); });
+    const gateway = new FakePlanningGateway(async (input) => { await setup.database.delete(sessions).where(eq(sessions.id, setup.sessionId)); return validEnvelope(input); });
     await startPlanning(setup);
-    await plannerFor(setup, provider.url).worker.tick();
+    await plannerFor(setup, gateway).worker.tick();
     expect(await decisions(setup)).toHaveLength(1);
     expect((await currentTask(setup)).planningStatus).toBe("review");
   });
@@ -179,17 +171,4 @@ describe("planning worker", () => {
     await expect(dao.fail({ claim: first, reason: "planning_timeout" })).rejects.toMatchObject({ reason: "stale_execution" });
     expect(await readPlanning(setup)).toMatchObject({ status: "review", operation: { id: retried.operationId, reason: null } });
   });
-
-  it("IT-087 fails an accepted plan when provider configuration disappears", async () => {
-    const setup = await publishedTask();
-    await startPlanning(setup);
-    await plannerFor(setup, undefined).worker.tick();
-    expect(await readPlanning(setup)).toMatchObject({ status: "failed", operation: { reason: "planning_unconfigured" } });
-  });
 });
-
-async function providerFixtureWith(handler: (request: never, response: never) => void) {
-  const provider = await providerFixture(handler as never);
-  closeProvider = provider.close;
-  return provider;
-}

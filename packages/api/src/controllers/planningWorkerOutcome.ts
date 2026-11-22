@@ -3,6 +3,7 @@ import { AccountMismatchError, CredentialUnavailableError, RepositoryArchivedErr
 import { PlanningDomainError } from "../application/services/tasks/planningContracts";
 import { planningRetryDelay } from "../application/services/tasks/planningWorkerRules";
 import { TaskError } from "../application/services/tasks/taskErrors";
+import { agentFailureDetail, withFailureDetail } from "../application/services/tasks/failureCode";
 
 const TRANSIENT_REASONS = ["planning_timeout", "planning_provider_unavailable", "planning_rate_limited"];
 const ACCESS_ERRORS = [ProjectUnavailableError, RepositoryAuthorizationNeededError, RepositoryNotFoundError, RepositoryForbiddenError, RepositoryIdentityMismatchError, RepositoryArchivedError, AccountMismatchError, CredentialUnavailableError];
@@ -17,10 +18,11 @@ export function classifyPlanningError(error: unknown, claim: { attempts: number;
   const reason = planningReason(error);
   if (reason === STALE_REASON) return { kind: "abandon", stale: true };
   if (reason === null) return { kind: "abandon", stale: false };
-  if (!TRANSIENT_REASONS.includes(reason)) return { kind: "fail", reason };
+  const detail = agentFailureDetail(error);
+  if (!TRANSIENT_REASONS.includes(reason)) return { kind: "fail", reason: withFailureDetail(reason, detail) };
   const delay = planningRetryDelay({ attempts: claim.attempts, now, deadline: claim.deadline, retryAfterSeconds: error instanceof TaskError ? error.retryAfterSeconds : undefined });
   if (!delay.terminal) return { kind: "requeue", reason, nextRunAt: delay.nextRunAt };
-  return { kind: "fail", reason: delay.reason === DEADLINE_REASON ? DEADLINE_REASON : reason };
+  return { kind: "fail", reason: delay.reason === DEADLINE_REASON ? DEADLINE_REASON : withFailureDetail(reason, detail) };
 }
 
 function planningReason(error: unknown) {

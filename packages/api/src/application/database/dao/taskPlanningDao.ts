@@ -10,7 +10,7 @@ export type PlanningDecisionSummary = { id: string; version: number; status: "re
 export type PlanningProjectionRecord = { taskStatus: string; planningStatus: PlanningStatus | null; activeOperationId: string | null; operation: PlanningOperationRecord | null; decision: PlanningDecisionRecord | null; publication: PlanningPublicationRecord | null; source: PlanningSourceRecord | null; history: PlanningDecisionSummary[] };
 export type PlanningCommandTarget = { projectId: string; taskId: string; actorUserId: string; requestKey: string; payloadHash: string };
 type Versioned = PlanningCommandTarget & { expectedVersion: number };
-type Accepting = Versioned & { sessionId: string; beforeAccept?: () => void };
+type Accepting = Versioned & { sessionId: string };
 type Reviewing = Versioned & { decisionId: string; expectedDecisionVersion: number };
 
 export interface TaskPlanningDao {

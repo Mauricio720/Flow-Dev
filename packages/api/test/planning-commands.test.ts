@@ -112,9 +112,8 @@ describe("planning start and retry with PostgreSQL", () => {
     expect(await rejection(planningCaller(review).planning.retry({ ...planningBase(review), failedOperationId: crypto.randomUUID() }))).toMatchObject({ reason: "planning_exists" });
   });
 
-  it("IT-064 and IT-085 reject missing configuration and stale versions without work", async () => {
+  it("IT-064 and IT-085 reject stale versions without work and never ask for an external configuration", async () => {
     const setup = await publishedTask();
-    expect(await rejection(planningCaller(setup, setup.ownerId, false).planning.start(planningBase(setup)))).toMatchObject({ code: "INTERNAL_SERVER_ERROR", reason: "planning_unconfigured" });
     expect(await rejection(planningCaller(setup).planning.start(planningBase(setup, 6)))).toMatchObject({ code: "CONFLICT", reason: "planning_conflict" });
     expect(await planOperations(setup)).toHaveLength(0);
   });

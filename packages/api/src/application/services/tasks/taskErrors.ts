@@ -21,6 +21,7 @@ export type TaskErrorReason =
   | "planning_deadline" | "planning_access_revoked" | "planning_timeout"
   | "admin_required" | "operator_required" | "claim_unresolved" | "issue_ineligible" | "board_status_changed"
   | "source_changed" | "work_unavailable" | "deletion_fenced"
+  | "local_agent_unavailable" | "agent_settings_invalid" | "planning_local_agent_unavailable" | "planning_agent_settings_invalid"
   | "image_too_large" | "unsupported_image_type" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable";
 
 export class TaskError extends Error {

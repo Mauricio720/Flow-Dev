@@ -6,6 +6,7 @@ import { ProjectConflictError, projectConflictKind } from "./application/service
 import { RepositoryRateLimitedError } from "./application/github/repositoryErrors";
 import { TaskError } from "./application/services/tasks/taskErrors";
 import { AssignedIssueError } from "./application/services/assigned-issues/assignedIssueErrors";
+import { AgentSettingsError } from "./application/services/projects/agentSettingsErrors";
 
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error }) {
@@ -15,7 +16,7 @@ const t = initTRPC.context<Context>().create({
     const taskRetryAfterSeconds = error.cause instanceof TaskError ? error.cause.retryAfterSeconds : undefined;
     const conflict = projectConflictKind(error.cause);
     const assignedError = error.cause instanceof AssignedIssueError ? error.cause : undefined;
-    const taskReason = error.cause instanceof TaskError ? error.cause.reason : assignedError?.reason ?? taskInputReason(error.cause);
+    const taskReason = error.cause instanceof TaskError ? error.cause.reason : assignedError?.reason ?? (error.cause instanceof AgentSettingsError ? error.cause.reason : undefined) ?? taskInputReason(error.cause);
     const fieldErrors = error.cause instanceof TaskError ? error.cause.fieldErrors : undefined;
     return { ...shape, data: { ...shape.data, zodError, retryAfterSeconds: taskRetryAfterSeconds ?? assignedError?.retryAfterSeconds ?? retryAfterSeconds, ...(taskReason ? { reason: taskReason } : {}), ...(fieldErrors ? { fieldErrors } : {}), ...(existingProjectId ? { existingProjectId } : {}), ...(conflict ? { conflict } : {}) } };
   },

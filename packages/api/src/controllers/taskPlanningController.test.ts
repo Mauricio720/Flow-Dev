@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { PlanningService } from "../application/services/tasks/planningService";
 import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
 import { AssignedIssueError } from "../application/services/assigned-issues/assignedIssueErrors";
-import { TaskError } from "../application/services/tasks/taskErrors";
 import { TaskPlanningController } from "./taskPlanningController";
 
 const taskId = "00000000-0000-4000-8000-000000000011";
@@ -12,10 +11,10 @@ const command = { projectId, taskId, requestKey: "k", expectedVersion: 7 };
 const receipt = { taskId, operationId: "o", decisionId: null, version: 8, decisionVersion: null };
 const review = { ...command, decisionId: "d", expectedDecisionVersion: 1, reviewedRoute: "prd" as const };
 
-function build(configuration = () => {}) {
-  const planning = { start: vi.fn(async (_input?: { beforeAccept?: () => void }) => ({ ...receipt, replayed: false })), retry: vi.fn(async () => ({ ...receipt, replayed: false })), replan: vi.fn(async () => ({ ...receipt, replayed: false })), approve: vi.fn(async () => ({ ...receipt, replayed: false })), selectRoute: vi.fn(async () => ({ ...receipt, replayed: false })), submission: vi.fn(async () => ({ status: "not_accepted" as const })) };
+function build() {
+  const planning = { start: vi.fn(async () => ({ ...receipt, replayed: false })), retry: vi.fn(async () => ({ ...receipt, replayed: false })), replan: vi.fn(async () => ({ ...receipt, replayed: false })), approve: vi.fn(async () => ({ ...receipt, replayed: false })), selectRoute: vi.fn(async () => ({ ...receipt, replayed: false })), submission: vi.fn(async () => ({ status: "not_accepted" as const })) };
   const authorization = { requireOperate: vi.fn(async (input: { actorId: string; taskId: string }) => { if (input.actorId !== "operator") throw new AssignedIssueError("operator_required"); if (input.taskId !== taskId) throw new AssignedIssueError("work_unavailable"); }), requireRead: vi.fn(async (input: { taskId: string }) => { if (input.taskId !== taskId) throw new AssignedIssueError("work_unavailable"); }) };
-  return { planning, authorization, controller: new TaskPlanningController(planning as unknown as PlanningService, authorization as unknown as WorkAuthorization, configuration) };
+  return { planning, authorization, controller: new TaskPlanningController(planning as unknown as PlanningService, authorization as unknown as WorkAuthorization) };
 }
 
 describe("TaskPlanningController", () => {
@@ -46,11 +45,12 @@ describe("TaskPlanningController", () => {
     await expect(controller.submission(operator, { projectId, taskId: "00000000-0000-4000-8000-000000000012", action: "planning.start", requestKey: "k" })).rejects.toMatchObject({ reason: "work_unavailable" });
   });
 
-  it("UT-018 passes the configuration check to run before enqueueing", async () => {
-    const configuration = () => { throw new TaskError("planning_unconfigured"); };
-    const { controller, planning } = build(configuration);
-    planning.start.mockImplementation(async (input) => { input?.beforeAccept?.(); return { ...receipt, replayed: false }; });
-    await expect(controller.start(operator, command)).rejects.toMatchObject({ reason: "planning_unconfigured" });
+  it("V-10b starts a planning without any Dev Control variable in the environment", async () => {
+    for (const name of Object.keys(process.env).filter((key) => /^(ISSUE_AUTHOR_|PLANNING_|FLOW_DEV_INTERNAL_)/.test(key))) vi.stubEnv(name, undefined);
+    const { controller, planning } = build();
+    expect(await controller.start(operator, command)).toEqual(receipt);
+    expect(planning.start).toHaveBeenCalledTimes(1);
+    vi.unstubAllEnvs();
   });
 
   it("approves only after requiring the operator and a current source, without touching the board", async () => {

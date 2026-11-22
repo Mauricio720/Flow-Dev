@@ -4,6 +4,8 @@ import type { IssueContextRequest, ScopedContextResult } from "../../github/scop
 export type ContextExecution = { taskId: string; operationId: string; executionId: string; fence: number; userId: string; sessionId: string; projectId: string; repositoryId: string; repositoryNodeId: string; repository: RepositoryIdentity; pinnedCommitSha: string | null };
 export type ContextCall = { executionId: string; toolCallId: string; inputHash: string; request: IssueContextRequest; result: ScopedContextResult; durationMs: number; target: string };
 
+export type RecordedContextCall = { toolCallId: string; status: "done" | "empty" | "unavailable"; evidenceIds: string[]; durationMs: number; reason?: string };
+
 export interface IssueContextDao {
   execution(executionId: string, capabilityHash: string, now: Date): Promise<ContextExecution | null>;
   supersededExecution(executionId: string, capabilityHash: string): Promise<boolean>;
@@ -12,4 +14,5 @@ export interface IssueContextDao {
   saveCall(context: ContextExecution, call: ContextCall): Promise<unknown>;
   activityCount(executionId: string): Promise<number>;
   hasActivity(executionId: string, toolCallId: string): Promise<boolean>;
+  listCalls(executionId: string): Promise<RecordedContextCall[]>;
 }

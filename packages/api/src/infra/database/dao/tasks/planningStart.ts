@@ -15,7 +15,7 @@ const MAX_REQUESTER_ACTIVE = 5;
 const MAX_GLOBAL_ACTIVE = 100;
 const ADMISSION_RETRY_SECONDS = 30;
 
-export type AcceptInput = PlanningCommandTarget & { expectedVersion: number; sessionId: string; beforeAccept?: () => void };
+export type AcceptInput = PlanningCommandTarget & { expectedVersion: number; sessionId: string };
 type RetryInput = AcceptInput & { failedOperationId: string };
 
 export type PlanningTaskRow = Awaited<ReturnType<typeof findPlanningTask>>;
@@ -41,7 +41,6 @@ export async function acceptPlanning(database: Database, input: AcceptInput, { a
     if (replay) return { ...replay, replayed: true };
     await prepare(task, db);
     await assertTaskAdmissionAllowed(db, task.id);
-    input.beforeAccept?.();
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended('planning-admission', 1))`);
     await assertAdmission(db, input.actorUserId);
     const operationId = await insertOperation(db, { task, input });
