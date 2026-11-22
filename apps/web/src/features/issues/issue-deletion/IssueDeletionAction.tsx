@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { deletionReasonCopy, deletionStatusCopy, preservedArtifactsCopy, remotePresenceCopy } from "./copy";
-import { useDialogFocus } from "./useDialogFocus";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useIssueDeletion } from "./useIssueDeletion";
 import type { DeletionTarget } from "./types";
 

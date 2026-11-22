@@ -55,7 +55,7 @@ describe("PlanningStage and timeline", () => {
 
   it("offers a confirmed new planning once the approved route stopped", async () => {
     const replan = vi.fn();
-    const permissions = { canStart: false, canRetry: false, canReplan: true, canSelectRoute: false, canApprove: false };
+    const permissions = { canStart: false, canRetry: false, canReplan: true, canSelectRoute: false, canApprove: false, canOpenTerminal: false };
     const detail = { ...publishedDetail(), planning: planningOf({ status: "approved", eligibility: { canStart: true, reason: null }, decision: decisionOf({ status: "approved", selectedRoute: "direct_execution" }), replannable: true, permissions }) };
     render(<PlanningStage detail={detail} actions={actions({ replan })} onRefresh={noop} />);
     await userEvent.click(screen.getByRole("button", { name: "Refazer planejamento" }));
@@ -65,7 +65,7 @@ describe("PlanningStage and timeline", () => {
   });
 
   it("explains the awaiting state and offers the specified action", () => {
-    const detail = { ...publishedDetail(), planning: planningOf({ status: "awaiting", eligibility: { canStart: true, reason: null }, permissions: { canStart: true, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false } }) };
+    const detail = { ...publishedDetail(), planning: planningOf({ status: "awaiting", eligibility: { canStart: true, reason: null }, permissions: { canStart: true, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false, canOpenTerminal: false } }) };
     render(<PlanningStage detail={detail} actions={actions()} onRefresh={noop} />);
     expect(screen.getByRole("button", { name: "Analisar próxima etapa" })).toBeTruthy();
     expect(screen.getByText(/recomendar a próxima etapa/)).toBeTruthy();

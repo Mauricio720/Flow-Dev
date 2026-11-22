@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { decisionOf } from "@/test/tasks";
 import { PlanningDecisionView } from "./PlanningDecisionView";
 
-const show = (patch = {}) => render(<PlanningDecisionView decision={decisionOf(patch)} />);
+const show = (patch = {}, lastOpened?: { userName: string; openedAt: string }) => render(<PlanningDecisionView decision={decisionOf(patch)} lastOpened={lastOpened} />);
+const APPROVED = { status: "approved", approvedByUserId: "u", approvedAt: "2026-10-05T12:00:00.000Z" };
 
 describe("PlanningDecisionView", () => {
   it("UT-057 renders named pt-BR fields with planning agent attribution", () => {
@@ -51,5 +52,17 @@ describe("PlanningDecisionView", () => {
     show({ selectedRoute: "prd", decisionSource: "HUMAN_OVERRIDE" });
     expect(screen.getByText(/explicam a recomendação original/)).toBeTruthy();
     expect(screen.getByText("Rota salva").nextElementSibling?.textContent).toContain("Escolhida pela pessoa operadora");
+  });
+
+  it("V-09h shows who opened the execution in the terminal in place of the not started note", () => {
+    show(APPROVED, { userName: "Ana", openedAt: "2026-11-22T14:05:00.000Z" });
+    expect(screen.getByText(/Execução aberta no terminal por Ana às \d{2}:\d{2}/)).toBeTruthy();
+    expect(screen.queryByText(/A próxima atividade ainda não foi iniciada/)).toBeNull();
+  });
+
+  it("V-09i keeps the not started note when no session was opened", () => {
+    show(APPROVED);
+    expect(screen.getByText(/A próxima atividade ainda não foi iniciada\./)).toBeTruthy();
+    expect(screen.queryByText(/Execução aberta no terminal/)).toBeNull();
   });
 });

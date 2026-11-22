@@ -26,7 +26,7 @@ export function useDialogFocus(open: boolean, busy: boolean, onClose: () => void
 }
 
 function keepFocusInside(event: KeyboardEvent, dialog: HTMLDialogElement) {
-  const focusable = [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')];
+  const focusable = [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')];
   if (!focusable.length) return;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];

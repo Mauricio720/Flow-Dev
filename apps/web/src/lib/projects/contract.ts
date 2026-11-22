@@ -9,6 +9,8 @@ export type AgentSettings = RouterOutputs["projects"]["agentSettings"]["get"];
 export type AgentSettingView = AgentSettings["agents"][number];
 export type AgentCatalog = AgentSettings["catalog"];
 
+export type LocalCheckout = RouterOutputs["projects"]["localCheckout"]["get"];
+
 export type RepositoryCandidatePage = RouterOutputs["projects"]["repositoryCandidates"];
 export type RepositoryCandidate = RepositoryCandidatePage["items"][number];
 

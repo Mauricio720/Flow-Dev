@@ -21,7 +21,7 @@ export function ReadyQueue({ projectId, initial }: Props) {
         <h2 id="ready-queue-title" className="text-[15px] font-semibold">Atribuídas a você em Ready</h2>
         <Button type="button" variant="ghost" size="sm" disabled={queue.busy} onClick={() => void queue.refresh()}>Atualizar</Button>
       </div>
-      {queue.failure && <QueueFailure failure={queue.failure} returnPath={projectWorkPath(projectId)} onRetry={() => void queue.refresh()} />}
+      {queue.failure && <QueueFailure projectId={projectId} failure={queue.failure} returnPath={projectWorkPath(projectId)} onRetry={() => void queue.refresh()} />}
       {queue.items.length > 0 && (
         <ul aria-label="Issues em Ready" className="divide-y divide-line">
           {queue.items.map((item) => <QueueRow key={item.issueNodeId} projectId={projectId} item={item} phase={claims.phaseOf(item.issueNodeId)} onClaim={(target) => void claims.claim(target)} onDeleted={() => void queue.refresh()} />)}

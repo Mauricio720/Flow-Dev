@@ -1,8 +1,10 @@
 import type { PlanningDecision } from "../contract";
 import { COMPLEXITY_LABEL, NO_UNCERTAINTIES, OVERRIDE_NOTE, PLANNING_PROVIDER, ROUTE_LABEL, ROUTE_NEXT_NOTE, SNAPSHOT_BASIS, SOURCE_LABEL } from "../planningCopy";
 import { formatMoment } from "@/lib/tasks/formatMoment";
+import type { TerminalLastOpened } from "../terminalContract";
+import { openedNote } from "../terminalCopy";
 
-type Props = { decision: PlanningDecision };
+type Props = { decision: PlanningDecision; lastOpened?: TerminalLastOpened };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -24,13 +26,13 @@ function TextList({ label, items, empty }: { label: string; items: string[]; emp
   );
 }
 
-function ApprovalLine({ decision }: Props) {
+function ApprovalLine({ decision, lastOpened }: Props) {
   if (decision.status !== "approved") return <p className="text-sm text-ink-2">Aguardando a aprovação da pessoa operadora.</p>;
   const when = decision.approvedAt;
-  return <p className="text-sm text-merge-ink">Aprovado pela pessoa operadora{when && <> em <time dateTime={when} suppressHydrationWarning>{formatMoment(when)}</time></>}. {ROUTE_NEXT_NOTE}</p>;
+  return <p className="text-sm text-merge-ink">Aprovado pela pessoa operadora{when && <> em <time dateTime={when} suppressHydrationWarning>{formatMoment(when)}</time></>}. {lastOpened ? openedNote(lastOpened.userName, lastOpened.openedAt) : ROUTE_NEXT_NOTE}</p>;
 }
 
-export function PlanningDecisionView({ decision }: Props) {
+export function PlanningDecisionView({ decision, lastOpened }: Props) {
   const overridden = decision.decisionSource === "HUMAN_OVERRIDE";
   return (
     <article aria-label="Decisão de planejamento" className="space-y-4">
@@ -45,7 +47,7 @@ export function PlanningDecisionView({ decision }: Props) {
       <TextList label="Motivos da recomendação" items={decision.reasons} />
       <TextList label="Pendências informadas" items={decision.uncertainties} empty={NO_UNCERTAINTIES} />
       <p className="text-xs text-ink-3">{SNAPSHOT_BASIS}</p>
-      <ApprovalLine decision={decision} />
+      <ApprovalLine decision={decision} lastOpened={lastOpened} />
     </article>
   );
 }

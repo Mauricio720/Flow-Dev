@@ -35,7 +35,7 @@ export function revisionOf(draft: Partial<IssueDraft> = {}, patch: Partial<TaskR
 }
 
 export function detailOf(patch: Partial<TaskDetail> = {}): TaskDetail {
-  return { task: summaryOf(), currentRevision: revisionOf(), pendingProposal: null, publication: null, activity: [], planning: planningOf(), permissions: { canEdit: true }, lastError: null, ...patch, viewerCanAuthor: patch.viewerCanAuthor ?? true };
+  return { task: summaryOf(), currentRevision: revisionOf(), pendingProposal: null, publication: null, activity: [], planning: planningOf(), terminal: { lastOpened: null }, permissions: { canEdit: true }, lastError: null, ...patch, viewerCanAuthor: patch.viewerCanAuthor ?? true };
 }
 
 export function messageOf(sequence: number, role: TaskMessage["role"], content: string): TaskMessage {
@@ -61,7 +61,7 @@ export function publishedDetail(): TaskDetail {
   return detailOf({ task: summaryOf({ status: "published", version: 9 }), publication });
 }
 
-const NO_PERMISSIONS = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false };
+const NO_PERMISSIONS = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false, canOpenTerminal: false };
 export const DECISION_ID = "00000000-0000-4000-8000-000000000091";
 export const ASSESSMENT = { recommendedRoute: "tech_spec", complexity: "medium", summary: "A mudança altera o contrato do carrinho.", reasons: ["O total depende de dois módulos"], uncertainties: ["Definir paginação"] } as const;
 
@@ -75,6 +75,13 @@ export function decisionOf(patch: Partial<NonNullable<TaskDetail["planning"]["de
 
 export function reviewDetail(planning: Partial<TaskDetail["planning"]> = {}, version = 10): TaskDetail {
   const base = publishedDetail();
-  const permissions = { canStart: false, canRetry: false, canSelectRoute: true, canApprove: true };
+  const permissions = { canStart: false, canRetry: false, canSelectRoute: true, canApprove: true, canOpenTerminal: false };
   return { ...base, task: { ...base.task, planningStatus: "review", version }, planning: planningOf({ status: "review", eligibility: { canStart: true, reason: null }, decision: decisionOf(), permissions, ...planning } as never) };
+}
+
+export function approvedDetail(patch: Partial<TaskDetail["planning"]> = {}, canOpenTerminal = true): TaskDetail {
+  const base = publishedDetail();
+  const decision = decisionOf({ status: "approved", selectedRoute: "direct_execution", approvedByUserId: A, approvedAt: "2026-10-05T12:00:00.000Z" });
+  const permissions = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false, canOpenTerminal };
+  return { ...base, task: { ...base.task, planningStatus: "approved" }, planning: planningOf({ status: "approved", eligibility: { canStart: true, reason: null }, decision, permissions, ...patch } as never) };
 }

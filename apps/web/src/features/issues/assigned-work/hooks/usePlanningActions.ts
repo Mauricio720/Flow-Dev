@@ -18,7 +18,7 @@ export function usePlanningActions(context: Input) {
   const decision = context.planning.decision;
   const scope = { taskId: context.task?.id ?? "", version: context.task?.version ?? 0 };
   return {
-    command, draftRoute, setDraftRoute, reconcile, resend, reviewed,
+    command, draftRoute, setDraftRoute, reconcile, resend, reviewed, refresh: context.onChanged,
     start: () => run({ action: "planning.start", taskId: scope.taskId, expectedVersion: scope.version }),
     replan: () => run({ action: "planning.replan", taskId: scope.taskId, expectedVersion: scope.version }),
     retry: (failedOperationId: string) => run({ action: "planning.retry", taskId: scope.taskId, expectedVersion: scope.version, failedOperationId }),

@@ -10,10 +10,11 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/projec
   const context = await loadProjectContext(projectId, projectSettingsPath(projectId));
   if (context.kind === "unavailable") return <ProjectUnavailable />;
   const viewer = await loadViewer();
-  const agentSettings = await (await getServerCaller()).projects.agentSettings.get({ projectId });
+  const caller = await getServerCaller();
+  const [agentSettings, localCheckout] = await Promise.all([caller.projects.agentSettings.get({ projectId }), caller.projects.localCheckout.get({ projectId })]);
   return (
     <ProjectShell project={context.project} section="settings" isAdmin={viewer.isAdmin}>
-      <ProjectSettings project={context.project} canEdit={viewer.isAdmin} agentSettings={agentSettings} />
+      <ProjectSettings project={context.project} canEdit={viewer.isAdmin} agentSettings={agentSettings} localCheckout={localCheckout} />
     </ProjectShell>
   );
 }

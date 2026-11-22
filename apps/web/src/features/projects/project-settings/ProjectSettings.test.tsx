@@ -28,7 +28,7 @@ describe("project settings", () => {
     await userEvent.click(form.save);
     expect(await screen.findByText("Detalhes salvos.")).toBeTruthy();
     expect(update).toHaveBeenCalledWith({ projectId: "p1", name: "Beta", description: "Loja principal", expectedVersion: 3 });
-    expect(screen.getAllByRole("textbox")).toHaveLength(3);
+    expect(screen.getAllByRole("textbox")).toHaveLength(4);
     expect(screen.getByText("acme/private")).toBeTruthy();
   });
 
@@ -73,7 +73,7 @@ describe("project settings", () => {
     render(<ProjectSettings project={VERSION_3} canEdit={false} agentSettings={agentSettingsOf()} />);
     expect(screen.getByText("Projeto Alfa")).toBeTruthy();
     expect(screen.getByText("acme/private")).toBeTruthy();
-    expect(screen.queryByRole("textbox")).toBeNull();
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getAllByRole("textbox").map((field) => field.id)).toEqual(["local-checkout-path"]);
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual(["Salvar pasta"]);
   });
 });

@@ -14,7 +14,7 @@ export const WORK_REASON_MESSAGE: Record<string, string> = {
   repository_authorization_needed: "Entrar no Flow Dev não libera repositórios. Autorize a leitura com a sua conta do GitHub para continuar.",
   provider_rate_limited: "O GitHub limitou as consultas por agora. A fila não está vazia: tente de novo em instantes.",
   provider_unavailable: "O GitHub não respondeu. A fila não está vazia; tente de novo em instantes.",
-  board_missing: "O projeto ainda não tem um quadro do GitHub configurado. Peça a uma pessoa administradora para configurá-lo.",
+  board_missing: "Este projeto ainda não tem um quadro do GitHub vinculado. Para ver as Issues em Ready, uma pessoa administradora precisa colar o link do GitHub Project em Configurações, na seção Quadro do GitHub.",
   ready_missing: "O quadro do projeto não tem a coluna Ready. Peça a uma pessoa administradora para ajustá-lo.",
   board_item_invalid: "O item do quadro mudou. Atualize a fila e escolha de novo.",
   in_progress_missing: "O quadro do projeto não tem a coluna In Progress. Peça a uma pessoa administradora para ajustá-lo.",
