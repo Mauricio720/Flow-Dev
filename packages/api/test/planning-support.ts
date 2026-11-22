@@ -40,7 +40,7 @@ export async function seedReview(setup: PlanningSetup, overrides: Record<string,
 export function planningCaller(setup: PlanningSetup, userId: string | null = setup.ownerId, planningDao: TaskPlanningDao = new DrizzleTaskPlanningDao(setup.database)) {
   const planning = new TaskPlanningController(new PlanningService(planningDao), operatorAuthorization(setup.database, setup.repositoryAccess, setup.world));
   const tasksController = new TasksController(setup.taskDao, setup.repositoryAccess);
-  return createTasksRouter(tasksController, undefined, planning).createCaller({ principal: userId ? { userId, sessionId: setup.sessionId } : null, requestId: "planning-test" });
+  return createTasksRouter(tasksController, undefined, { planning }).createCaller({ principal: userId ? { userId, sessionId: setup.sessionId } : null, requestId: "planning-test" });
 }
 
 export function planningBase(setup: PlanningSetup, version = 7, taskId = setup.taskId) {

@@ -137,7 +137,7 @@ describe("planning authorization and error boundaries", () => {
 
   it("IT-061 rejects malformed planning input through /api/trpc with field issues", async () => {
     const setup = await publishedTask();
-    const handler = httpHandler(planningCaller(setup) && createTasksRouter(undefined, undefined, undefined), setup);
+    const handler = httpHandler(planningCaller(setup) && createTasksRouter(), setup);
     const responses = await Promise.all([{ ...planningBase(setup), taskId: "bad" }, { ...planningBase(setup), expectedVersion: 0 }, { ...planningBase(setup), actorUserId: crypto.randomUUID() }].map((body) => handler("planning.start", body)));
     for (const response of responses) expect(response).toMatchObject({ status: 400, body: { error: { data: { code: "BAD_REQUEST" } } } });
     expect(responses[0]!.body.error.data.zodError.fieldErrors).toBeDefined();
@@ -149,7 +149,7 @@ describe("planning reason transport", () => {
   it.each(table)("IT-083 and UT-042 map %s", async (reason, status, retryAfterSeconds) => {
     const stub = { start: async () => { throw new TaskError(reason, undefined, undefined, retryAfterSeconds); } } as never;
     const setup = { project: { id: crypto.randomUUID() }, taskId: crypto.randomUUID(), ownerId: "owner", sessionId: "s" } as PlanningSetup;
-    const response = await httpHandler(createTasksRouter(undefined, undefined, stub), setup)("planning.start", planningBase(setup));
+    const response = await httpHandler(createTasksRouter(undefined, undefined, { planning: stub }), setup)("planning.start", planningBase(setup));
     expect(response.status).toBe(status);
     expect(response.body.error.data).toMatchObject({ reason, ...(retryAfterSeconds ? { retryAfterSeconds } : {}) });
   });

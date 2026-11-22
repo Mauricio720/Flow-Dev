@@ -1,4 +1,5 @@
 import type { PlanningProjectionRecord } from "./taskPlanningDao";
+import type { LastTerminalOpening } from "./terminalSessionDao";
 import type { TaskLabel } from "../../../schemas/taskLabels";
 import type { IssueDraft, TaskMessage, TaskPublication, TaskSummary, TaskToolActivity } from "../../services/tasks/taskContracts";
 
@@ -21,6 +22,7 @@ export interface TaskDao {
   activity(taskId: string): Promise<TaskToolActivity[]>;
   authorNames(userIds: string[]): Promise<Map<string, string>>;
   planning(taskId: string): Promise<PlanningProjectionRecord>;
+  terminalLastOpened(taskId: string): Promise<LastTerminalOpening | null>;
   snapshot<T>(read: (dao: TaskDao) => Promise<T>): Promise<T>;
   messages(taskId: string, cursor: string | undefined, limit: number): Promise<{ items: TaskMessage[]; nextCursor: string | null }>;
   revisions(taskId: string, cursor: string | undefined, limit: number): Promise<{ items: TaskRevisionRecord[]; nextCursor: string | null }>;

@@ -76,4 +76,10 @@ describe("Claude Code runner", () => {
     const choice = { provider: "claude" as const, model: "gpt-antigo", effort: "low" as const };
     expect(await failureOf(runner.run(request({ mode: "echo" }, { choice })))).toMatchObject({ failure: "model_unavailable" });
   });
+
+  it("V-11e keeps the planning agents free of --add-dir, --plugin-dir and terminal session folders", async () => {
+    const { output } = await runner.run(request({ mode: "dump" }));
+    const joined = (output as { args: string[] }).args.join(" ");
+    expect(joined).not.toMatch(/--add-dir|--plugin-dir|terminal-sessions/);
+  });
 });

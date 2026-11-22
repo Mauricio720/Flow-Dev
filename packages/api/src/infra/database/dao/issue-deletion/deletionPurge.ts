@@ -29,6 +29,8 @@ export const CLEANUP_STEPS: CleanupStep[] = [
   { table: "task_spec_workspaces", description: "Spec workspaces", run: (db, taskId) => db.execute(sql`DELETE FROM task_spec_workspaces WHERE workflow_id IN (SELECT id FROM task_spec_workflows WHERE task_id = ${taskId})`) },
   { table: "task_spec_attempts", description: "Spec attempts", run: (db, taskId) => db.execute(sql`DELETE FROM task_spec_attempts WHERE workflow_id IN (SELECT id FROM task_spec_workflows WHERE task_id = ${taskId})`) },
   { table: "task_spec_workflows", description: "Spec workflows", run: (db, taskId) => db.execute(sql`DELETE FROM task_spec_workflows WHERE task_id = ${taskId}`) },
+  { table: "task_terminal_attachments", description: "Terminal attachments", run: (db, taskId) => db.execute(sql`DELETE FROM task_terminal_attachments WHERE task_id = ${taskId}`) },
+  { table: "task_terminal_sessions", description: "Terminal sessions", run: (db, taskId) => db.execute(sql`DELETE FROM task_terminal_sessions WHERE task_id = ${taskId}`) },
   { table: "task_planning_decisions", description: "Planning decisions", run: (db, taskId) => db.execute(sql`DELETE FROM task_planning_decisions WHERE task_id = ${taskId}`) },
   { table: "task_evidence", description: "Generation evidence", run: (db, taskId) => db.execute(sql`DELETE FROM task_evidence WHERE task_id = ${taskId}`) },
   { table: "task_tool_activity", description: "Generation tool activity", run: (db, taskId) => db.execute(sql`DELETE FROM task_tool_activity WHERE task_id = ${taskId}`) },

@@ -1,5 +1,5 @@
 import type { IssueDeletionDao, DeletionClaim } from "../../database/dao/issueDeletionDao";
-import type { DeletionAccess, DeletionProvider } from "./deletionPorts";
+import type { DeletionAccess, DeletionProvider, TerminalFilesPurger } from "./deletionPorts";
 import type { DeletionStopCoordinator } from "./deletionStop";
 import type { DeletionFailureReason, DeletionOperation } from "./issueDeletionContracts";
 import { IssueDeletionError } from "./issueDeletionErrors";
@@ -12,6 +12,7 @@ export type IssueDeletionWorkerDeps = {
   owner: string;
   clock: () => Date;
   leaseMs: number;
+  terminalFiles?: TerminalFilesPurger;
 };
 
 export class IssueDeletionWorker {
@@ -165,6 +166,7 @@ export class IssueDeletionWorker {
     const { operation } = claim;
     const expectedRemote = operation.remotePresence === "not_applicable" ? "not_applicable" as const : "absent" as const;
     if (operation.taskId) {
+      await this.deps.terminalFiles?.purgeTask(operation.taskId);
       await this.deps.dao.purgeTaskAndComplete({ operationId: operation.id, taskId: operation.taskId, fence: claim.fence, expectedRemote });
       return;
     }

@@ -26,3 +26,7 @@ export interface DeletionProvider {
   remove(token: string, target: ProviderInspectTarget): Promise<ProviderOutcome<"accepted">>;
   absence(token: string, target: ProviderInspectTarget): Promise<ProviderOutcome<"present" | "absent">>;
 }
+
+export interface TerminalFilesPurger {
+  purgeTask(taskId: string): Promise<void>;
+}

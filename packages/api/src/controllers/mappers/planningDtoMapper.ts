@@ -8,7 +8,7 @@ import { splitFailureCode } from "../../application/services/tasks/failureCode";
 
 type Viewer = { canOperate: boolean };
 const PLANNABLE_STATUSES = ["published", "imported"];
-const EMPTY_PERMISSIONS = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false };
+const EMPTY_PERMISSIONS = { canStart: false, canRetry: false, canReplan: false, canSelectRoute: false, canApprove: false, canOpenTerminal: false };
 
 export { planningListStatus };
 
@@ -29,7 +29,7 @@ function sourceDto(record: PlanningProjectionRecord) {
 
 function permissions({ status, canStart, replannable }: { status: string; canStart: boolean; replannable: boolean }, viewer: Viewer) {
   if (!viewer.canOperate) return EMPTY_PERMISSIONS;
-  return { canStart: status === "awaiting" && canStart, canRetry: status === "failed", canReplan: replannable, canSelectRoute: status === "review", canApprove: status === "review" };
+  return { canStart: status === "awaiting" && canStart, canRetry: status === "failed", canReplan: replannable, canSelectRoute: status === "review", canApprove: status === "review", canOpenTerminal: status === "approved" };
 }
 
 function decisionDto(record: PlanningProjectionRecord, status: string) {

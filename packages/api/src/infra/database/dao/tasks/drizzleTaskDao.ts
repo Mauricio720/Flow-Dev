@@ -5,6 +5,7 @@ import { DrizzleTaskDraftDao } from "./drizzleTaskDraftDao";
 import { DrizzleTaskWorkspaceDao } from "./drizzleTaskWorkspaceDao";
 import type { Database } from "../../client";
 import { readPlanningProjection } from "./planningProjection";
+import { readLastOpened } from "../terminal/terminalLastOpened";
 
 export class DrizzleTaskDao implements TaskDao {
   private readonly commands: DrizzleTaskCommandDao;
@@ -33,6 +34,7 @@ export class DrizzleTaskDao implements TaskDao {
   messages(taskId: string, cursor: string | undefined, limit: number) { return this.reads.messages(taskId, cursor, limit); }
   revisions(taskId: string, cursor: string | undefined, limit: number) { return this.reads.revisions(taskId, cursor, limit); }
   planning(taskId: string) { return readPlanningProjection(this.database, taskId); }
+  terminalLastOpened(taskId: string) { return readLastOpened(this.database, taskId); }
   snapshot<T>(read: (dao: TaskDao) => Promise<T>): Promise<T> { return this.database.transaction((tx) => read(new DrizzleTaskDao(tx as unknown as Database)), { isolationLevel: "repeatable read", accessMode: "read only" }); }
   start(input: Parameters<TaskDao["start"]>[0]) { return this.commands.start(input); }
   send(input: Parameters<TaskDao["send"]>[0], kind: "clarification" | "refinement") { return this.commands.send(input, kind); }

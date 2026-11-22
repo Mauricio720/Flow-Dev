@@ -4,11 +4,12 @@ import { RepositoryAuthorizationNeededError, RepositoryRateLimitedError } from "
 import { RepositoryArchivedError, RepositoryForbiddenError, RepositoryIdentityMismatchError, RepositoryNotFoundError, RepositoryUnavailableError } from "../application/github/repositoryErrors";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import { AssignedIssueError } from "../application/services/assigned-issues/assignedIssueErrors";
+import { terminalErrorCode, terminalMessage } from "../application/services/terminal/terminalErrorCatalog";
 
 export function mapTaskError(error: unknown): never {
   if (error instanceof TRPCError) throw error;
   const taskError = normalizeTaskError(error);
-  throw new TRPCError({ code: taskErrorCode(taskError.reason), message: taskErrorMessage(taskError.reason), cause: taskError });
+  throw new TRPCError({ code: taskErrorCode(taskError.reason), message: taskErrorMessage(taskError.reason, taskError.fieldErrors), cause: taskError });
 }
 
 export function normalizeTaskError(error: unknown) {
@@ -27,6 +28,8 @@ export function normalizeTaskError(error: unknown) {
 
 function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "PRECONDITION_FAILED" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED" | "TOO_MANY_REQUESTS" {
   if (reason === "session_required") return "UNAUTHORIZED";
+  const terminalCode = terminalErrorCode(reason);
+  if (terminalCode) return terminalCode;
   if (reason === "provider_rate_limited" || reason === "planning_capacity" || reason === "planning_rate_limited") return "TOO_MANY_REQUESTS";
   if (["task_unavailable", "project_unavailable", "decision_unavailable", "work_unavailable"].includes(reason)) return "NOT_FOUND";
   if (["author_required", "access_revoked", "admin_required", "operator_required"].includes(reason)) return "FORBIDDEN";
@@ -37,7 +40,9 @@ function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" 
   return "BAD_REQUEST";
 }
 
-function taskErrorMessage(reason: TaskError["reason"]) {
+function taskErrorMessage(reason: TaskError["reason"], fieldErrors?: Record<string, string>) {
+  const terminal = terminalMessage(reason, fieldErrors);
+  if (terminal) return terminal;
   if (reason === "session_required") return "Sessão necessária";
   if (reason === "author_required") return "Somente a pessoa autora pode alterar esta tarefa";
   if (reason === "task_unavailable" || reason === "project_unavailable") return "Tarefa indisponível";

@@ -13,6 +13,7 @@ import { IssueDeletionController } from "../src/controllers/issueDeletionControl
 import { createIssueDeletionRouter } from "../src/routers/issueDeletion";
 import { fixture, repository, type Fixture } from "./fixture";
 import { DeletionWorld } from "./issue-deletion-world";
+import { removeTerminalDeletionState, terminalDeletionState } from "./issue-deletion-terminal-support";
 
 export const SESSION = "60000000-0000-4000-8000-000000000001";
 export const NOW = new Date("2026-10-13T12:00:00.000Z");
@@ -38,11 +39,12 @@ export async function issueDeletionFixture() {
   const clock = { now: NOW };
   const stop = new CoordinatedDeletionStop({ dao });
   const service = new IssueDeletionService({ dao, access, provider, clock: () => clock.now });
-  const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: "test-worker", clock: () => clock.now, leaseMs: 60_000 });
+  const { terminalEnv, terminalFiles } = await terminalDeletionState(base.database);
+  const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: "test-worker", clock: () => clock.now, leaseMs: 60_000, terminalFiles });
   const controller = new IssueDeletionController(service);
   const caller = (userId: string, sessionId: string | null = SESSION) => createIssueDeletionRouter(controller).createCaller({ principal: sessionId ? { userId, sessionId } : null, requestId: "issue-deletion-test" });
   const drain = async (limit = 30) => { for (let index = 0; index < limit; index += 1) { if (!(await worker.tick())) break; } };
-  return { ...base, createProject: base.project, second: second!, project, world, dao, provider, clock, worker, caller, drain, stop };
+  return { ...base, terminalEnv, createProject: base.project, second: second!, project, world, dao, provider, clock, worker, caller, drain, stop };
 }
 
 export type IssueDeletionFixture = Awaited<ReturnType<typeof issueDeletionFixture>>;
@@ -53,7 +55,7 @@ export async function resetIssueDeletion(f: IssueDeletionFixture) {
   f.clock.now = NOW;
 }
 
-export async function closeIssueDeletion() { await current?.close(); current = undefined; }
+export async function closeIssueDeletion() { await current?.close(); current = undefined; await removeTerminalDeletionState(); }
 
 export function rejection(promise: Promise<unknown>) {
   return promise.then(() => null, (error: { code: string; cause?: { reason: string; retryAfterSeconds?: number } }) => ({ code: error.code, reason: error.cause?.reason, retryAfterSeconds: error.cause?.retryAfterSeconds }));

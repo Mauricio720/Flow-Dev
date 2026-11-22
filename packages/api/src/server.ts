@@ -8,4 +8,7 @@ export { destinationProjectId, normalizeDestination } from "./application/auth/d
 export { createProductionRepositoryOAuthController } from "./infra/composition";
 export { createProductionTasksController, createProductionTranscriptionController } from "./infra/composition";
 export { createProductionTaskImageController } from "./infra/taskImageComposition";
+export { createProductionTerminalAttachmentController } from "./infra/terminalAttachmentComposition";
+export { attachmentFailureOf } from "./controllers/terminalAttachmentController";
+export { attachmentFailureMessage } from "./application/services/terminal/terminalAttachmentErrors";
 export { oauthFailure } from "./controllers/repositoryOAuthController";

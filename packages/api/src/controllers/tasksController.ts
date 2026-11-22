@@ -29,9 +29,9 @@ export class TasksController {
   private async readWorkspace(dao: TaskDao, viewer: { userId: string; isAdmin: boolean }, input: { projectId: string; taskId: string }) {
     const task = await dao.findScoped(input.projectId, input.taskId);
     if (!task) throw new TaskError("task_unavailable");
-    const [revision, pendingProposal, publication, activity, authorNames, planning] = await Promise.all([dao.currentRevision(task.id), dao.pendingProposal(task.id), dao.publication(task.id), dao.activity(task.id), dao.authorNames([task.authorUserId]), dao.planning(task.id)]);
+    const [revision, pendingProposal, publication, activity, authorNames, planning, lastOpened] = await Promise.all([dao.currentRevision(task.id), dao.pendingProposal(task.id), dao.publication(task.id), dao.activity(task.id), dao.authorNames([task.authorUserId]), dao.planning(task.id), dao.terminalLastOpened(task.id)]);
     const canAuthor = viewer.isAdmin && task.authorUserId === viewer.userId;
-    return workspaceDto({ task, revision, pendingProposal, publication, activity, authorNames, planning, canAuthor });
+    return workspaceDto({ task, revision, pendingProposal, publication, activity, authorNames, planning, lastOpened, canAuthor });
   }
 
   async messages(actor: SessionPrincipal, input: { projectId: string; taskId: string; cursor?: string; limit: number }) {

@@ -33,6 +33,8 @@ import { createRepositoryAccessService } from "./repositoryAccessFactory";
 import { TaskPublicationWorkerController } from "../controllers/taskPublicationWorkerController";
 import { createIssueImagePublisher } from "./taskImageComposition";
 
+export { createProductionLocalCheckoutController } from "./localCheckoutComposition";
+
 export function createProductionProjectsController() {
   const database = requireDatabase();
   const access = new DrizzleAccessDao(database);

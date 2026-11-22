@@ -9,7 +9,7 @@ const revision = { id: task.currentRevisionId, taskId: task.id, revisionNumber: 
 const actor = { userId: task.authorUserId, sessionId: "session-1" };
 
 function controller(overrides: Partial<TaskDao> = {}) {
-  const dao = { snapshot: async (read: (dao: TaskDao) => Promise<unknown>) => read(dao as TaskDao), planning: async () => ({ taskStatus: "draft_ready", planningStatus: null, operation: null, decision: null, publication: null }), findScoped: async () => task, currentRevision: async () => revision, evidence: async () => [], pendingProposal: async () => null, publication: async () => null, activity: async () => [], authorNames: async () => new Map([[task.authorUserId, "Ana"]]), ...overrides } as unknown as TaskDao;
+  const dao = { snapshot: async (read: (dao: TaskDao) => Promise<unknown>) => read(dao as TaskDao), planning: async () => ({ taskStatus: "draft_ready", planningStatus: null, operation: null, decision: null, publication: null }), findScoped: async () => task, currentRevision: async () => revision, evidence: async () => [], pendingProposal: async () => null, publication: async () => null, activity: async () => [], terminalLastOpened: async () => null, authorNames: async () => new Map([[task.authorUserId, "Ana"]]), ...overrides } as unknown as TaskDao;
   const repositories = { authoring: { requireAdmin: async () => {}, isAdmin: async () => true }, requireRead: async () => ({ githubId: "202", nodeId: "REPO202" }) } as never;
   return new TasksController(dao, repositories);
 }

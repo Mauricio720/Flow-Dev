@@ -1,0 +1,46 @@
+import type { TaskErrorReason } from "../tasks/taskErrors";
+
+export const TERMINAL_REASONS = ["planning_not_approved", "checkout_missing", "checkout_invalid", "skill_missing", "claude_unavailable", "terminal_unavailable", "terminal_disabled", "prompt_invalid", "attachment_missing", "attachment_limit"] as const satisfies readonly TaskErrorReason[];
+
+export type TerminalReason = (typeof TERMINAL_REASONS)[number];
+export type TerminalErrorDetails = Record<string, string> | undefined;
+export const OPERATOR_REQUIRED_MESSAGE = "Somente a pessoa operadora desta Issue pode agir.";
+export const LAUNCH_FAILED_KIND = "launch_failed";
+export const TOTAL_SIZE_KIND = "total_size";
+
+const PRECONDITION_REASONS = new Set<string>(["planning_not_approved", "checkout_missing", "checkout_invalid", "skill_missing", "claude_unavailable", "terminal_unavailable", "terminal_disabled", "attachment_missing"]);
+
+export function isTerminalReason(reason: string): reason is TerminalReason {
+  return (TERMINAL_REASONS as readonly string[]).includes(reason);
+}
+
+export function terminalErrorCode(reason: string) {
+  if (!isTerminalReason(reason)) return undefined;
+  return PRECONDITION_REASONS.has(reason) ? "PRECONDITION_FAILED" : "BAD_REQUEST";
+}
+
+function terminalUnavailable(details: TerminalErrorDetails) {
+  if (details?.kind === LAUNCH_FAILED_KIND) return "Não foi possível abrir o GNOME Terminal. Confira se há uma sessão gráfica ativa e tente de novo.";
+  return "GNOME Terminal não encontrado.";
+}
+
+function attachmentLimit(details: TerminalErrorDetails) {
+  return details?.kind === TOTAL_SIZE_KIND ? "Os anexos passariam de 30 MB." : "Limite de 10 arquivos por abertura.";
+}
+
+export function terminalMessage(reason: string, details?: TerminalErrorDetails): string | undefined {
+  if (reason === "planning_not_approved") return "O planejamento ainda não foi aprovado. Aprove a rota antes de abrir a execução no terminal.";
+  if (reason === "checkout_missing") return "Você ainda não vinculou o clone local deste projeto. Vincule a pasta nas Configurações para abrir a execução.";
+  if (reason === "checkout_invalid") return `A pasta vinculada não é mais um clone válido de ${details?.repository}. Atualize o vínculo nas Configurações.`;
+  if (reason === "skill_missing") return `Skill ${details?.name} não encontrada no Flow Dev.`;
+  if (reason === "claude_unavailable") return "Claude Code não encontrado no PATH.";
+  if (reason === "terminal_unavailable") return terminalUnavailable(details);
+  return terminalMessageRest(reason, details);
+}
+
+function terminalMessageRest(reason: string, details: TerminalErrorDetails) {
+  if (reason === "terminal_disabled") return "A abertura no terminal está desligada. Defina FLOW_DEV_TERMINAL_ENABLED=true no .env.local e reinicie o Flow Dev.";
+  if (reason === "prompt_invalid") return "O prompt precisa ter entre 1 e 20.000 caracteres.";
+  if (reason === "attachment_missing") return "Um dos anexos não está mais disponível. Anexe de novo e tente outra vez.";
+  return reason === "attachment_limit" ? attachmentLimit(details) : undefined;
+}

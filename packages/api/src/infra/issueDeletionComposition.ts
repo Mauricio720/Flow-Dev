@@ -5,7 +5,7 @@ import { IssueDeletionService } from "../application/services/issue-deletion/iss
 import { IssueDeletionWorker } from "../application/services/issue-deletion/issueDeletionWorker";
 import { CoordinatedDeletionStop } from "../application/services/issue-deletion/coordinatedDeletionStop";
 import { RepositoryDeletionAccess } from "../application/services/issue-deletion/repositoryDeletionAccess";
-import type { DeletionAccess, DeletionProvider } from "../application/services/issue-deletion/deletionPorts";
+import type { DeletionAccess, DeletionProvider, TerminalFilesPurger } from "../application/services/issue-deletion/deletionPorts";
 import type { IssueDeletionDao } from "../application/database/dao/issueDeletionDao";
 import { DrizzleAccessDao } from "./database/dao/drizzleAccessDao";
 import { DrizzleProjectDao } from "./database/dao/projects/drizzleProjectDao";
@@ -17,6 +17,9 @@ import { oauthClient, tokenCipher } from "./composition";
 import { GitHubHttpIssueDeletionGateway } from "./github/githubIssueDeletionGateway";
 import { GitHubDeletionProvider } from "./issue-deletion/gitHubDeletionProvider";
 import { IssueDeletionController } from "../controllers/issueDeletionController";
+import { DrizzleTerminalAttachmentDao } from "./database/dao/terminal/drizzleTerminalAttachmentDao";
+import { DiskAttachmentFileStore } from "./terminal/diskAttachmentFileStore";
+import { TerminalTaskFilesPurger } from "./terminal/terminalTaskFilesPurger";
 
 export type IssueDeletionOverrides = {
   dao?: IssueDeletionDao;
@@ -24,6 +27,7 @@ export type IssueDeletionOverrides = {
   provider?: DeletionProvider;
   clock?: () => Date;
   leaseMs?: number;
+  terminalFiles?: TerminalFilesPurger;
 };
 
 function authorization(database: ReturnType<typeof requireDatabase>) {
@@ -47,9 +51,10 @@ export function createIssueDeletionServices(database: ReturnType<typeof requireD
   const dao = overrides.dao ?? new DrizzleIssueDeletionDao(database);
   const access = overrides.access ?? createDeletionAccess(database);
   const provider = overrides.provider ?? createDeletionProvider(database);
+  const terminalFiles = overrides.terminalFiles ?? new TerminalTaskFilesPurger(new DrizzleTerminalAttachmentDao(database), new DiskAttachmentFileStore());
   const stop = new CoordinatedDeletionStop({ dao });
   const service = new IssueDeletionService({ dao, access, provider, clock });
-  const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: `deletion:${randomUUID()}`, clock, leaseMs: overrides.leaseMs ?? 60_000 });
+  const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: `deletion:${randomUUID()}`, clock, leaseMs: overrides.leaseMs ?? 60_000, terminalFiles });
   return { dao, access, provider, stop, service, worker };
 }
 
