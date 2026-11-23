@@ -1,9 +1,10 @@
 import type { LocalCheckoutDao } from "../../database/dao/localCheckoutDao";
 import type { SessionContextBuilder } from "../../terminal/sessionContext";
-import { CLAUDE_BINARY, TERMINAL_BINARY, type ToolLocator } from "../../terminal/terminalLauncher";
+import { CLAUDE_BINARY, type ToolLocator } from "../../terminal/toolLocator";
 import { CheckoutValidationError } from "../projects/localCheckoutErrors";
 import type { LocalCheckoutService, VerifiedCheckout } from "../projects/localCheckoutService";
 import { TaskError } from "../tasks/taskErrors";
+import type { SessionServiceStatus } from "./sessionServiceStatus";
 import type { TerminalLog } from "./terminalLaunchLog";
 import { promptProblem } from "./terminalPromptBuilder";
 
@@ -16,6 +17,7 @@ export type TerminalGuardDeps = {
   verifier: Pick<LocalCheckoutService, "verify">;
   tools: ToolLocator;
   context: SessionContextBuilder;
+  service: SessionServiceStatus;
   log: TerminalLog;
 };
 
@@ -52,7 +54,14 @@ export class TerminalOpenGuard {
 
   async assertTools() {
     if (!(await this.deps.tools.has(CLAUDE_BINARY))) throw new TaskError("claude_unavailable");
-    if (!(await this.deps.tools.has(TERMINAL_BINARY))) throw new TaskError("terminal_unavailable");
+  }
+
+  serviceRunning() {
+    return this.deps.service.running();
+  }
+
+  async assertServiceRunning() {
+    if (!(await this.serviceRunning())) throw new TaskError("session_service_offline");
   }
 
   async assertSkills() {

@@ -6,11 +6,15 @@ type Transitions = Partial<Record<TerminalEventKind, TerminalSessionStatus>>;
 
 const WORK_SIGNALS: Transitions = { started: "running", prompt: "running", skill: "running", file_edit: "running", command: "running", ended: "ended" };
 
+const TURN_SIGNALS: Transitions = { waiting: "waiting", attention: "waiting", ended: "ended" };
+
 const TRANSITIONS: Record<TerminalSessionStatus, Transitions> = {
   opening: WORK_SIGNALS,
   unconfirmed: WORK_SIGNALS,
   waiting: WORK_SIGNALS,
-  running: { waiting: "waiting", attention: "waiting", ended: "ended" },
+  interrupted: WORK_SIGNALS,
+  running: TURN_SIGNALS,
+  asking: TURN_SIGNALS,
   ended: {},
   launch_failed: {},
 };

@@ -22,7 +22,8 @@ export type TaskErrorReason =
   | "admin_required" | "operator_required" | "claim_unresolved" | "issue_ineligible" | "board_status_changed"
   | "source_changed" | "work_unavailable" | "deletion_fenced"
   | "local_agent_unavailable" | "agent_settings_invalid" | "planning_local_agent_unavailable" | "planning_agent_settings_invalid"
-  | "planning_not_approved" | "checkout_missing" | "checkout_invalid" | "skill_missing" | "claude_unavailable" | "terminal_unavailable" | "terminal_disabled" | "session_already_active" | "prompt_invalid" | "attachment_missing" | "attachment_limit"
+  | "planning_not_approved" | "checkout_missing" | "checkout_invalid" | "skill_missing" | "claude_unavailable" | "session_service_offline" | "terminal_disabled" | "session_already_active" | "prompt_invalid" | "attachment_missing" | "attachment_limit"
+  | "session_control_denied" | "session_not_active" | "request_closed" | "request_answered" | "message_invalid" | "answer_incomplete" | "answer_invalid"
   | "image_too_large" | "unsupported_image_type" | "artifact_unavailable" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable";
 
 export class TaskError extends Error {

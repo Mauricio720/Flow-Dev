@@ -7,7 +7,7 @@ import { taskTerminalSessions } from "../../schema";
 import { linkAttachments, releaseAttachments } from "./terminalAttachmentLinks";
 import { readLastOpened } from "./terminalLastOpened";
 import { readApprovedPlanning } from "./terminalPromptSource";
-import { findSessionByRequestKey, insertOrRelaunch } from "./terminalSessionWrites";
+import { findSessionByRequestKey, insertOrRelaunch, toSessionRecord } from "./terminalSessionWrites";
 
 const LAUNCH_FAILED_STATUS = "launch_failed";
 
@@ -20,6 +20,11 @@ export class DrizzleTerminalSessionDao implements TerminalSessionDao {
 
   lastOpened(taskId: string) {
     return readLastOpened(this.database, taskId);
+  }
+
+  async findById(sessionId: string) {
+    const [row] = await this.database.select().from(taskTerminalSessions).where(eq(taskTerminalSessions.id, sessionId)).limit(1);
+    return row ? toSessionRecord(row) : null;
   }
 
   findByRequestKey(userId: string, requestKey: string) {
@@ -39,10 +44,6 @@ export class DrizzleTerminalSessionDao implements TerminalSessionDao {
     const filter = and(eq(taskTerminalSessions.taskId, taskId), eq(taskTerminalSessions.userId, userId), notInArray(taskTerminalSessions.status, [...FINAL_SESSION_STATUSES]));
     const [row] = await this.database.select({ id: taskTerminalSessions.id }).from(taskTerminalSessions).where(filter).limit(1);
     return row !== undefined;
-  }
-
-  async setTokenHash(sessionId: string, tokenHash: string) {
-    await this.database.update(taskTerminalSessions).set({ tokenHash }).where(eq(taskTerminalSessions.id, sessionId));
   }
 
   markLaunchFailed(sessionId: string, reason: string) {

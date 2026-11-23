@@ -1,6 +1,7 @@
 import { and, desc, eq, lt } from "drizzle-orm";
 import type { ExecutionSessionRow, TerminalExecutionDao } from "../../../../application/database/dao/terminalExecutionDao";
 import type { PlanningRoute } from "../../../../application/services/tasks/planningContracts";
+import type { SessionRuntimeKind } from "../../../../application/terminal/sessionInteraction";
 import type { TerminalSessionStatus } from "../../../../application/terminal/terminalSessionStatus";
 import type { Database } from "../../client";
 import { taskTerminalSessions, users } from "../../schema";
@@ -13,8 +14,8 @@ export class DrizzleTerminalExecutionDao implements TerminalExecutionDao {
   constructor(private readonly database: Database) {}
 
   async sessionsOf(taskId: string): Promise<ExecutionSessionRow[]> {
-    const rows = await this.database.select({ id: taskTerminalSessions.id, status: taskTerminalSessions.status, route: taskTerminalSessions.route, name: users.name, displayName: users.displayName, openedAt: taskTerminalSessions.openedAt, lastSignalAt: taskTerminalSessions.lastSignalAt, endedAt: taskTerminalSessions.endedAt, droppedEvents: taskTerminalSessions.droppedEvents, filesRemovedAt: taskTerminalSessions.filesRemovedAt }).from(taskTerminalSessions).innerJoin(users, eq(users.id, taskTerminalSessions.userId)).where(eq(taskTerminalSessions.taskId, taskId)).orderBy(desc(taskTerminalSessions.openedAt));
-    return rows.map(({ name, displayName, ...row }) => ({ ...row, status: row.status as TerminalSessionStatus, route: row.route as PlanningRoute, userName: displayName ?? name }));
+    const rows = await this.database.select({ id: taskTerminalSessions.id, status: taskTerminalSessions.status, runtime: taskTerminalSessions.runtime, route: taskTerminalSessions.route, name: users.name, displayName: users.displayName, openedAt: taskTerminalSessions.openedAt, lastSignalAt: taskTerminalSessions.lastSignalAt, endedAt: taskTerminalSessions.endedAt, droppedEvents: taskTerminalSessions.droppedEvents, filesRemovedAt: taskTerminalSessions.filesRemovedAt }).from(taskTerminalSessions).innerJoin(users, eq(users.id, taskTerminalSessions.userId)).where(eq(taskTerminalSessions.taskId, taskId)).orderBy(desc(taskTerminalSessions.openedAt));
+    return rows.map(({ name, displayName, ...row }) => ({ ...row, status: row.status as TerminalSessionStatus, runtime: row.runtime as SessionRuntimeKind, route: row.route as PlanningRoute, userName: displayName ?? name }));
   }
 
   recentEvents(sessionIds: string[], limit: number) {

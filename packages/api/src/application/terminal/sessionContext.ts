@@ -7,4 +7,7 @@ export interface SessionContextBuilder {
   missingSkills(): Promise<string[]>;
   prepare(sessionId: string): Promise<SessionContextPaths>;
   discard(sessionId: string): Promise<void>;
+  writePrompt(sessionId: string, prompt: string): Promise<void>;
+  readPrompt(sessionId: string): Promise<string | null>;
+  pathsOf(sessionId: string): SessionContextPaths;
 }

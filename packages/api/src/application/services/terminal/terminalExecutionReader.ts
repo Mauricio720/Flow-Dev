@@ -3,6 +3,7 @@ import { SESSION_RETENTION_MS } from "./terminalCleanup";
 import { UNCONFIRMED_AFTER_MS, silentSince } from "./terminalSessionTiming";
 
 export const MAX_EVENTS_PER_SESSION = 200;
+const FLOW_DEV_RUNTIME = "flow_dev";
 
 type Rows = Awaited<ReturnType<TerminalExecutionReader["load"]>>;
 
@@ -29,12 +30,12 @@ export class TerminalExecutionReader {
 function sessionView(session: ExecutionSessionRow, rows: Rows, now: Date) {
   const events = rows.events.filter((event) => event.sessionId === session.id);
   const count = rows.counts.find((entry) => entry.sessionId === session.id);
-  const silent = silentSince({ status: session.status, lastSignalAt: session.lastSignalAt, now });
+  const silent = session.runtime === FLOW_DEV_RUNTIME ? null : silentSince({ status: session.status, lastSignalAt: session.lastSignalAt, now });
   const removed = session.filesRemovedAt !== null;
   const availableUntil = removed ? null : new Date(session.lastSignalAt.getTime() + SESSION_RETENTION_MS).toISOString();
   const attachments = rows.attachments.filter((item) => item.sessionId === session.id).map(({ name, contentType, byteSize }) => ({ name, contentType, byteSize, availableUntil, removed }));
   return {
-    id: session.id, status: session.status, route: session.route, userName: session.userName,
+    id: session.id, status: session.status, runtime: session.runtime, route: session.route, userName: session.userName,
     openedAt: session.openedAt.toISOString(), endedAt: session.endedAt?.toISOString() ?? null,
     lastEventAt: count?.lastAt?.toISOString() ?? null, silentSince: silent?.toISOString() ?? null,
     droppedEvents: session.droppedEvents, hiddenEvents: Math.max(0, (count?.total ?? 0) - events.length),

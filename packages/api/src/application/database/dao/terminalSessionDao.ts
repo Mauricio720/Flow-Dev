@@ -1,4 +1,5 @@
 import type { PlanningComplexity, PlanningRoute } from "../../services/tasks/planningContracts";
+import type { PermissionMode, SessionRuntimeKind } from "../../terminal/sessionInteraction";
 import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 import type { SessionAttachmentLinks } from "./terminalAttachmentLinks";
 
@@ -27,6 +28,12 @@ export type TerminalSessionRecord = {
   startedAt: Date | null;
   endedAt: Date | null;
   lastCaptureAt: Date | null;
+  runtime: SessionRuntimeKind;
+  permissionMode: PermissionMode;
+  hostId: string | null;
+  workerId: string | null;
+  interruptRequestedAt: Date | null;
+  endRequestedAt: Date | null;
 };
 
 export type ApprovedPlanning = {
@@ -48,6 +55,9 @@ export type CreateTerminalSessionInput = {
   checkoutPath: string;
   branch: string | null;
   dirty: boolean;
+  runtime: SessionRuntimeKind;
+  permissionMode: PermissionMode;
+  hostId: string | null;
 };
 
 export type CreatedTerminalSession = { session: TerminalSessionRecord; created: boolean };
@@ -55,10 +65,10 @@ export type LastTerminalOpening = { userName: string; openedAt: string };
 
 export interface TerminalSessionDao {
   approvedPlanning(taskId: string): Promise<ApprovedPlanning | null>;
+  findById(sessionId: string): Promise<TerminalSessionRecord | null>;
   findByRequestKey(userId: string, requestKey: string): Promise<TerminalSessionRecord | null>;
   create(input: CreateTerminalSessionInput, links?: SessionAttachmentLinks): Promise<CreatedTerminalSession>;
   markLaunchFailed(sessionId: string, reason: string): Promise<void>;
   lastOpened(taskId: string): Promise<LastTerminalOpening | null>;
   hasActiveSession(taskId: string, userId: string): Promise<boolean>;
-  setTokenHash(sessionId: string, tokenHash: string): Promise<void>;
 }

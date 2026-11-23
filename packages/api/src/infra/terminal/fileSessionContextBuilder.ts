@@ -1,4 +1,4 @@
-import { chmod, cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SKILLS_PLUGIN_NAME } from "../../application/services/terminal/terminalPromptCopy";
 import { FLOW_DEV_SKILLS, type SessionContextBuilder, type SessionContextPaths } from "../../application/terminal/sessionContext";
@@ -9,6 +9,7 @@ import { terminalSessionsRoot } from "./terminalStateRoot";
 const PRIVATE_DIRECTORY_MODE = 0o700;
 const PRIVATE_FILE_MODE = 0o600;
 const SKILL_FILE = "SKILL.md";
+const PROMPT_FILE = "prompt.md";
 const PLUGIN_MANIFEST_DIRECTORY = ".claude-plugin";
 const PLUGIN_MANIFEST_FILE = "plugin.json";
 const PLUGIN_MANIFEST = { name: SKILLS_PLUGIN_NAME, version: "1.0.0", description: "Skills do Flow Dev para esta sessão" };
@@ -35,15 +36,27 @@ export class FileSessionContextBuilder implements SessionContextBuilder {
     return FLOW_DEV_SKILLS.filter((_skill, index) => !present[index]);
   }
 
-  async prepare(sessionId: string): Promise<SessionContextPaths> {
+  pathsOf(sessionId: string): SessionContextPaths {
     const sessionDir = this.sessionDirectory(sessionId);
     const contextDir = join(sessionDir, "contexto");
-    const attachmentsDir = join(contextDir, "anexos");
+    return { sessionDir, contextDir, attachmentsDir: join(contextDir, "anexos") };
+  }
+
+  async prepare(sessionId: string): Promise<SessionContextPaths> {
+    const { sessionDir, contextDir, attachmentsDir } = this.pathsOf(sessionId);
     await privateDirectory(sessionDir);
     await privateDirectory(attachmentsDir);
     await this.writeManifest(contextDir);
     await this.copySkills(contextDir);
     return { sessionDir, contextDir, attachmentsDir };
+  }
+
+  async writePrompt(sessionId: string, prompt: string) {
+    await writeFile(join(this.sessionDirectory(sessionId), PROMPT_FILE), prompt, { mode: PRIVATE_FILE_MODE });
+  }
+
+  async readPrompt(sessionId: string) {
+    return readFile(join(this.sessionDirectory(sessionId), PROMPT_FILE), "utf8").catch(() => null);
   }
 
   async discard(sessionId: string) {

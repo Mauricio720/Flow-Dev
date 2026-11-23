@@ -9,7 +9,8 @@
     "./schemas/*": "./src/schemas/*.ts"
   },
   "scripts": {
-    "dev": "env -u LD_PRELOAD sh -c 'tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts & trap \"kill 0\" EXIT INT TERM; wait'",
+    "dev": "env -u LD_PRELOAD sh -c 'tsx watch --env-file=../../apps/web/.env.local src/cli/tasksWorker.ts & tsx watch --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts & tsx --env-file=../../apps/web/.env.local src/cli/terminalSessionsWorker.ts & trap \"kill 0\" EXIT INT TERM; wait'",
+    "sessions:worker": "tsx --env-file=../../apps/web/.env.local src/cli/terminalSessionsWorker.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=../../apps/web/.env.local src/cli/databaseMigrate.ts",
@@ -25,6 +26,7 @@
     "issue-deletion:worker": "tsx --env-file=../../apps/web/.env.local src/cli/issueDeletionWorker.ts"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.330",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@trpc/server": "^11.19.0",
     "better-auth": "^1.7.7",

@@ -27,7 +27,15 @@ describe("PathToolLocator", () => {
     const directory = await toolDirectory("claude", 0o644);
     const locator = new PathToolLocator({ PATH: directory });
     expect(await locator.has("claude")).toBe(false);
-    expect(await locator.has("gnome-terminal")).toBe(false);
+    expect(await locator.has("ferramenta-inexistente")).toBe(false);
+  });
+
+  it("locates the full path of the first PATH directory that has the binary", async () => {
+    const first = await toolDirectory("claude", 0o755);
+    const second = await toolDirectory("claude", 0o755);
+    const locator = new PathToolLocator({ PATH: `/nonexistent:${first}:${second}` });
+    expect(await locator.locate("claude")).toBe(join(first, "claude"));
+    expect(await locator.locate("ferramenta-inexistente")).toBeNull();
   });
 
   it("finds nothing when PATH is empty", async () => {

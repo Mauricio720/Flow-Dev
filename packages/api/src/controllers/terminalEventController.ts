@@ -5,10 +5,10 @@ import { hashSessionToken } from "../application/services/terminal/sessionToken"
 import { planIngestion } from "../application/services/terminal/terminalEventIngestion";
 import type { TerminalLog } from "../application/services/terminal/terminalLaunchLog";
 import type { ArtifactCaptureTrigger } from "../application/terminal/artifactCaptureTrigger";
-import type { SessionSettingsWriter } from "../application/terminal/sessionSettings";
+import type { SessionSettingsRemover } from "../application/terminal/sessionSettings";
 import { isActiveSession } from "../application/terminal/terminalSessionStatus";
 
-export type TerminalEventDeps = { events: TerminalEventDao; settings: SessionSettingsWriter; capture: ArtifactCaptureService; log: TerminalLog; now?: () => Date };
+export type TerminalEventDeps = { events: TerminalEventDao; settings: SessionSettingsRemover; capture: ArtifactCaptureService; log: TerminalLog; now?: () => Date };
 
 export class TerminalEventController {
   constructor(private readonly deps: TerminalEventDeps) {}

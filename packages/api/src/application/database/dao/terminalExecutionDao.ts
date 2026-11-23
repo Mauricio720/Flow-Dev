@@ -1,10 +1,12 @@
 import type { PlanningRoute } from "../../services/tasks/planningContracts";
+import type { SessionRuntimeKind } from "../../terminal/sessionInteraction";
 import type { TerminalEventKind } from "../../terminal/terminalEventKind";
 import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 
 export type ExecutionSessionRow = {
   id: string;
   status: TerminalSessionStatus;
+  runtime: SessionRuntimeKind;
   route: PlanningRoute;
   userName: string;
   openedAt: Date;

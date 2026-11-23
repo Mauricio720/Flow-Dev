@@ -3,28 +3,28 @@ import { TerminalAttachmentService } from "../application/services/terminal/term
 import { SessionAttachmentDelivery } from "../application/services/terminal/sessionAttachmentDelivery";
 import { IssueImageSelector } from "../application/services/terminal/issueImageSelector";
 import { ConsoleTerminalLog } from "../application/services/terminal/terminalLaunchLog";
+import { HeartbeatSessionServiceStatus } from "../application/services/terminal/sessionServiceStatus";
 import { TerminalOpenGuard } from "../application/services/terminal/terminalOpenGuard";
 import type { SessionContextBuilder } from "../application/terminal/sessionContext";
-import type { SessionSettingsWriter } from "../application/terminal/sessionSettings";
-import type { TerminalLauncher, ToolLocator } from "../application/terminal/terminalLauncher";
+import type { ToolLocator } from "../application/terminal/toolLocator";
 import { TerminalSessionController } from "../controllers/terminalSessionController";
 import { createWorkAuthorization } from "./assignedIssuesComposition";
 import { requireDatabase } from "./database/client";
 import { DrizzleAccessDao } from "./database/dao/drizzleAccessDao";
 import { DrizzleLocalCheckoutDao } from "./database/dao/projects/drizzleLocalCheckoutDao";
 import { DrizzleProjectDao } from "./database/dao/projects/drizzleProjectDao";
+import { DrizzleSessionHostDao } from "./database/dao/terminal/drizzleSessionHostDao";
 import { DrizzleTerminalAttachmentDao } from "./database/dao/terminal/drizzleTerminalAttachmentDao";
 import { DrizzleTerminalIssueImageDao } from "./database/dao/terminal/drizzleTerminalIssueImageDao";
 import { DrizzleTerminalSessionDao } from "./database/dao/terminal/drizzleTerminalSessionDao";
 import { DiskAttachmentFileStore } from "./terminal/diskAttachmentFileStore";
-import { ClaudeSessionSettingsWriter } from "./terminal/claudeSessionSettingsWriter";
 import { FileSessionContextBuilder } from "./terminal/fileSessionContextBuilder";
 import { ExecGitCheckoutInspector } from "./terminal/execGitCheckoutInspector";
 import { terminalPorts } from "./terminal/terminalPorts";
-import { buildTerminalCommand } from "./terminal/terminalCommand";
+import { machineIdentity } from "./terminal/machineIdentity";
 
 type Database = ReturnType<typeof requireDatabase>;
-export type TerminalOverrides = { launcher?: TerminalLauncher; tools?: ToolLocator; context?: SessionContextBuilder; settings?: SessionSettingsWriter; env?: NodeJS.ProcessEnv; workAuthorization?: ReturnType<typeof createWorkAuthorization> };
+export type TerminalOverrides = { tools?: ToolLocator; context?: SessionContextBuilder; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workAuthorization?: ReturnType<typeof createWorkAuthorization> };
 
 export function createTerminalController(database: Database, overrides: TerminalOverrides = {}) {
   const env = overrides.env ?? process.env;
@@ -34,14 +34,16 @@ export function createTerminalController(database: Database, overrides: Terminal
   const ports = terminalPorts(env);
   const context = overrides.context ?? new FileSessionContextBuilder(env);
   const log = new ConsoleTerminalLog();
-  const guard = new TerminalOpenGuard({ env, checkouts, verifier, tools: overrides.tools ?? ports.tools, context, log });
+  const hostId = overrides.hostId ?? machineIdentity();
+  const service = new HeartbeatSessionServiceStatus({ hosts: new DrizzleSessionHostDao(database), hostId, now: overrides.now ?? (() => new Date()) });
+  const guard = new TerminalOpenGuard({ env, checkouts, verifier, tools: overrides.tools ?? ports.tools, context, service, log });
   const issueImages = new IssueImageSelector(new DrizzleTerminalIssueImageDao(database));
   const attachments = new DrizzleTerminalAttachmentDao(database);
   const files = new DiskAttachmentFileStore(env);
   const delivery = new SessionAttachmentDelivery({ attachments, issueImages, files });
   const sessions = new DrizzleTerminalSessionDao(database);
   const authorization = overrides.workAuthorization ?? createWorkAuthorization(database);
-  return new TerminalSessionController({ authorization, sessions, projects, guard, issueImages, delivery, cleanup: new TerminalAttachmentService({ authorization, plannings: sessions, attachments, files, log }), context, settings: overrides.settings ?? new ClaudeSessionSettingsWriter(env), launcher: overrides.launcher ?? ports.launcher, buildCommand: buildTerminalCommand, log });
+  return new TerminalSessionController({ authorization, sessions, projects, guard, issueImages, delivery, cleanup: new TerminalAttachmentService({ authorization, plannings: sessions, attachments, files, log }), context, hostId, log });
 }
 
 export function createProductionTerminalController() {

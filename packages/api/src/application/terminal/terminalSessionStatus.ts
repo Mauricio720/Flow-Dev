@@ -1,4 +1,4 @@
-export const TERMINAL_SESSION_STATUSES = ["opening", "running", "waiting", "unconfirmed", "ended", "launch_failed"] as const;
+export const TERMINAL_SESSION_STATUSES = ["opening", "running", "waiting", "unconfirmed", "ended", "launch_failed", "asking", "interrupted"] as const;
 
 export type TerminalSessionStatus = (typeof TERMINAL_SESSION_STATUSES)[number];
 

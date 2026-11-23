@@ -11,7 +11,7 @@ const PROJECT = { id: "p1", repository: { owner: "acme", name: "shop" } } as unk
 const SAVED = { path: "/home/ana/shop", verifiedAt: new Date(), version: 2 } as StoredLocalCheckout;
 
 function serviceWith(options: { visible?: boolean; saved?: StoredLocalCheckout | null; picker?: FolderPicker }) {
-  const projects: ProjectDao = { findVisible: async () => (options.visible === false ? null : PROJECT) };
+  const projects = { findVisible: async () => (options.visible === false ? null : PROJECT) } as unknown as ProjectDao;
   const checkouts = { find: vi.fn(async () => options.saved ?? null) } as unknown as LocalCheckoutDao;
   const inspector = { inspect: vi.fn() } as unknown as GitCheckoutInspector;
   return new LocalCheckoutService({ projects, checkouts, inspector, picker: options.picker });

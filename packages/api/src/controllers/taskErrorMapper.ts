@@ -4,6 +4,7 @@ import { RepositoryAuthorizationNeededError, RepositoryRateLimitedError } from "
 import { RepositoryArchivedError, RepositoryForbiddenError, RepositoryIdentityMismatchError, RepositoryNotFoundError, RepositoryUnavailableError } from "../application/github/repositoryErrors";
 import { TaskError } from "../application/services/tasks/taskErrors";
 import { AssignedIssueError } from "../application/services/assigned-issues/assignedIssueErrors";
+import { sessionErrorCode, sessionMessage } from "../application/services/terminal/sessionErrorCatalog";
 import { terminalErrorCode, terminalMessage } from "../application/services/terminal/terminalErrorCatalog";
 
 export function mapTaskError(error: unknown): never {
@@ -28,7 +29,7 @@ export function normalizeTaskError(error: unknown) {
 
 function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "PRECONDITION_FAILED" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED" | "TOO_MANY_REQUESTS" {
   if (reason === "session_required") return "UNAUTHORIZED";
-  const terminalCode = terminalErrorCode(reason);
+  const terminalCode = terminalErrorCode(reason) ?? sessionErrorCode(reason);
   if (terminalCode) return terminalCode;
   if (reason === "provider_rate_limited" || reason === "planning_capacity" || reason === "planning_rate_limited") return "TOO_MANY_REQUESTS";
   if (["task_unavailable", "project_unavailable", "decision_unavailable", "work_unavailable", "artifact_unavailable"].includes(reason)) return "NOT_FOUND";
@@ -41,7 +42,7 @@ function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" 
 }
 
 function taskErrorMessage(reason: TaskError["reason"], fieldErrors?: Record<string, string>) {
-  const terminal = terminalMessage(reason, fieldErrors);
+  const terminal = terminalMessage(reason, fieldErrors) ?? sessionMessage(reason);
   if (terminal) return terminal;
   if (reason === "session_required") return "Sessão necessária";
   if (reason === "author_required") return "Somente a pessoa autora pode alterar esta tarefa";

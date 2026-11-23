@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { access, stat } from "node:fs/promises";
 import { delimiter, join } from "node:path";
-import type { ToolLocator } from "../../application/terminal/terminalLauncher";
+import type { ToolLocator } from "../../application/terminal/toolLocator";
 
 async function isExecutableFile(path: string) {
   try {
@@ -16,8 +16,12 @@ export class PathToolLocator implements ToolLocator {
   constructor(private readonly environment: NodeJS.ProcessEnv = process.env) {}
 
   async has(binary: string) {
+    return (await this.locate(binary)) !== null;
+  }
+
+  async locate(binary: string): Promise<string | null> {
     const directories = (this.environment.PATH ?? "").split(delimiter).filter(Boolean);
-    for (const directory of directories) if (await isExecutableFile(join(directory, binary))) return true;
-    return false;
+    for (const directory of directories) if (await isExecutableFile(join(directory, binary))) return join(directory, binary);
+    return null;
   }
 }
