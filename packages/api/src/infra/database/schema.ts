@@ -125,3 +125,5 @@ export { issueDeletionOperations } from "./schema/issueDeletion";
 export { projectAgentSettings } from "./schema/projectAgentSettings";
 export { projectLocalCheckouts } from "./schema/projectLocalCheckouts";
 export { taskTerminalAttachments, taskTerminalSessions } from "./schema/tasks/terminal";
+export { taskTerminalEvents } from "./schema/tasks/terminalEvents";
+export { taskArtifactVersions, taskArtifacts } from "./schema/tasks/artifacts";

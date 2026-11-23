@@ -41,4 +41,24 @@ describe("issueDeletion terminal files", () => {
     await expect(stat(sessionFolder)).rejects.toThrow();
     await expect(files.readStaged(f.member.id, stagedName)).rejects.toThrow();
   });
+
+  it("V-20a removes terminal events, artifacts and versions with the Issue and leaves another task intact", async () => {
+    const spec = await seedSpecFlowTask(f.database, f.client, { projectId: f.project.id, authorId: f.member.id, messageCount: 3 });
+    const otherTask = crypto.randomUUID();
+    await f.client`insert into tasks (id, project_id, author_user_id, repository_id, repository_node_id, status, version, title) values (${otherTask}, ${f.project.id}, ${f.member.id}, '202', 'R_202', 'draft_ready', 1, 'Outra')`;
+    await f.client`insert into task_artifacts (task_id, project_id, relative_path, latest_version) values (${otherTask}, ${f.project.id}, 'docs/spec.md', 0)`;
+    const [decision] = await f.client`select id from task_planning_decisions where task_id = ${spec.task}`;
+    const [session] = await f.client`insert into task_terminal_sessions (task_id, project_id, user_id, planning_decision_id, route, request_key, checkout_path, dirty) values (${spec.task}, ${f.project.id}, ${f.member.id}, ${decision!.id}, 'tech_spec', ${crypto.randomUUID()}, '/work/shop', false) returning id`;
+    await f.client`insert into task_terminal_events (session_id, kind, summary) values (${session!.id}, 'started', 'startup')`;
+    const [artifact] = await f.client`insert into task_artifacts (task_id, project_id, relative_path, latest_version) values (${spec.task}, ${f.project.id}, 'docs/spec.md', 1) returning id`;
+    await f.client`insert into task_artifact_versions (artifact_id, version, skill, session_id, content, sha256, byte_size, trigger) values (${artifact!.id}, 1, 'spec-writer', ${session!.id}, '# Spec', ${"c".repeat(64)}, 6, 'stop')`;
+    f.world.issue = { ...ISSUE_41, nodeId: "I_fixture_41", number: 41 };
+    const preview = await f.caller(f.member.id).preview({ kind: "task", projectId: f.project.id, taskId: spec.task });
+    await f.caller(f.member.id).start({ target: { kind: "task", projectId: f.project.id, taskId: spec.task }, fingerprint: preview.fingerprint, requestKey: crypto.randomUUID() });
+    await f.drain();
+    expect(await countWhere("task_artifacts", "task_id", spec.task)).toBe(0);
+    expect(await countWhere("task_terminal_events", "session_id", session!.id)).toBe(0);
+    expect(await countWhere("task_artifact_versions", "artifact_id", artifact!.id)).toBe(0);
+    expect(await countWhere("task_artifacts", "task_id", otherTask)).toBe(1);
+  });
 });

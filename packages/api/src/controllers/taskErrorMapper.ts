@@ -31,7 +31,7 @@ function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" 
   const terminalCode = terminalErrorCode(reason);
   if (terminalCode) return terminalCode;
   if (reason === "provider_rate_limited" || reason === "planning_capacity" || reason === "planning_rate_limited") return "TOO_MANY_REQUESTS";
-  if (["task_unavailable", "project_unavailable", "decision_unavailable", "work_unavailable"].includes(reason)) return "NOT_FOUND";
+  if (["task_unavailable", "project_unavailable", "decision_unavailable", "work_unavailable", "artifact_unavailable"].includes(reason)) return "NOT_FOUND";
   if (["author_required", "access_revoked", "admin_required", "operator_required"].includes(reason)) return "FORBIDDEN";
   if (["claim_unresolved", "issue_ineligible", "board_status_changed", "source_changed"].includes(reason)) return "PRECONDITION_FAILED";
   if (["revision_conflict", "operation_active", "request_key_reused", "task_complete", "stale_proposal", "capture_active", "capture_expired", "attempt_not_uncertain", "refinement_pending", "generation_not_failed", "stale_execution", "planning_conflict", "planning_exists", "planning_retry_required", "planning_not_failed", "planning_approved", "planning_not_ready", "replan_unavailable", "deletion_fenced"].includes(reason)) return "CONFLICT";
@@ -46,5 +46,6 @@ function taskErrorMessage(reason: TaskError["reason"], fieldErrors?: Record<stri
   if (reason === "session_required") return "Sessão necessária";
   if (reason === "author_required") return "Somente a pessoa autora pode alterar esta tarefa";
   if (reason === "task_unavailable" || reason === "project_unavailable") return "Tarefa indisponível";
+  if (reason === "artifact_unavailable") return "Artefato indisponível";
   return "Não foi possível concluir a operação da tarefa";
 }

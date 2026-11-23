@@ -73,5 +73,5 @@ export async function linkClone(setup: PlanningSetup, path: string, userId = set
 }
 
 export function openInput(setup: PlanningSetup, overrides: Record<string, unknown> = {}) {
-  return { projectId: setup.project.id, taskId: setup.taskId, prompt: "/flow-dev:direct-executor faça", requestKey: crypto.randomUUID(), attachmentIds: [], issueImageIds: [], ...overrides };
+  return { projectId: setup.project.id, taskId: setup.taskId, prompt: "/flow-dev:direct-executor faça", requestKey: crypto.randomUUID(), attachmentIds: [], issueImageIds: [], allowAdditional: true, ...overrides };
 }

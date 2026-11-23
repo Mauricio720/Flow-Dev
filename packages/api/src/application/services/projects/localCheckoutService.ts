@@ -2,13 +2,14 @@ import type { SessionPrincipal } from "../../../context";
 import type { AccessDao } from "../../database/dao/accessDao";
 import type { LocalCheckoutDao, StoredLocalCheckout } from "../../database/dao/localCheckoutDao";
 import type { ProjectDao, ProjectRecord } from "../../database/dao/projectDao";
+import type { FolderPick, FolderPicker } from "../../terminal/folderPicker";
 import type { GitCheckoutInspector } from "../../terminal/gitCheckoutInspector";
 import { ProjectAccessService } from "../access/projectAccessService";
 import { CheckoutValidationError, StaleLocalCheckoutError } from "./localCheckoutErrors";
 import { isValidCheckoutPath, matchesRepository, repositorySlugOf } from "./localCheckoutRules";
 
 export type VerifiedCheckout = { path: string; branch: string | null; detachedSha: string | null; dirty: boolean };
-export type LocalCheckoutDeps = { checkouts: LocalCheckoutDao; inspector: GitCheckoutInspector; projects: ProjectDao; permissions?: AccessDao; clock?: () => Date };
+export type LocalCheckoutDeps = { checkouts: LocalCheckoutDao; inspector: GitCheckoutInspector; projects: ProjectDao; permissions?: AccessDao; clock?: () => Date; picker?: FolderPicker };
 export type SaveLocalCheckoutRequest = { projectId: string; path: string; expectedVersion?: number };
 export type LocalCheckoutView = { path: string; verifiedAt: string; version: number };
 
@@ -30,12 +31,14 @@ export class LocalCheckoutService {
   private readonly checkouts: LocalCheckoutDao;
   private readonly inspector: GitCheckoutInspector;
   private readonly clock: () => Date;
+  private readonly picker?: FolderPicker;
 
   constructor(deps: LocalCheckoutDeps) {
     this.access = new ProjectAccessService(deps.projects, deps.permissions);
     this.checkouts = deps.checkouts;
     this.inspector = deps.inspector;
     this.clock = deps.clock ?? (() => new Date());
+    this.picker = deps.picker;
   }
 
   async get(actor: SessionPrincipal, projectId: string) {
@@ -50,6 +53,13 @@ export class LocalCheckoutService {
     const saved = await this.checkouts.save({ userId: actor.userId, projectId: input.projectId, path: verified.path, verifiedAt: this.clock(), expectedVersion: input.expectedVersion });
     if (!saved) throw new StaleLocalCheckoutError();
     return toView(saved);
+  }
+
+  async pickFolder(actor: SessionPrincipal, projectId: string): Promise<FolderPick> {
+    await this.access.requireProject(actor, projectId);
+    if (!this.picker) return { kind: "unavailable" };
+    const row = await this.checkouts.find(actor.userId, projectId);
+    return this.picker.pick(row?.path ?? null);
   }
 
   async remove(actor: SessionPrincipal, projectId: string) {

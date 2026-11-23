@@ -1,0 +1,14 @@
+DROP TABLE IF EXISTS "task_artifact_versions";
+DROP TABLE IF EXISTS "task_artifacts";
+DROP TABLE IF EXISTS "task_terminal_events";
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_token_hash_unique";
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_status_check";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "last_capture_at";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "ended_at";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "started_at";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "dropped_events";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "active_skill";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "end_reason";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "claude_session_id";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "token_hash";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "status";

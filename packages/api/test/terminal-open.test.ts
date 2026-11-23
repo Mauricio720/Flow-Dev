@@ -22,7 +22,7 @@ describe("tasks.terminal.open", () => {
     const [command] = harness.launcher.commands;
     const contextDir = join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "contexto");
     expect(command!.file).toBe("gnome-terminal");
-    expect(command!.args).toEqual([`--working-directory=${clone}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", contextDir, "--", prompt]);
+    expect(command!.args).toEqual([`--working-directory=${clone}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", contextDir, "--settings", join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "privado", "settings.json"), "--", prompt]);
     expect((await stat(join(contextDir, "skills", "direct-executor", "SKILL.md"))).isFile()).toBe(true);
     const [session] = await setup.database.select().from(taskTerminalSessions);
     expect(session).toMatchObject({ id: result.sessionId, taskId: setup.taskId, userId: setup.ownerId, route: "tech_spec", checkoutPath: clone, dirty: false, launchFailedAt: null });
@@ -48,13 +48,13 @@ describe("tasks.terminal.open", () => {
     const error = await harness.caller.terminal.open(input).then(() => null, (caught: unknown) => caught as Error & { cause?: { reason: string } });
     expect(error?.cause?.reason).toBe("terminal_unavailable");
     const [failed] = await setup.database.select().from(taskTerminalSessions);
-    expect(failed).toMatchObject({ launchError: "sem display" });
+    expect(failed).toMatchObject({ launchError: "sem display", status: "launch_failed" });
     expect(failed!.launchFailedAt).not.toBeNull();
     await expect(stat(join(harness.state, "flow-dev", "terminal-sessions", failed!.id))).rejects.toThrow();
     harness.launcher.failure = null;
     expect((await harness.caller.terminal.open(input)).sessionId).toBe(failed!.id);
     const [retried] = await setup.database.select().from(taskTerminalSessions);
-    expect(retried).toMatchObject({ launchFailedAt: null, launchError: null });
+    expect(retried).toMatchObject({ launchFailedAt: null, launchError: null, status: "opening" });
     expect(harness.launcher.commands).toHaveLength(1);
   });
 

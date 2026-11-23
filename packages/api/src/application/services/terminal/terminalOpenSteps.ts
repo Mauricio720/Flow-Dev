@@ -1,14 +1,16 @@
 import type { ApprovedPlanning, TerminalSessionDao, TerminalSessionRecord } from "../../database/dao/terminalSessionDao";
 import type { SessionContextBuilder } from "../../terminal/sessionContext";
+import type { SessionSettingsWriter } from "../../terminal/sessionSettings";
 import type { TerminalCommand, TerminalLauncher } from "../../terminal/terminalLauncher";
 import { TaskError } from "../tasks/taskErrors";
+import { createSessionToken, hashSessionToken } from "./sessionToken";
 import { LAUNCH_FAILED_KIND } from "./terminalErrorCatalog";
 import type { TerminalLog } from "./terminalLaunchLog";
 import { appendAttachmentsSection } from "./terminalPromptBuilder";
 import type { AttachmentPlan, SessionAttachmentDelivery } from "./sessionAttachmentDelivery";
 
-export type CommandBuilder = (input: { checkoutPath: string; contextDir: string; prompt: string }) => TerminalCommand;
-export type LaunchStepDeps = { sessions: TerminalSessionDao; context: SessionContextBuilder; launcher: TerminalLauncher; buildCommand: CommandBuilder; delivery: SessionAttachmentDelivery; log: TerminalLog };
+export type CommandBuilder = (input: { checkoutPath: string; contextDir: string; settingsPath: string; prompt: string }) => TerminalCommand;
+export type LaunchStepDeps = { sessions: TerminalSessionDao; context: SessionContextBuilder; settings: SessionSettingsWriter; launcher: TerminalLauncher; buildCommand: CommandBuilder; delivery: SessionAttachmentDelivery; log: TerminalLog };
 
 export function promptSource(planning: ApprovedPlanning) {
   return { route: planning.route, issueNumber: planning.issue.number, title: planning.issue.title, url: planning.issue.url, body: planning.issue.body, complexity: planning.complexity, reasons: planning.reasons, uncertainties: planning.uncertainties };
@@ -26,11 +28,18 @@ export class TerminalLaunchStep {
       const paths = await this.deps.context.prepare(session.id);
       const delivered = await this.deps.delivery.deliver(plan, { userId: session.userId, taskId: session.taskId, attachmentsDir: paths.attachmentsDir });
       const finalPrompt = appendAttachmentsSection(prompt, delivered);
-      await this.deps.launcher.launch(this.deps.buildCommand({ checkoutPath: session.checkoutPath, contextDir: paths.contextDir, prompt: finalPrompt }));
+      const settingsPath = await this.prepareSettings(session.id, paths.sessionDir);
+      await this.deps.launcher.launch(this.deps.buildCommand({ checkoutPath: session.checkoutPath, contextDir: paths.contextDir, settingsPath, prompt: finalPrompt }));
     } catch (error) {
       await this.fail(session, error);
     }
     await this.deps.delivery.finish(plan, session.userId).catch(() => undefined);
+  }
+
+  private async prepareSettings(sessionId: string, sessionDir: string) {
+    const token = createSessionToken();
+    await this.deps.sessions.setTokenHash(sessionId, hashSessionToken(token));
+    return this.deps.settings.write({ sessionDir, token });
   }
 
   private async fail(session: TerminalSessionRecord, error: unknown): Promise<never> {

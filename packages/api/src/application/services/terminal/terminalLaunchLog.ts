@@ -6,6 +6,10 @@ export interface TerminalLog {
   skillMissing(fields: LogFields): void;
   attachmentRejected(fields: LogFields): void;
   cleanup(fields: LogFields): void;
+  tokenRejected(fields: LogFields): void;
+  eventDropped(fields: LogFields): void;
+  captureDone(fields: LogFields): void;
+  captureFailed(fields: LogFields): void;
 }
 
 const LOG_PREFIX = "[terminal]";
@@ -34,5 +38,21 @@ export class ConsoleTerminalLog implements TerminalLog {
 
   cleanup(fields: LogFields) {
     console.info(format("cleanup", fields));
+  }
+
+  tokenRejected(fields: LogFields) {
+    console.warn(format("token_rejected", fields));
+  }
+
+  eventDropped(fields: LogFields) {
+    console.warn(format("event_dropped", fields));
+  }
+
+  captureDone(fields: LogFields) {
+    console.info(format("capture", fields));
+  }
+
+  captureFailed(fields: LogFields) {
+    console.error(format("capture_failed", fields));
   }
 }

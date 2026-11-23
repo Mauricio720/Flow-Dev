@@ -8,11 +8,14 @@ import { createProductionTaskPlanningController } from "../infra/planningComposi
 import type { TaskPlanningController } from "../controllers/taskPlanningController";
 import { createTaskPlanningRouter } from "./taskPlanning";
 import { createTerminalRouter } from "./terminal";
+import { createArtifactsRouter } from "./artifacts";
+import type { TaskArtifactController } from "../controllers/taskArtifactController";
+import { createProductionArtifactController } from "../infra/artifactComposition";
 import type { TerminalSessionController } from "../controllers/terminalSessionController";
 import { createProductionTerminalController } from "../infra/terminalComposition";
 import { taskPreviewInputSchema, taskPublishInputSchema, taskReconcilePublicationInputSchema } from "../schemas/tasks";
 
-export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController };
+export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController };
 
 export function createTasksRouter(controller?: TasksController, publicationController?: TaskPublicationController, extras: TasksRouterExtras = {}) {
   let production: TasksController | undefined;
@@ -23,6 +26,8 @@ export function createTasksRouter(controller?: TasksController, publicationContr
   const getPlanningController = () => extras.planning ?? (planning ??= createProductionTaskPlanningController());
   let terminal: TerminalSessionController | undefined;
   const getTerminalController = () => extras.terminal ?? (terminal ??= createProductionTerminalController());
+  let artifacts: TaskArtifactController | undefined;
+  const getArtifactController = () => extras.artifacts ?? (artifacts ??= createProductionArtifactController());
   const call = <T>(operation: () => Promise<T>) => operation().catch(mapTaskError);
   return router({
     list: protectedProcedure.input(taskListInputSchema).query(({ ctx, input }) => call(() => getController().list(ctx.principal, input))),
@@ -39,6 +44,7 @@ export function createTasksRouter(controller?: TasksController, publicationContr
     publish: protectedProcedure.input(taskPublishInputSchema).mutation(({ ctx, input }) => call(() => getPublicationController().publish(ctx.principal, input))),
     planning: createTaskPlanningRouter(getPlanningController),
     terminal: createTerminalRouter(getTerminalController),
+    artifacts: createArtifactsRouter(getArtifactController),
     reconcilePublication: protectedProcedure.input(taskReconcilePublicationInputSchema).mutation(({ ctx, input }) => call(() => getPublicationController().reconcilePublication(ctx.principal, input))),
   });
 }

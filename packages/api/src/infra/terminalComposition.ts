@@ -5,6 +5,7 @@ import { IssueImageSelector } from "../application/services/terminal/issueImageS
 import { ConsoleTerminalLog } from "../application/services/terminal/terminalLaunchLog";
 import { TerminalOpenGuard } from "../application/services/terminal/terminalOpenGuard";
 import type { SessionContextBuilder } from "../application/terminal/sessionContext";
+import type { SessionSettingsWriter } from "../application/terminal/sessionSettings";
 import type { TerminalLauncher, ToolLocator } from "../application/terminal/terminalLauncher";
 import { TerminalSessionController } from "../controllers/terminalSessionController";
 import { createWorkAuthorization } from "./assignedIssuesComposition";
@@ -16,13 +17,14 @@ import { DrizzleTerminalAttachmentDao } from "./database/dao/terminal/drizzleTer
 import { DrizzleTerminalIssueImageDao } from "./database/dao/terminal/drizzleTerminalIssueImageDao";
 import { DrizzleTerminalSessionDao } from "./database/dao/terminal/drizzleTerminalSessionDao";
 import { DiskAttachmentFileStore } from "./terminal/diskAttachmentFileStore";
+import { ClaudeSessionSettingsWriter } from "./terminal/claudeSessionSettingsWriter";
 import { FileSessionContextBuilder } from "./terminal/fileSessionContextBuilder";
 import { ExecGitCheckoutInspector } from "./terminal/execGitCheckoutInspector";
 import { terminalPorts } from "./terminal/terminalPorts";
 import { buildTerminalCommand } from "./terminal/terminalCommand";
 
 type Database = ReturnType<typeof requireDatabase>;
-export type TerminalOverrides = { launcher?: TerminalLauncher; tools?: ToolLocator; context?: SessionContextBuilder; env?: NodeJS.ProcessEnv; workAuthorization?: ReturnType<typeof createWorkAuthorization> };
+export type TerminalOverrides = { launcher?: TerminalLauncher; tools?: ToolLocator; context?: SessionContextBuilder; settings?: SessionSettingsWriter; env?: NodeJS.ProcessEnv; workAuthorization?: ReturnType<typeof createWorkAuthorization> };
 
 export function createTerminalController(database: Database, overrides: TerminalOverrides = {}) {
   const env = overrides.env ?? process.env;
@@ -39,7 +41,7 @@ export function createTerminalController(database: Database, overrides: Terminal
   const delivery = new SessionAttachmentDelivery({ attachments, issueImages, files });
   const sessions = new DrizzleTerminalSessionDao(database);
   const authorization = overrides.workAuthorization ?? createWorkAuthorization(database);
-  return new TerminalSessionController({ authorization, sessions, projects, guard, issueImages, delivery, cleanup: new TerminalAttachmentService({ authorization, plannings: sessions, attachments, files, log }), context, launcher: overrides.launcher ?? ports.launcher, buildCommand: buildTerminalCommand, log });
+  return new TerminalSessionController({ authorization, sessions, projects, guard, issueImages, delivery, cleanup: new TerminalAttachmentService({ authorization, plannings: sessions, attachments, files, log }), context, settings: overrides.settings ?? new ClaudeSessionSettingsWriter(env), launcher: overrides.launcher ?? ports.launcher, buildCommand: buildTerminalCommand, log });
 }
 
 export function createProductionTerminalController() {

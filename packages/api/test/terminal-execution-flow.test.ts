@@ -38,7 +38,8 @@ describe("V-10a link, attach and open through the environment-selected launcher"
     const recorded = JSON.parse(await readFile(recordFile, "utf8")) as { file: string; args: string[] };
     const folder = join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "contexto");
     expect(recorded.file).toBe("gnome-terminal");
-    expect(recorded.args.slice(0, 7)).toEqual([`--working-directory=${clone}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", folder, "--"]);
+    const settings = join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "privado", "settings.json");
+    expect(recorded.args.slice(0, 9)).toEqual([`--working-directory=${clone}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", folder, "--settings", settings, "--"]);
     const attachmentLines = [`- nota.md (text/markdown): ${join(folder, "anexos", "01-nota.md")}`, `- print.png (image/png): ${join(folder, "anexos", "02-print.png")}`];
     expect(recorded.args.at(-1)).toBe(`${prompt}\n\nAnexos (leia antes de começar):\n${attachmentLines.join("\n")}`);
     expect((await readdir(join(folder, "anexos"))).sort()).toEqual(["01-nota.md", "02-print.png"]);

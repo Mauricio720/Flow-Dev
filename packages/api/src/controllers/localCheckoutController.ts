@@ -12,6 +12,10 @@ export class LocalCheckoutController {
     return this.service.save(actor, input);
   }
 
+  pickFolder(actor: SessionPrincipal, projectId: string) {
+    return this.service.pickFolder(actor, projectId);
+  }
+
   remove(actor: SessionPrincipal, projectId: string) {
     return this.service.remove(actor, projectId);
   }

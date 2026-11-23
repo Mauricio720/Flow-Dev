@@ -9,6 +9,7 @@ export { createProductionRepositoryOAuthController } from "./infra/composition";
 export { createProductionTasksController, createProductionTranscriptionController } from "./infra/composition";
 export { createProductionTaskImageController } from "./infra/taskImageComposition";
 export { createProductionTerminalAttachmentController } from "./infra/terminalAttachmentComposition";
+export { createProductionTerminalEventController } from "./infra/terminalEventComposition";
 export { attachmentFailureOf } from "./controllers/terminalAttachmentController";
 export { attachmentFailureMessage } from "./application/services/terminal/terminalAttachmentErrors";
 export { oauthFailure } from "./controllers/repositoryOAuthController";

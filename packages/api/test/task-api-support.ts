@@ -23,7 +23,7 @@ export async function taskFixture() {
   const taskDao = new DrizzleTaskDao(current.database);
   const repositoryAccess = new RepositoryAccessService(new DrizzleProjectDao(current.database), new DrizzleAccessDao(current.database), current.authorization, current.github);
   const callerFor = (userId: string) => createTasksRouter(new TasksController(taskDao, repositoryAccess)).createCaller({ principal: { userId, sessionId }, requestId: "task-api-test" });
-  return { database: current.database, project, createProject: current.project, githubFetcher: current.fetcher, ownerId: current.member.id, readerId: current.admin.id, sessionId, taskDao, repositoryAccess, permissions: current.permissions, authorize: current.authorize, caller: callerFor(current.member.id), callerFor, taskId: "00000000-0000-4000-8000-000000000011", revisionId: "00000000-0000-4000-8000-000000000037", previousRevisionId: "00000000-0000-4000-8000-000000000036", proposalId: "00000000-0000-4000-8000-000000000063" };
+  return { database: current.database, client: current.client, project, createProject: current.project, githubFetcher: current.fetcher, ownerId: current.member.id, readerId: current.admin.id, sessionId, taskDao, repositoryAccess, permissions: current.permissions, authorize: current.authorize, caller: callerFor(current.member.id), callerFor, taskId: "00000000-0000-4000-8000-000000000011", revisionId: "00000000-0000-4000-8000-000000000037", previousRevisionId: "00000000-0000-4000-8000-000000000036", proposalId: "00000000-0000-4000-8000-000000000063" };
 }
 
 export async function closeTaskFixture() { await current?.close(); current = undefined; }

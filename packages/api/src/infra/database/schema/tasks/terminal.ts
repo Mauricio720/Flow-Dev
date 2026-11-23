@@ -21,8 +21,18 @@ export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   filesRemovedAt: timestamp("files_removed_at", { withTimezone: true }),
   launchFailedAt: timestamp("launch_failed_at", { withTimezone: true }),
   launchError: text("launch_error"),
+  status: text("status").notNull().default("opening"),
+  tokenHash: text("token_hash").unique(),
+  claudeSessionId: text("claude_session_id"),
+  endReason: text("end_reason"),
+  activeSkill: text("active_skill"),
+  droppedEvents: integer("dropped_events").notNull().default(0),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  lastCaptureAt: timestamp("last_capture_at", { withTimezone: true }),
 }, (table) => [
   check("task_terminal_sessions_route_check", sql`${table.route} in ('direct_execution','tech_spec','prd')`),
+  check("task_terminal_sessions_status_check", sql`${table.status} in ('opening','running','waiting','unconfirmed','ended','launch_failed')`),
   uniqueIndex("task_terminal_sessions_request_key_unique").on(table.userId, table.requestKey),
   index("task_terminal_sessions_task_opened_idx").on(table.taskId, table.openedAt.desc()),
 ]);

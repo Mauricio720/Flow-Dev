@@ -6,6 +6,8 @@ import { DrizzleTaskWorkspaceDao } from "./drizzleTaskWorkspaceDao";
 import type { Database } from "../../client";
 import { readPlanningProjection } from "./planningProjection";
 import { readLastOpened } from "../terminal/terminalLastOpened";
+import { TerminalExecutionReader } from "../../../../application/services/terminal/terminalExecutionReader";
+import { DrizzleTerminalExecutionDao } from "../terminal/drizzleTerminalExecutionDao";
 
 export class DrizzleTaskDao implements TaskDao {
   private readonly commands: DrizzleTaskCommandDao;
@@ -35,6 +37,9 @@ export class DrizzleTaskDao implements TaskDao {
   revisions(taskId: string, cursor: string | undefined, limit: number) { return this.reads.revisions(taskId, cursor, limit); }
   planning(taskId: string) { return readPlanningProjection(this.database, taskId); }
   terminalLastOpened(taskId: string) { return readLastOpened(this.database, taskId); }
+  terminalExecution(taskId: string, now: Date) { return this.executionReader().read(taskId, now); }
+  expireUnconfirmedTerminals(scope: { projectId: string; taskId: string }, now: Date) { return this.executionReader().expireUnconfirmed(scope, now); }
+  private executionReader() { return new TerminalExecutionReader(new DrizzleTerminalExecutionDao(this.database)); }
   snapshot<T>(read: (dao: TaskDao) => Promise<T>): Promise<T> { return this.database.transaction((tx) => read(new DrizzleTaskDao(tx as unknown as Database)), { isolationLevel: "repeatable read", accessMode: "read only" }); }
   start(input: Parameters<TaskDao["start"]>[0]) { return this.commands.start(input); }
   send(input: Parameters<TaskDao["send"]>[0], kind: "clarification" | "refinement") { return this.commands.send(input, kind); }

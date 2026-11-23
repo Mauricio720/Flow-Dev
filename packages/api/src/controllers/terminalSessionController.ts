@@ -13,7 +13,7 @@ import { MAX_PROMPT_LENGTH, buildDefaultPrompt } from "../application/services/t
 import type { SessionPrincipal } from "../context";
 
 type Scope = { projectId: string; taskId: string };
-type OpenInput = Scope & { prompt: string; requestKey: string; attachmentIds: string[]; issueImageIds: string[] };
+type OpenInput = Scope & { prompt: string; requestKey: string; attachmentIds: string[]; issueImageIds: string[]; allowAdditional: boolean };
 type OpenRequest = { actor: SessionPrincipal; input: OpenInput; planning: ApprovedPlanning; checkout: VerifiedCheckout; plan: AttachmentPlan };
 
 export type TerminalControllerDeps = LaunchStepDeps & {
@@ -49,6 +49,7 @@ export class TerminalSessionController {
     const planning = await this.requireApproved(input.taskId);
     const existing = await this.deps.sessions.findByRequestKey(actor.userId, input.requestKey);
     if (existing && !existing.launchFailedAt) return openedResult(existing);
+    if (!input.allowAdditional && await this.deps.sessions.hasActiveSession(input.taskId, actor.userId)) throw new TaskError("session_already_active");
     this.deps.guard.assertPrompt(input.prompt);
     const repository = await this.repositoryOf(input.projectId);
     const checkout = await this.deps.guard.requireCheckout({ userId: actor.userId, projectId: input.projectId, repository });

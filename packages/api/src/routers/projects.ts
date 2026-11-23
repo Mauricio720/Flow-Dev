@@ -20,6 +20,7 @@ export function createProjectsRouter(controller?: ProjectsController, agentSetti
       get: protectedProcedure.input(projectIdSchema).query(({ ctx, input }) => getLocalCheckout().get(ctx.principal, input.projectId).catch(mapLocalCheckoutError)),
       save: protectedProcedure.input(localCheckoutSaveInputSchema).mutation(({ ctx, input }) => getLocalCheckout().save(ctx.principal, input).catch(mapLocalCheckoutError)),
       remove: protectedProcedure.input(projectIdSchema).mutation(({ ctx, input }) => getLocalCheckout().remove(ctx.principal, input.projectId).catch(mapLocalCheckoutError)),
+      pickFolder: protectedProcedure.input(projectIdSchema).mutation(({ ctx, input }) => getLocalCheckout().pickFolder(ctx.principal, input.projectId).catch(mapLocalCheckoutError)),
     }),
     agentSettings: router({
       get: protectedProcedure.input(projectIdSchema).query(({ ctx, input }) => getAgentSettings().get(ctx.principal, input.projectId).catch(mapAgentSettingsError)),

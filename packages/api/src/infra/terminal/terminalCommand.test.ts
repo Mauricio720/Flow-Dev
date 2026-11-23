@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildTerminalCommand } from "./terminalCommand";
 
-const BASE = { checkoutPath: "/home/ana/Área de trabalho/shop", contextDir: "/state/flow-dev/terminal-sessions/s1/contexto" };
+const BASE = { checkoutPath: "/home/ana/Área de trabalho/shop", contextDir: "/state/flow-dev/terminal-sessions/s1/contexto", settingsPath: "/state/flow-dev/terminal-sessions/s1/privado/settings.json" };
 
 describe("buildTerminalCommand", () => {
   it("V-04a runs gnome-terminal with the prompt as a single argument", () => {
@@ -16,9 +16,9 @@ describe("buildTerminalCommand", () => {
     expect(args.at(-2)).toBe("--");
   });
 
-  it("V-04c uses the exact argument order recorded in the spike", () => {
+  it("V-07f uses the exact argument order recorded in the spike, with --settings before the separator", () => {
     const { args } = buildTerminalCommand({ ...BASE, prompt: "p" });
-    expect(args).toEqual([`--working-directory=${BASE.checkoutPath}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", BASE.contextDir, "--", "p"]);
+    expect(args).toEqual([`--working-directory=${BASE.checkoutPath}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", BASE.contextDir, "--settings", BASE.settingsPath, "--", "p"]);
   });
 
   it("V-04g passes quotes, command substitution, backticks and newlines byte for byte", () => {

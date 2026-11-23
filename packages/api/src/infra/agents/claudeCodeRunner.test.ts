@@ -27,6 +27,12 @@ describe("Claude Code runner", () => {
     expect(JSON.parse(dump.mcp)).toEqual({ mcpServers: { flow: { type: "http", url: "http://127.0.0.1:1/mcp/e", headers: { Authorization: `Bearer ${CAPABILITY}` } } } });
   });
 
+  it("V-20e gives the isolated runner no settings, hooks or events url", async () => {
+    const { output } = await runner.run(request({ mode: "dump" }));
+    const dump = JSON.stringify(output);
+    expect(dump).not.toMatch(/--settings|hooks|terminal-sessions\/events/);
+  });
+
   it("never shows the capability in the arguments and drops variables outside the allow list", async () => {
     const { output } = await runner.run(request({ mode: "dump" }));
     const dump = output as { args: string[]; env: Record<string, string> };

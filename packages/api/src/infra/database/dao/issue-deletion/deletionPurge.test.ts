@@ -7,6 +7,7 @@ const TASK_OWNED_TABLES = [
   "task_issue_sources", "task_issue_snapshots", "task_issue_claims", "task_issue_claim_attempts",
   "task_context_capabilities", "task_capture_leases", "task_publication_attempts", "task_images",
   "task_planning_decisions", "task_terminal_sessions", "task_terminal_attachments",
+  "task_terminal_events", "task_artifacts", "task_artifact_versions",
   "task_spec_workflows", "task_spec_workspaces", "task_spec_stages", "task_spec_attempts",
   "task_spec_commands", "task_spec_packages", "task_spec_documents", "task_spec_approvals",
   "task_spec_finalizations", "task_spec_interactions", "task_spec_events",
@@ -47,6 +48,10 @@ describe("deletion cleanup planner", () => {
     before("task_planning_decisions", "task_operations");
     before("local_commands", "task_execution_runs");
     before("task_terminal_attachments", "task_terminal_sessions");
+    before("task_terminal_events", "task_terminal_sessions");
+    before("task_artifact_versions", "task_artifacts");
+    before("task_artifact_versions", "task_terminal_sessions");
+    before("task_artifacts", "tasks");
     before("task_terminal_sessions", "task_planning_decisions");
     before("task_terminal_sessions", "tasks");
   });

@@ -15,11 +15,12 @@ export type TaskWorkspaceParts = {
   authorNames: Map<string, string>;
   planning: Resolved<"planning">;
   lastOpened: Resolved<"terminalLastOpened">;
+  execution: Resolved<"terminalExecution">;
   canAuthor: boolean;
 };
 
 export function workspaceDto(parts: TaskWorkspaceParts) {
   const { task, revision, canAuthor } = parts;
   const summary = mapTaskSummary(task, revision ? storedDraftLabels(revision.canonicalDraft) : []);
-  return { task: summaryDto(summary, parts.authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal: parts.pendingProposal, publication: publicationDto(parts.publication), activity: parts.activity, planning: planningDto(parts.planning, { canOperate: false }), terminal: { lastOpened: parts.lastOpened }, permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? splitFailureCode(task.lastError) : null };
+  return { task: summaryDto(summary, parts.authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal: parts.pendingProposal, publication: publicationDto(parts.publication), activity: parts.activity, planning: planningDto(parts.planning, { canOperate: false }), terminal: { lastOpened: parts.lastOpened }, execution: parts.execution, permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? splitFailureCode(task.lastError) : null };
 }

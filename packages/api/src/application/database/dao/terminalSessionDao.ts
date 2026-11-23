@@ -1,4 +1,5 @@
 import type { PlanningComplexity, PlanningRoute } from "../../services/tasks/planningContracts";
+import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 import type { SessionAttachmentLinks } from "./terminalAttachmentLinks";
 
 export type TerminalSessionRecord = {
@@ -17,6 +18,15 @@ export type TerminalSessionRecord = {
   filesRemovedAt: Date | null;
   launchFailedAt: Date | null;
   launchError: string | null;
+  status: TerminalSessionStatus;
+  tokenHash: string | null;
+  claudeSessionId: string | null;
+  endReason: string | null;
+  activeSkill: string | null;
+  droppedEvents: number;
+  startedAt: Date | null;
+  endedAt: Date | null;
+  lastCaptureAt: Date | null;
 };
 
 export type ApprovedPlanning = {
@@ -49,4 +59,6 @@ export interface TerminalSessionDao {
   create(input: CreateTerminalSessionInput, links?: SessionAttachmentLinks): Promise<CreatedTerminalSession>;
   markLaunchFailed(sessionId: string, reason: string): Promise<void>;
   lastOpened(taskId: string): Promise<LastTerminalOpening | null>;
+  hasActiveSession(taskId: string, userId: string): Promise<boolean>;
+  setTokenHash(sessionId: string, tokenHash: string): Promise<void>;
 }

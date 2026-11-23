@@ -22,8 +22,8 @@ export type TaskErrorReason =
   | "admin_required" | "operator_required" | "claim_unresolved" | "issue_ineligible" | "board_status_changed"
   | "source_changed" | "work_unavailable" | "deletion_fenced"
   | "local_agent_unavailable" | "agent_settings_invalid" | "planning_local_agent_unavailable" | "planning_agent_settings_invalid"
-  | "planning_not_approved" | "checkout_missing" | "checkout_invalid" | "skill_missing" | "claude_unavailable" | "terminal_unavailable" | "terminal_disabled" | "prompt_invalid" | "attachment_missing" | "attachment_limit"
-  | "image_too_large" | "unsupported_image_type" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable";
+  | "planning_not_approved" | "checkout_missing" | "checkout_invalid" | "skill_missing" | "claude_unavailable" | "terminal_unavailable" | "terminal_disabled" | "session_already_active" | "prompt_invalid" | "attachment_missing" | "attachment_limit"
+  | "image_too_large" | "unsupported_image_type" | "artifact_unavailable" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable";
 
 export class TaskError extends Error {
   constructor(readonly reason: TaskErrorReason, readonly fieldErrors?: Record<string, string>, cause?: unknown, readonly retryAfterSeconds?: number) {
