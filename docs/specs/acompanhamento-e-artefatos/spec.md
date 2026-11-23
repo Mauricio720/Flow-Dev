@@ -1,6 +1,6 @@
 # Spec B: Acompanhamento e artefatos da execução no terminal
 
-> **Status:** Rascunho · **Data:** 2026-11-22 · **Nível:** L4 ancorada (vai para spec-to-tasks) · **Depende de:** [Spec A — Abrir a execução no terminal](../execucao-no-terminal/spec.md). Os IDs são compartilhados com a Spec A e nunca se repetem.
+> **Status:** Implementada (smoke V-19 na tela pendente) · **Data:** 2026-11-22 · **Nível:** L4 ancorada (vai para spec-to-tasks) · **Depende de:** [Spec A — Abrir a execução no terminal](../execucao-no-terminal/spec.md). Os IDs são compartilhados com a Spec A e nunca se repetem.
 > **Contexto lido:** o mesmo da Spec A, mais `apps/web/src/features/issues/assigned-work/` (`components/PlanningTimeline.tsx`, `workState.ts`), `packages/api/src/infra/agents/contextMcpEndpoint.ts`, `.claude/skills/spec-writer/SKILL.md` e `.claude/skills/spec-to-tasks/SKILL.md` (onde cada skill salva o que produz), `apps/web/node_modules/next/dist/docs/01-app/03-api-reference/04-functions/after.md`, e a documentação de hooks do Claude Code (`type: "http"`, `headers`, `onFailure`).
 
 ## Resumo para revisão
@@ -254,19 +254,21 @@ tasks.byId → + execution: { sessions: Array<{ id; status; route; userName; ope
   silentSince: string | null; droppedEvents; hiddenEvents: number;
   events: Array<{ kind; summary; occurredAt }>;
   attachments: Array<{ name; contentType; byteSize; availableUntil: string | null; removed: boolean }> }>;
-  artifacts: Array<{ id; path; skill; versions: number; updatedAt; lastFailure: string | null }> }
-tasks.artifacts.list({ taskId }) → Array<{ id; path; versions: Array<{ version; skill; sessionId; capturedAt; byteSize }> }>
-tasks.artifacts.get({ artifactId, version?: number }) → { path; version; skill; sessionId; capturedAt; content: string }
+  artifacts: Array<{ id; path; skill: string | null; versions: number; updatedAt; lastFailure: string | null }> }
+tasks.artifacts.list({ projectId, taskId }) → Array<{ id; path; versions: Array<{ version; skill; sessionId: string | null; capturedAt; byteSize }> }>
+tasks.artifacts.get({ projectId, taskId, artifactId, version?: number }) → { path; version; skill; sessionId: string | null; capturedAt; content: string }
 ```
+
+As inputs de `tasks.artifacts.*` levam `projectId` e `taskId`, como as demais procedures `tasks.*` (desvio consciente da versão anterior da §15, que só trazia `taskId` e `artifactId`). `artifactId` de outra tarefa e versão inexistente respondem `NOT_FOUND` (`artifact_unavailable`).
 
 **Endpoint de eventos:** `POST /api/terminal-sessions/events`, `Authorization: Bearer <token>`. Do JSON do hook, o handler usa: `hook_event_name`, `session_id`, `prompt`, `tool_name`, `tool_input.file_path`, `tool_input.command`, `tool_input.skill`, `message` e `reason`. Respostas:
 - `204` sem corpo quando o token vale, inclusive para evento descartado;
 - `401` quando não vale;
 - `413` acima de 5 MB, contado em `dropped_events`.
 
-Nunca devolve JSON de decisão, para não interferir no Claude.
+Nunca devolve JSON de decisão, para não interferir no Claude. O corpo traz também campos que o handler não lê: `tool_response` (conteúdo e saída) e `last_assistant_message`.
 
-**Settings** (formato exato a confirmar no V-15):
+**Settings** (formato confirmado no V-15 com o Claude Code 2.1.330; ver [v15-spike.md](v15-spike.md)). O `SessionStart` é aceito mas não entregue em hooks `http`, e o `SessionEnd` com `reason: "clear"` não encerra a sessão:
 
 ```json
 { "hooks": {
@@ -441,3 +443,23 @@ Nenhuma.
 ## Histórico
 
 - 2026-11-22 — Criação, a partir da divisão da Spec A. Vieram US-03, REQ-014, REQ-016–024, REQ-026, REQ-034, 7.2, NFR-02–04, DEC-02–04, DEC-07, DEC-08, B-05–07, B-10, B-11 e V-05–V-08, com os mesmos IDs. Novos: US-05 (artefatos produzidos pelas skills e guardados no Flow Dev com versões, a pedido do usuário), REQ-041–050, 7.8, NFR-07–09, P-07, P-08, DEC-12–14, B-17–21 e V-15–V-20. Estado `launch_failed` acrescentado à 7.2.
+- 2026-11-22 — V-15 executado (Claude Code 2.1.330): `SessionStart` não chega por hook `http`, então o `started` é gravado no primeiro evento; `SessionEnd` com `reason: "clear"` não encerra a sessão; `Notification` não foi observado; a ferramenta Skill chega por `PostToolUse` com `tool_input.skill` namespaced.
+- 2026-11-22 — Implementada. Premissas aprovadas com o plano e conferidas na implementação:
+  - **P-A:** `/flow-dev:spec-writer`, `/spec-writer` e `tool_input.skill` namespaced gravam a skill como `spec-writer`.
+  - **P-B:** um prompt que começa com `/skill` gera `prompt` e depois `skill`; comandos embutidos (`exit`, `quit`, `clear`, `compact`, `help`, `resume`, `model`, `config`, `status`) não viram skill (e `/exit` e `/clear` nem chegam ao `UserPromptSubmit`, V-15c).
+  - **P-C:** `summary` guarda o valor cru; a tela acrescenta o verbo ("Editou …", "Rodou: …").
+  - **P-D:** `file_edit` fora do clone guarda o caminho absoluto, e a captura o ignora (B-18).
+  - **P-E:** `last_failure` guarda a mensagem da REQ-046 e é limpo na próxima captura bem-sucedida; um arquivo que falha antes de existir versão cria o artefato com `latest_version = 0`.
+  - **P-F:** os artefatos ficam numa seção "Artefatos" dentro da aba "Execução no terminal".
+  - **P-G:** o e2e V-19a/b está escrito e completo, mas fica `test.fixme` com a anotação `feature-gate` do V-10a (a tela do trabalho exige GitHub e quadro controlados); o V-19c cobre o fluxo. **Pendente:** o V-19c rodou em modo `-p`, sem a tela do navegador, o GNOME Terminal nem o `/exit` interativo; a prova do fluxo visível (etapa "Aguardando você", artefato renderizado, seletor de versão, "Encerrada" com horário) ainda não existe.
+  - **P-H:** os testes da migration usam `MIG-a` a `MIG-f`.
+  - **P-I:** as inputs de `tasks.artifacts.*` levam `projectId` e `taskId` (§15).
+  - **P-J:** quem só lê vê "Aguardando a pessoa operadora".
+  - **P-K:** "Não confirmada" é gravada por `tasks.byId` antes do `snapshot`, que é só de leitura.
+- 2026-11-22 — Decisões tomadas na implementação, a partir do V-15 ([v15-spike.md](v15-spike.md)):
+  - o `started` é gravado no primeiro evento da sessão, porque o `SessionStart` não chega por hook `http`;
+  - o `SessionEnd` com `reason: "clear"` só dispara a captura, sem encerrar a sessão nem apagar o `settings.json`;
+  - JSON inválido com token válido responde `204` sem gravar;
+  - `last_capture_at` guarda a marca d'água do maior `occurred_at` capturado, e a ingestão toma o horário dentro da trava da sessão, para que nenhum evento fique para trás de uma captura;
+  - o erro `artifact_unavailable` (NOT_FOUND) cobre artefato ou versão inexistente.
+- 2026-11-22 — Revisão final (review-001): `Smoke V-19` na tela marcado como pendente (P-G); linha do tempo passa a respeitar o modo leitura (P-J); `summary` dos eventos é cortado em 500 em todos os tipos; sessão em estado final recebe `204` antes da leitura do corpo; a expiração de "Não confirmada" filtra pelo projeto; o horário do artefato reflete só a última versão.
