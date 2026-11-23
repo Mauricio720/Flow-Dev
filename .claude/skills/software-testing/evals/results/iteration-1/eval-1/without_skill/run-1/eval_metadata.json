@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "revisao-persistencia-espera",
+  "prompt": "Revise somente os testes de um PR. A implementação calcula total de pedidos e grava em PostgreSQL. O PR inclui um teste que mocka o repositório e verifica somente que save foi chamado, e um teste que espera 5 segundos antes de consultar o resultado. Aponte riscos demonstráveis, menor correção e quais evidências faltam. Não altere arquivos.",
+  "assertions": [
+    "Mostra que verificar save no mock não prova nem o total gravado nem a query real em PostgreSQL.",
+    "Propõe asserção do resultado persistido com banco isolado para o risco de persistência.",
+    "Explica a instabilidade potencial de esperar cinco segundos e propõe sincronização por condição quando necessária.",
+    "Diferencia riscos inferidos da descrição de defeitos confirmados e não afirma ter executado testes.",
+    "Mantém o escopo de revisão sem editar arquivos."
+  ]
+}

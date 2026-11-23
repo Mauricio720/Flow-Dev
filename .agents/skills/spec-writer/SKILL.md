@@ -109,6 +109,14 @@ Never silently settle a product decision that changes behavior.
 
 ## Step 5 — Write
 
+**Testing follows the project's testing skill.** Before writing Part 3, look in `.claude/skills/` and `.agents/skills/` for a skill about testing (in this user's projects, `software-testing`). If there is one, read its SKILL.md and its guide on choosing and designing tests (for `software-testing`, `references/escolha-e-desenho.md`). It is the basis for the test strategy and the verification matrix, which means four things:
+- **One risk card per row.** Each row states the contract at stake, the plausible failure it must catch, the scenario, the **oracle** (the expected result, taken from the requirement and never derived from code), and the **boundary** that must be real versus what may be replaced by a double.
+- **Boundaries, not labels.** Describe what each test exercises for real (database, HTTP, UI) and what is substituted. Do not choose tests by the words "unit" or "integration", and do not impose a fixed ratio between levels.
+- **Doubles only where needed.** Real collaborators where that stays fast and controlled. A real database where SQL, transactions or constraints are the risk. A controlled double for external providers, plus a separate contract check when compatibility is critical.
+- **Few end-to-end journeys,** only for the critical P1 flows. Rule details stay in narrower tests.
+
+If the project has no testing skill, apply the same four points; they are good practice anyway.
+
 Read the template for your level (`references/mini-spec-template.md` or `references/spec-template.md`). Then read `references/requirements-writing.md` for EARS, Given/When/Then, the edge-case sweep, how to quantify NFRs, and the vague words to avoid.
 
 Rules that matter most:
@@ -121,7 +129,7 @@ Rules that matter most:
   - When an edge case is really a requirement, write it as an EARS REQ (SE … ENTÃO …) rather than repeating it in the edge-case table.
 - **Comportamento que não muda:** required whenever an existing system changes. Regressions hide in exactly what nobody wrote down.
 - **Decisions:** at least the primary technical approach, with the alternatives considered and the consequences.
-- **Compact verification matrix:**
+- **Compact verification matrix** (built on the testing skill as above):
   - One row per **requirement group or story**, not one row per scenario.
   - Each row lists the IDs it covers, the test level(s), the component, and the single most important expected result.
   - The test cases themselves are named, one line each, inside the row or in a short list. Do not write a separate test catalog.

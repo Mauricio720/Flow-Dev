@@ -1,0 +1,42 @@
+{
+  "expectations": [
+    {
+      "text": "Usa R$ 200 exatamente e espera frete grátis conforme o critério de aceite.",
+      "passed": true,
+      "evidence": "R$ 200,00 ... frete calculado é R$ 0,00"
+    },
+    {
+      "text": "Pede prova de que o teste falha na versão defeituosa e passa com a correção, ou explica como recuperar essa prova.",
+      "passed": true,
+      "evidence": "versão com o bug ... falha; após a correção ... passa"
+    },
+    {
+      "text": "Se o teste já passava antes, investiga se exercita o caminho real, possui asserção adequada ou se o ambiente mudou.",
+      "passed": true,
+      "evidence": "pedido realmente chega ... cupom, configuração, mock ou arredondamento"
+    },
+    {
+      "text": "Inclui execução da suíte pertinente após a mudança e separa evidência observada de instrução futura.",
+      "passed": true,
+      "evidence": "testes existentes ... Registre os comandos e resultados"
+    },
+    {
+      "text": "Não inventa comando executado nem status de teste.",
+      "passed": true,
+      "evidence": "Orientações no imperativo, sem alegar que comandos foram executados"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "user_notes_summary": {
+    "uncertainties": [
+      "Cenário textual sem código real; a avaliação mede a resposta, não execução de testes."
+    ],
+    "needs_review": [],
+    "workarounds": []
+  }
+}

@@ -54,7 +54,7 @@ A feature usually has 3–7 tasks.
 1. **It is one reviewable change.** A few files, a diff that reads in about 10 minutes, roughly 200–300 changed lines at most.
 2. **It ends in proof.** "Pronto quando" names the exact command (its test, the package typecheck) or the visible behavior that shows it worked.
 3. **It leaves the system working.** After it, the build, the typecheck and the existing tests still pass.
-4. **Its tests come with it.** The mini-task that builds a behavior includes the test that proves it; there is never a "write the tests for the above" step. If the user wants strict TDD, split it into a red step (failing test) and a green step (make it pass).
+4. **Its tests come with it, and they are written per the project's testing skill.** The mini-task that builds a behavior includes the test that proves it; there is never a "write the tests for the above" step. If the user wants strict TDD, split it into a red step (failing test) and a green step (make it pass).
 
 Typical order inside a task: contract or schema → core logic with its unit tests → wiring or integration with its integration test → UI → end-to-end check. Merge a mini-task that has nothing to verify into its neighbor, and put setup in the step that first needs it.
 
@@ -81,6 +81,7 @@ If the user asks for big tasks only (one agent run per task, no mini-task contro
 
   Delegate wide exploration to a subagent.
 - **Read the project instructions** (AGENTS.md, CLAUDE.md, rules files) for constraints every task must respect, and for verification proportionality.
+- **Find the project's testing skill:** look in `.claude/skills/` and `.agents/skills/` for a skill about testing (in this user's projects, `software-testing`). Read its SKILL.md. Every test case you write into the tasks follows it, and every task file points the implementer to it.
 
 ### 3. Inventory the spec
 
@@ -92,6 +93,8 @@ List every item that requires work, by its ID:
 - test cases.
 
 A spec-writer verification matrix is compact (each V-xx row names several cases in a few words): expand each row into concrete cases (V-01a, V-01b…), each with its scenario and expected result. A Compozy `_tests.md` already has concrete IDs (UT/IT/E2E); use them as they are.
+
+Write each concrete case the way the testing skill asks: scenario (input and initial state) → observable expected result, taken from the spec (the oracle) → the boundary that must be real. "Retorna 403 quando o usuário não é membro" is a case; "testar permissões" is not.
 
 ### 4. Plan, and present the plan before writing files
 

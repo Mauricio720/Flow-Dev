@@ -1,0 +1,12 @@
+{
+  "eval_id": 0,
+  "eval_name": "plano-cupom-gateway",
+  "prompt": "Vou adicionar cupom ao checkout em TypeScript. A regra é: cupom de 10% só vale para subtotal acima de R$ 100, com teto de desconto de R$ 30; em R$ 100 exatos não vale. Há uma cobrança via gateway externo. Planeje os testes antes de implementar: casos, fronteiras, dublês e o que cada nível ainda não prova. Não escreva código.",
+  "assertions": [
+    "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.",
+    "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.",
+    "Verifica o valor enviado ou cobrado pelo gateway e explicita que dublê não prova o contrato real do fornecedor.",
+    "Distingue teste da regra de teste de integração com a fronteira externa.",
+    "Não escreve código nem impõe meta arbitrária de cobertura."
+  ]
+}

@@ -1,0 +1,11 @@
+O critério de aceite é **frete grátis para pedidos a partir de R$ 200**, portanto R$ 200,00 está incluído. O teste de regressão deve criar um pedido cujo valor usado pela regra de elegibilidade seja exatamente R$ 200,00, calcular o frete pela API pública pertinente e afirmar o resultado observável: **frete de R$ 0,00** (ou a indicação pública equivalente de frete grátis). O valor esperado vem do critério de aceite, não da implementação. Use valores monetários exatos, como centavos inteiros ou `Decimal`, conforme o projeto, e evite simular a própria regra. Um caso de R$ 199,99 com frete cobrado ajuda a garantir que o limite não foi deslocado para baixo; R$ 200,01 pode confirmar o comportamento acima dele se ainda não houver cobertura.
+
+Sequência mínima para o agente:
+
+1. Conferir qual valor do pedido entra no critério (por exemplo, antes ou depois de descontos) e usar um pedido que resulte em **R$ 200,00 nessa entrada**, sem outras condições que alterem o frete.
+2. Adicionar o teste e executá-lo contra a versão com o bug. Ele deve falhar especificamente porque foi cobrado frete em R$ 200,00. Registrar o comando, a falha e o código de saída.
+3. Aplicar a correção mínima e executar novamente o teste, os testes próximos da regra e os gates pertinentes exigidos pelo projeto. Conferir saídas e códigos de retorno; relatar apenas o que de fato foi executado.
+
+Se o teste novo **já passava antes da correção**, ele ainda não demonstra regressão. Verifique se executou a versão anterior, se o pedido chegou à regra com exatamente R$ 200,00, se a asserção observa o frete real e se mocks, descontos ou outra condição não mascararam o caminho defeituoso. Ajuste o cenário e rode de novo. Se necessário, reintroduza temporariamente e de forma reversível a comparação incorreta (`> 200`), confirme que o teste falha pelo motivo esperado e restaure a correção. Se ele continuar passando, reformule o teste antes de usá-lo como evidência; se o comportamento anterior já estava correto nesse caminho, investigue onde o bug realmente ocorria.
+
+Sem acesso ao código e aos comandos do projeto nesta tarefa, esta é uma estratégia de verificação, não um relato de testes executados. O teste da regra isolada não comprova, por si só, que o valor chega corretamente a ela no fluxo completo do pedido.

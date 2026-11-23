@@ -30,7 +30,7 @@ complexity: medium
 - LEIA a spec (e `_tests.md`, se existir) e as regras do projeto (AGENTS.md/CLAUDE.md) antes de começar.
 - FAÇA UMA MINI-TAREFA POR VEZ, na ordem. Só marque `[x]` depois de rodar o "Pronto quando" dela e ver passar.
 - NÃO saia dos arquivos listados sem registrar o motivo no Registro de execução. Nada fora do escopo da spec.
-- TESTES JUNTO COM O CÓDIGO: cada mini-tarefa implementa os testes atribuídos a ela.
+- TESTES JUNTO COM O CÓDIGO: cada mini-tarefa implementa os testes atribuídos a ela, seguindo a skill de testes do projeto (`software-testing`). Isso quer dizer: asserção sobre o efeito observável e específico, nada de `toBeTruthy` ou de só checar que não lança exceção; valor esperado tirado da spec, nunca recalculado a partir do código; dublês só em dependências lentas, variáveis ou externas; relógio e aleatoriedade controlados. Em bug, reproduza antes de corrigir.
 - Ao começar, mude `status` para `in_progress` (aqui e em `_tasks.md`). Mude para `completed` só quando todas as mini-tarefas estiverem marcadas e os critérios de sucesso tiverem sido comprovados por comando. A revisão contra a spec acontece uma vez, depois de todas as tarefas: não a espere aqui, mas não marque nada que não tenha prova, porque ela vai conferir.
 </critical>
 
@@ -72,6 +72,7 @@ complexity: medium
 <Somente se a spec deixou algo em aberto que afeta esta tarefa. "Nenhuma" caso contrário.>
 
 ## Testes atribuídos
+<!-- Cenário → resultado esperado (da spec) · fronteira real. Ex.: "V-05: não membro chama comments.list → FORBIDDEN · serviço + Postgres de teste". -->
 - [ ] V-03a: <cenário> → <resultado esperado>
 - [ ] V-03b: …
 - [ ] V-05: …

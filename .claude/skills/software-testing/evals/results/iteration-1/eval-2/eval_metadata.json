@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "regressao-limite-frete",
+  "prompt": "Corrigi um bug de cálculo de frete: pedidos com valor exatamente R$ 200 não recebiam frete grátis, apesar do critério de aceite dizer 'a partir de R$ 200'. Explique o teste de regressão e a sequência mínima de verificação para um agente de IA; indique o que fazer se o teste novo já passava antes da correção.",
+  "assertions": [
+    "Usa R$ 200 exatamente e espera frete grátis conforme o critério de aceite.",
+    "Pede prova de que o teste falha na versão defeituosa e passa com a correção, ou explica como recuperar essa prova.",
+    "Se o teste já passava antes, investiga se exercita o caminho real, possui asserção adequada ou se o ambiente mudou.",
+    "Inclui execução da suíte pertinente após a mudança e separa evidência observada de instrução futura.",
+    "Não inventa comando executado nem status de teste."
+  ]
+}

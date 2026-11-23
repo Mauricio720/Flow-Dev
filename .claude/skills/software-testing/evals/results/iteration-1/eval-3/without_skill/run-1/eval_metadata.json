@@ -1,0 +1,12 @@
+{
+  "eval_id": 3,
+  "eval_name": "revisao-frete-verde-falso",
+  "prompt": "Revise somente os testes em evals/fixtures/frete/ frente ao contrato do README e à implementação. Rode a suíte se possível. Quero saber que defeitos podem passar com tudo verde, quais dois testes você adicionaria primeiro e por quê. Não edite os arquivos da fixture.",
+  "assertions": [
+    "Executa a suíte e relata que os dois testes existentes passam sem provar conformidade com o contrato.",
+    "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condição > 20000 retorna 1500.",
+    "Mostra que assert.ok(frete > 0) não garante o valor contratual de 1500 centavos.",
+    "Identifica que subtotal negativo deveria ser rejeitado, mas não há teste para isso.",
+    "Prioriza dois testes com resultado esperado preciso e mantém os arquivos de entrada intactos."
+  ]
+}

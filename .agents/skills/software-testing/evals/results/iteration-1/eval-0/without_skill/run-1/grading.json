@@ -1,0 +1,42 @@
+{
+  "expectations": [
+    {
+      "text": "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.",
+      "passed": true,
+      "evidence": "R$ 100,00 sem desconto; R$ 100,10 com desconto R$ 10,01"
+    },
+    {
+      "text": "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.",
+      "passed": true,
+      "evidence": "R$ 300,10 com desconto R$ 30,00"
+    },
+    {
+      "text": "Verifica o valor enviado ou cobrado pelo gateway e explicita que dublê não prova o contrato real do fornecedor.",
+      "passed": true,
+      "evidence": "valor enviado ... total calculado; dublê não prova ... provedor"
+    },
+    {
+      "text": "Distingue teste da regra de teste de integração com a fronteira externa.",
+      "passed": true,
+      "evidence": "Unidade — regra de preço; Integração do checkout — orquestração"
+    },
+    {
+      "text": "Não escreve código nem impõe meta arbitrária de cobertura.",
+      "passed": true,
+      "evidence": "Plano em tabela e prosa, sem código executável ou meta de cobertura"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "user_notes_summary": {
+    "uncertainties": [
+      "Cenário textual sem código real; a avaliação mede a resposta, não execução de testes."
+    ],
+    "needs_review": [],
+    "workarounds": []
+  }
+}

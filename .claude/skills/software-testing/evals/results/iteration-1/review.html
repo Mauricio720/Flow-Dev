@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "software-testing", "runs": [{"id": "eval-0-with_skill-run-1", "prompt": "Vou adicionar cupom ao checkout em TypeScript. A regra \u00e9: cupom de 10% s\u00f3 vale para subtotal acima de R$ 100, com teto de desconto de R$ 30; em R$ 100 exatos n\u00e3o vale. H\u00e1 uma cobran\u00e7a via gateway externo. Planeje os testes antes de implementar: casos, fronteiras, dubl\u00eas e o que cada n\u00edvel ainda n\u00e3o prova. N\u00e3o escreva c\u00f3digo.", "eval_id": 0, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Plano de testes do cupom no checkout\n\n**Contrato conhecido:** o desconto \u00e9 10% do subtotal somente quando ele \u00e9 **maior** que R$ 100,00, limitado a R$ 30,00. O gateway deve receber o valor final calculado para a cobran\u00e7a. Os valores esperados abaixo v\u00eam dessa regra, e n\u00e3o de uma futura implementa\u00e7\u00e3o.\n\n| Risco e caso | Entrada e a\u00e7\u00e3o | Resultado observ\u00e1vel esperado | Falha que detecta |\n|---|---|---|---|\n| Limite inferior | Aplicar o cupom com subtotal de R$ 99,99 e de R$ 100,00 | Desconto R$ 0,00; total igual ao subtotal | Usar `>= 100` ou conceder desconto abaixo do limite |\n| Primeiro valor eleg\u00edvel | Aplicar com R$ 100,01 | Cupom eleg\u00edvel e desconto de 10%, arredondado conforme a pol\u00edtica monet\u00e1ria definida | Usar `> 100,01`, perder centavos ou arredondar o subtotal antes de comparar |\n| C\u00e1lculo normal | Aplicar com R$ 101,00 | Desconto R$ 10,10; total R$ 90,90 | Percentual, base de c\u00e1lculo ou subtra\u00e7\u00e3o incorretos |\n| Teto | Aplicar com R$ 290,00, R$ 300,00 e R$ 310,00 | Descontos R$ 29,00, R$ 30,00 e R$ 30,00; totais R$ 261,00, R$ 270,00 e R$ 280,00 | Teto aplicado cedo demais, tarde demais ou ausente |\n| Valores inv\u00e1lidos | Informar subtotal negativo, `NaN` ou infinito, se a API p\u00fablica puder receb\u00ea-los | Entrada rejeitada antes de cobrar; nenhum valor inv\u00e1lido enviado ao gateway | Cobran\u00e7a inv\u00e1lida ou desconto negativo |\n\n**Primeira fronteira \u2014 regra de pre\u00e7o:** testar a API p\u00fablica que calcula o total, com dados em centavos ou outra representa\u00e7\u00e3o monet\u00e1ria definida pelo projeto e colaboradores simples reais. Comparar desconto e total exatos. Esses testes provam a condi\u00e7\u00e3o estrita e o teto; n\u00e3o provam que o checkout usa o c\u00e1lculo nem que a requisi\u00e7\u00e3o ao gateway est\u00e1 correta.\n\n**Segunda fronteira \u2014 checkout e cobran\u00e7a:** exercitar o fluxo real de checkout com a regra real e substituir somente o gateway por um dubl\u00ea controlado. Para R$ 100,00, R$ 101,00 e R$ 310,00, verificar respectivamente uma cobran\u00e7a de R$ 100,00, R$ 90,90 e R$ 280,00, com a moeda correta e uma \u00fanica tentativa por confirma\u00e7\u00e3o. Simular aprova\u00e7\u00e3o e recusa/erro do gateway; na recusa/erro, o checkout n\u00e3o deve apresentar pagamento conclu\u00eddo. Se existir reenvio ou retry, testar que ele n\u00e3o cria cobran\u00e7a duplicada, conforme o contrato de idempot\u00eancia adotado. Isso prova a liga\u00e7\u00e3o entre c\u00e1lculo e cobran\u00e7a contra o dubl\u00ea; n\u00e3o prova compatibilidade com o fornecedor nem a jornada pela interface.\n\n**Terceira fronteira \u2014 cliente do gateway:** exercitar o cliente HTTP real contra um servidor controlado, verificando a serializa\u00e7\u00e3o do valor em centavos, moeda e interpreta\u00e7\u00e3o de aprova\u00e7\u00e3o e recusa. Um contrato do fornecedor ou teste isolado em sandbox deve conferir a compatibilidade quando dispon\u00edvel. Respostas simuladas e sandbox n\u00e3o provam disponibilidade nem comportamento da produ\u00e7\u00e3o.\n\n**Jornada completa:** manter poucos testes pela interface p\u00fablica, por exemplo R$ 100,00 sem desconto e R$ 101,00 com desconto, conferindo o total mostrado, o total cobrado e o resultado percebido ap\u00f3s aprova\u00e7\u00e3o. Eles comprovam a conex\u00e3o entre interface e checkout, mas n\u00e3o substituem os casos de fronteira da regra nem garantem o contrato externo.\n\n**Decis\u00f5es a fixar antes de implementar:** pol\u00edtica de arredondamento dos 10% em centavos (inclusive R$ 100,01); se o subtotal usado no limite e no desconto \u00e9 antes de frete, impostos ou outros descontos; comportamento para cupom desconhecido/repetido; estado do pedido e pol\u00edtica de retry ap\u00f3s erro de gateway. At\u00e9 isso ser definido, n\u00e3o inventar valores esperados para esses cen\u00e1rios. Nenhum teste foi executado: esta entrega \u00e9 somente o planejamento pedido.\n"}], "grading": {"expectations": [{"text": "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.", "passed": true, "evidence": "R$ 99,99 e de R$ 100,00; R$ 101,00 ... desconto R$ 10,10"}, {"text": "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.", "passed": true, "evidence": "R$ 310,00 ... desconto R$ 30,00"}, {"text": "Verifica o valor enviado ou cobrado pelo gateway e explicita que dubl\u00ea n\u00e3o prova o contrato real do fornecedor.", "passed": true, "evidence": "cobran\u00e7a de R$ 90,90 ... dubl\u00ea n\u00e3o prova compatibilidade"}, {"text": "Distingue teste da regra de teste de integra\u00e7\u00e3o com a fronteira externa.", "passed": true, "evidence": "Primeira fronteira \u2014 regra de pre\u00e7o; Segunda fronteira \u2014 checkout e cobran\u00e7a"}, {"text": "N\u00e3o escreve c\u00f3digo nem imp\u00f5e meta arbitr\u00e1ria de cobertura.", "passed": true, "evidence": "Planejamento em tabela e prosa, sem c\u00f3digo execut\u00e1vel ou meta de cobertura"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-0-without_skill-run-1", "prompt": "Vou adicionar cupom ao checkout em TypeScript. A regra \u00e9: cupom de 10% s\u00f3 vale para subtotal acima de R$ 100, com teto de desconto de R$ 30; em R$ 100 exatos n\u00e3o vale. H\u00e1 uma cobran\u00e7a via gateway externo. Planeje os testes antes de implementar: casos, fronteiras, dubl\u00eas e o que cada n\u00edvel ainda n\u00e3o prova. N\u00e3o escreva c\u00f3digo.", "eval_id": 0, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Plano de testes para cupom no checkout\n\nAntes de implementar, fixaria o contrato: o percentual incide sobre o subtotal antes do desconto; a condi\u00e7\u00e3o \u00e9 **subtotal > R$ 100,00**; o desconto \u00e9 `min(10% do subtotal, R$ 30,00)`; o gateway recebe o total ap\u00f3s o desconto, em centavos. Falta definir a regra de arredondamento dos 10% quando o resultado tem fra\u00e7\u00f5es de centavo. Essa decis\u00e3o deve ser expl\u00edcita antes de fechar as expectativas monet\u00e1rias desses casos. Tamb\u00e9m conv\u00e9m esclarecer se frete e taxas comp\u00f5em o subtotal; os exemplos abaixo consideram apenas o subtotal dos itens.\n\n| Subtotal | Desconto esperado | Total esperado | Motivo |\n| --- | ---: | ---: | --- |\n| R$ 0,00 | R$ 0,00 | R$ 0,00 | Base sem elegibilidade; se checkout de valor zero for proibido, validar a rejei\u00e7\u00e3o em vez de cobrar. |\n| R$ 99,99 | R$ 0,00 | R$ 99,99 | Abaixo do limiar. |\n| R$ 100,00 | R$ 0,00 | R$ 100,00 | Fronteira estrita: igualdade n\u00e3o vale. |\n| R$ 100,01 | Eleg\u00edvel; 10% sujeito ao arredondamento acordado | Subtotal menos desconto arredondado | Primeiro centavo acima do limiar. |\n| R$ 100,10 | R$ 10,01 | R$ 90,09 | Percentual com resultado exato em centavos. |\n| R$ 299,90 | R$ 29,99 | R$ 269,91 | Abaixo do teto, sem ambiguidade de arredondamento. |\n| R$ 300,00 | R$ 30,00 | R$ 270,00 | Ponto em que percentual e teto coincidem. |\n| R$ 300,10 | R$ 30,00 | R$ 270,10 | Acima do teto. |\n\nTestaria tamb\u00e9m o checkout sem cupom: desconto zero e cobran\u00e7a pelo subtotal. Para subtotal negativo, esperaria valida\u00e7\u00e3o de entrada e nenhuma chamada ao gateway. Se houver entrada de c\u00f3digo de cupom, acrescentaria casos de c\u00f3digo inv\u00e1lido ou n\u00e3o aplic\u00e1vel conforme a pol\u00edtica de produto definida; n\u00e3o presumiria se a compra deve ser recusada ou prosseguir sem desconto.\n\n## N\u00edveis e dubl\u00eas\n\n1. **Unidade \u2014 regra de pre\u00e7o:** testes parametrizados para a tabela, incluindo as duas fronteiras e o teto; verificar desconto, total e representa\u00e7\u00e3o exata em centavos. Ap\u00f3s decidir o arredondamento, acrescentar valores que gerem fra\u00e7\u00f5es de centavo e verificar que o teto nunca \u00e9 excedido. A fun\u00e7\u00e3o de c\u00e1lculo deve ser testada sem gateway. Isso prova a aritm\u00e9tica e a condi\u00e7\u00e3o local, mas n\u00e3o prova que o checkout usa o resultado na cobran\u00e7a.\n2. **Integra\u00e7\u00e3o do checkout \u2014 orquestra\u00e7\u00e3o:** usar um *fake* ou *stub* do gateway com um *spy* para registrar a chamada. Em aprova\u00e7\u00e3o, verificar que o valor enviado \u00e9 o total calculado, na moeda e unidade esperadas, e que pedido/recibo registram subtotal, desconto e total coerentes. Repetir para R$ 100,00, R$ 100,01 e R$ 300,10. Em recusa e falha de comunica\u00e7\u00e3o, verificar que a compra n\u00e3o \u00e9 marcada como paga e que o erro \u00e9 tratado conforme o contrato. Se existir retentativa, verificar chave de idempot\u00eancia e aus\u00eancia de cobran\u00e7as duplicadas. Esses testes provam o fluxo da aplica\u00e7\u00e3o, mas o dubl\u00ea n\u00e3o prova formato, autentica\u00e7\u00e3o nem comportamento reais do provedor.\n3. **Contrato/adaptador do gateway:** testar serializa\u00e7\u00e3o do valor em centavos, moeda, campos obrigat\u00f3rios, interpreta\u00e7\u00e3o de aprova\u00e7\u00e3o/recusa e tratamento de timeout/erro contra o contrato oficial ou ambiente de teste do gateway. Isso detecta diverg\u00eancias de protocolo, mas ainda n\u00e3o prova uma cobran\u00e7a real ponta a ponta nem disponibilidade do servi\u00e7o em produ\u00e7\u00e3o.\n4. **Fluxo ponta a ponta:** em ambiente de teste isolado do provedor, concluir uma compra com cupom aplic\u00e1vel e conferir o valor capturado e o estado do pedido; incluir ao menos uma compra de R$ 100,00 sem desconto. Isso cobre a integra\u00e7\u00e3o dos componentes e a cobran\u00e7a simulada, mas n\u00e3o garante comportamento da produ\u00e7\u00e3o, todos os meios de pagamento ou aus\u00eancia de falhas futuras.\n\nExecutaria primeiro os testes de unidade e integra\u00e7\u00e3o com dubl\u00ea para orientar a implementa\u00e7\u00e3o. Manteria os testes com o gateway real de teste em uma su\u00edte separada, pois dependem de rede, credenciais e disponibilidade externa.\n"}], "grading": {"expectations": [{"text": "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.", "passed": true, "evidence": "R$ 100,00 sem desconto; R$ 100,10 com desconto R$ 10,01"}, {"text": "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.", "passed": true, "evidence": "R$ 300,10 com desconto R$ 30,00"}, {"text": "Verifica o valor enviado ou cobrado pelo gateway e explicita que dubl\u00ea n\u00e3o prova o contrato real do fornecedor.", "passed": true, "evidence": "valor enviado ... total calculado; dubl\u00ea n\u00e3o prova ... provedor"}, {"text": "Distingue teste da regra de teste de integra\u00e7\u00e3o com a fronteira externa.", "passed": true, "evidence": "Unidade \u2014 regra de pre\u00e7o; Integra\u00e7\u00e3o do checkout \u2014 orquestra\u00e7\u00e3o"}, {"text": "N\u00e3o escreve c\u00f3digo nem imp\u00f5e meta arbitr\u00e1ria de cobertura.", "passed": true, "evidence": "Plano em tabela e prosa, sem c\u00f3digo execut\u00e1vel ou meta de cobertura"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-1-with_skill-run-1", "prompt": "Revise somente os testes de um PR. A implementa\u00e7\u00e3o calcula total de pedidos e grava em PostgreSQL. O PR inclui um teste que mocka o reposit\u00f3rio e verifica somente que save foi chamado, e um teste que espera 5 segundos antes de consultar o resultado. Aponte riscos demonstr\u00e1veis, menor corre\u00e7\u00e3o e quais evid\u00eancias faltam. N\u00e3o altere arquivos.", "eval_id": 1, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Revis\u00e3o dos testes do PR\n\nEscopo: a revis\u00e3o se baseia apenas nos dois testes descritos. N\u00e3o foram fornecidos diff, caminhos, linhas, contrato do c\u00e1lculo nem resultados de execu\u00e7\u00e3o. Os pontos abaixo s\u00e3o lacunas de evid\u00eancia desses testes, n\u00e3o defeitos confirmados na implementa\u00e7\u00e3o.\n\n1. **Alta \u2014 teste com reposit\u00f3rio mockado.** Verificar apenas que `save` foi chamado continua passando se o total calculado for `0` ou outro valor incorreto. Como o reposit\u00f3rio \u00e9 substitu\u00eddo, tamb\u00e9m n\u00e3o comprova que o PostgreSQL aceita e conserva o registro. **Menor corre\u00e7\u00e3o:** usar pedidos com total esperado derivado da regra de neg\u00f3cio e conferir o valor exato entregue a `save`; acrescentar um caso isolado que execute a grava\u00e7\u00e3o no PostgreSQL de teste e leia o total persistido. Se j\u00e1 existe outro teste que prova a persist\u00eancia real, basta apont\u00e1-lo e fortalecer a asser\u00e7\u00e3o deste teste.\n\n2. **M\u00e9dia \u2014 espera fixa de cinco segundos antes da consulta.** A dura\u00e7\u00e3o n\u00e3o \u00e9 uma condi\u00e7\u00e3o de conclus\u00e3o: o teste pode falhar sob carga quando a grava\u00e7\u00e3o demora mais e sempre acrescenta cinco segundos quando termina antes. **Menor corre\u00e7\u00e3o:** aguardar o sinal de conclus\u00e3o da opera\u00e7\u00e3o; se ela for ass\u00edncrona e n\u00e3o houver sinal, consultar a condi\u00e7\u00e3o observ\u00e1vel com prazo m\u00e1ximo e intervalos curtos, usando dados exclusivos do teste e falha diagn\u00f3stica ao esgotar o prazo. A consulta deve verificar o total esperado, n\u00e3o apenas a exist\u00eancia do registro.\n\n**Evid\u00eancias que faltam:** contrato de quais pedidos entram no total e de precis\u00e3o/arredondamento; diff e linhas dos testes para localizar os achados; exist\u00eancia de outros testes para c\u00e1lculo e persist\u00eancia; configura\u00e7\u00e3o do PostgreSQL de teste, isolamento e limpeza dos dados; mecanismo de conclus\u00e3o da grava\u00e7\u00e3o; execu\u00e7\u00e3o dos testes afetados e resultado em CI. Sem isso, n\u00e3o \u00e9 poss\u00edvel afirmar que o PR inteiro deixa essas regras descobertas nem que a espera j\u00e1 causou flakiness. Nenhum teste foi executado e nenhum arquivo de produ\u00e7\u00e3o ou teste foi alterado nesta revis\u00e3o.\n"}], "grading": {"expectations": [{"text": "Mostra que verificar save no mock n\u00e3o prova nem o total gravado nem a query real em PostgreSQL.", "passed": true, "evidence": "save ... continua passando se o total calculado for 0; n\u00e3o comprova PostgreSQL"}, {"text": "Prop\u00f5e asser\u00e7\u00e3o do resultado persistido com banco isolado para o risco de persist\u00eancia.", "passed": true, "evidence": "grava\u00e7\u00e3o no PostgreSQL de teste e leia o total persistido"}, {"text": "Explica a instabilidade potencial de esperar cinco segundos e prop\u00f5e sincroniza\u00e7\u00e3o por condi\u00e7\u00e3o quando necess\u00e1ria.", "passed": true, "evidence": "dura\u00e7\u00e3o n\u00e3o \u00e9 uma condi\u00e7\u00e3o de conclus\u00e3o; consultar a condi\u00e7\u00e3o observ\u00e1vel"}, {"text": "Diferencia riscos inferidos da descri\u00e7\u00e3o de defeitos confirmados e n\u00e3o afirma ter executado testes.", "passed": true, "evidence": "lacunas de evid\u00eancia ... n\u00e3o defeitos confirmados; nenhum teste foi executado"}, {"text": "Mant\u00e9m o escopo de revis\u00e3o sem editar arquivos.", "passed": true, "evidence": "Nenhum arquivo ... foi alterado"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-1-without_skill-run-1", "prompt": "Revise somente os testes de um PR. A implementa\u00e7\u00e3o calcula total de pedidos e grava em PostgreSQL. O PR inclui um teste que mocka o reposit\u00f3rio e verifica somente que save foi chamado, e um teste que espera 5 segundos antes de consultar o resultado. Aponte riscos demonstr\u00e1veis, menor corre\u00e7\u00e3o e quais evid\u00eancias faltam. N\u00e3o altere arquivos.", "eval_id": 1, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Revis\u00e3o dos testes\n\n1. **O teste com reposit\u00f3rio mockado n\u00e3o protege o c\u00e1lculo nem a grava\u00e7\u00e3o.** Verificar apenas que `save` foi chamado tamb\u00e9m passa se o total enviado estiver errado. O mock tampouco demonstra que o registro foi persistido no PostgreSQL. **Menor corre\u00e7\u00e3o:** usar pedidos com valores distintos e afirmar o total exato no argumento de `save`. Para cobrir a grava\u00e7\u00e3o, manter ou acrescentar um teste de integra\u00e7\u00e3o com PostgreSQL que consulte o registro por uma chave pr\u00f3pria do teste e compare o total gravado.\n\n2. **A espera fixa de 5 segundos torna o teste lento e n\u00e3o garante sincroniza\u00e7\u00e3o.** Ele pode falhar se a grava\u00e7\u00e3o levar mais tempo e sempre desperdi\u00e7a 5 segundos quando termina antes. **Menor corre\u00e7\u00e3o:** se a opera\u00e7\u00e3o for s\u00edncrona, consultar logo ap\u00f3s seu retorno; se for ass\u00edncrona, aguardar o sinal de conclus\u00e3o ou consultar repetidamente at\u00e9 encontrar o registro e o total esperados, com prazo m\u00e1ximo e erro claro ao expirar.\n\n**Evid\u00eancias que faltam:** o diff completo dos testes e o contrato de execu\u00e7\u00e3o (s\u00edncrono ou ass\u00edncrono); uma asser\u00e7\u00e3o do valor calculado; resultado de uma consulta ao PostgreSQL real, em dados isolados, depois da grava\u00e7\u00e3o; e execu\u00e7\u00e3o desses testes no CI. Com a descri\u00e7\u00e3o fornecida, n\u00e3o h\u00e1 evid\u00eancia de defeito na implementa\u00e7\u00e3o, apenas de lacunas e instabilidade nos testes.\n"}], "grading": {"expectations": [{"text": "Mostra que verificar save no mock n\u00e3o prova nem o total gravado nem a query real em PostgreSQL.", "passed": true, "evidence": "save ... passa se o total enviado estiver errado; n\u00e3o demonstra PostgreSQL"}, {"text": "Prop\u00f5e asser\u00e7\u00e3o do resultado persistido com banco isolado para o risco de persist\u00eancia.", "passed": true, "evidence": "teste de integra\u00e7\u00e3o com PostgreSQL ... compare o total gravado"}, {"text": "Explica a instabilidade potencial de esperar cinco segundos e prop\u00f5e sincroniza\u00e7\u00e3o por condi\u00e7\u00e3o quando necess\u00e1ria.", "passed": true, "evidence": "espera fixa de 5 segundos ... consultar repetidamente at\u00e9 encontrar o registro"}, {"text": "Diferencia riscos inferidos da descri\u00e7\u00e3o de defeitos confirmados e n\u00e3o afirma ter executado testes.", "passed": true, "evidence": "n\u00e3o h\u00e1 evid\u00eancia de defeito na implementa\u00e7\u00e3o, apenas de lacunas"}, {"text": "Mant\u00e9m o escopo de revis\u00e3o sem editar arquivos.", "passed": true, "evidence": "Resposta somente de revis\u00e3o; nenhum arquivo do caso foi editado"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-2-with_skill-run-1", "prompt": "Corrigi um bug de c\u00e1lculo de frete: pedidos com valor exatamente R$ 200 n\u00e3o recebiam frete gr\u00e1tis, apesar do crit\u00e9rio de aceite dizer 'a partir de R$ 200'. Explique o teste de regress\u00e3o e a sequ\u00eancia m\u00ednima de verifica\u00e7\u00e3o para um agente de IA; indique o que fazer se o teste novo j\u00e1 passava antes da corre\u00e7\u00e3o.", "eval_id": 2, "outputs": [{"name": "resposta.md", "type": "text", "content": "O crit\u00e9rio de aceite \u00e9 **frete gr\u00e1tis para pedidos a partir de R$ 200**, portanto R$ 200,00 est\u00e1 inclu\u00eddo. O teste de regress\u00e3o deve criar um pedido cujo valor usado pela regra de elegibilidade seja exatamente R$ 200,00, calcular o frete pela API p\u00fablica pertinente e afirmar o resultado observ\u00e1vel: **frete de R$ 0,00** (ou a indica\u00e7\u00e3o p\u00fablica equivalente de frete gr\u00e1tis). O valor esperado vem do crit\u00e9rio de aceite, n\u00e3o da implementa\u00e7\u00e3o. Use valores monet\u00e1rios exatos, como centavos inteiros ou `Decimal`, conforme o projeto, e evite simular a pr\u00f3pria regra. Um caso de R$ 199,99 com frete cobrado ajuda a garantir que o limite n\u00e3o foi deslocado para baixo; R$ 200,01 pode confirmar o comportamento acima dele se ainda n\u00e3o houver cobertura.\n\nSequ\u00eancia m\u00ednima para o agente:\n\n1. Conferir qual valor do pedido entra no crit\u00e9rio (por exemplo, antes ou depois de descontos) e usar um pedido que resulte em **R$ 200,00 nessa entrada**, sem outras condi\u00e7\u00f5es que alterem o frete.\n2. Adicionar o teste e execut\u00e1-lo contra a vers\u00e3o com o bug. Ele deve falhar especificamente porque foi cobrado frete em R$ 200,00. Registrar o comando, a falha e o c\u00f3digo de sa\u00edda.\n3. Aplicar a corre\u00e7\u00e3o m\u00ednima e executar novamente o teste, os testes pr\u00f3ximos da regra e os gates pertinentes exigidos pelo projeto. Conferir sa\u00eddas e c\u00f3digos de retorno; relatar apenas o que de fato foi executado.\n\nSe o teste novo **j\u00e1 passava antes da corre\u00e7\u00e3o**, ele ainda n\u00e3o demonstra regress\u00e3o. Verifique se executou a vers\u00e3o anterior, se o pedido chegou \u00e0 regra com exatamente R$ 200,00, se a asser\u00e7\u00e3o observa o frete real e se mocks, descontos ou outra condi\u00e7\u00e3o n\u00e3o mascararam o caminho defeituoso. Ajuste o cen\u00e1rio e rode de novo. Se necess\u00e1rio, reintroduza temporariamente e de forma revers\u00edvel a compara\u00e7\u00e3o incorreta (`> 200`), confirme que o teste falha pelo motivo esperado e restaure a corre\u00e7\u00e3o. Se ele continuar passando, reformule o teste antes de us\u00e1-lo como evid\u00eancia; se o comportamento anterior j\u00e1 estava correto nesse caminho, investigue onde o bug realmente ocorria.\n\nSem acesso ao c\u00f3digo e aos comandos do projeto nesta tarefa, esta \u00e9 uma estrat\u00e9gia de verifica\u00e7\u00e3o, n\u00e3o um relato de testes executados. O teste da regra isolada n\u00e3o comprova, por si s\u00f3, que o valor chega corretamente a ela no fluxo completo do pedido.\n"}], "grading": {"expectations": [{"text": "Usa R$ 200 exatamente e espera frete gr\u00e1tis conforme o crit\u00e9rio de aceite.", "passed": true, "evidence": "R$ 200,00 ... frete de R$ 0,00"}, {"text": "Pede prova de que o teste falha na vers\u00e3o defeituosa e passa com a corre\u00e7\u00e3o, ou explica como recuperar essa prova.", "passed": true, "evidence": "falhar ... vers\u00e3o com o bug; passar com corre\u00e7\u00e3o; reintroduza temporariamente"}, {"text": "Se o teste j\u00e1 passava antes, investiga se exercita o caminho real, possui asser\u00e7\u00e3o adequada ou se o ambiente mudou.", "passed": true, "evidence": "se executou a vers\u00e3o anterior ... mocks, descontos ou outra condi\u00e7\u00e3o"}, {"text": "Inclui execu\u00e7\u00e3o da su\u00edte pertinente ap\u00f3s a mudan\u00e7a e separa evid\u00eancia observada de instru\u00e7\u00e3o futura.", "passed": true, "evidence": "testes pr\u00f3ximos ... gates pertinentes; estrat\u00e9gia, n\u00e3o relato executado"}, {"text": "N\u00e3o inventa comando executado nem status de teste.", "passed": true, "evidence": "Sem acesso ao c\u00f3digo ... n\u00e3o um relato de testes executados"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-2-without_skill-run-1", "prompt": "Corrigi um bug de c\u00e1lculo de frete: pedidos com valor exatamente R$ 200 n\u00e3o recebiam frete gr\u00e1tis, apesar do crit\u00e9rio de aceite dizer 'a partir de R$ 200'. Explique o teste de regress\u00e3o e a sequ\u00eancia m\u00ednima de verifica\u00e7\u00e3o para um agente de IA; indique o que fazer se o teste novo j\u00e1 passava antes da corre\u00e7\u00e3o.", "eval_id": 2, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Teste de regress\u00e3o do frete gr\u00e1tis\n\nCrie um teste no n\u00edvel mais pr\u00f3ximo da regra de c\u00e1lculo, usando o mesmo caminho pelo qual o pedido real obt\u00e9m o frete. Com um pedido eleg\u00edvel cujo subtotal considerado pela regra seja **R$ 200,00**, afirme que o frete calculado \u00e9 **R$ 0,00**. Inclua valores vizinhos para delimitar a fronteira: **R$ 199,99** deve manter o frete normal e **R$ 200,01** deve receber frete gr\u00e1tis. Use valores monet\u00e1rios exatos (centavos inteiros ou decimal), sem ponto flutuante; deixe expl\u00edcito se descontos entram no valor usado pela regra.\n\n## Verifica\u00e7\u00e3o m\u00ednima para o agente\n\n1. Execute o teste novo na vers\u00e3o com o bug, antes da corre\u00e7\u00e3o, e confirme que **falha especificamente no pedido de R$ 200,00**: o resultado \u00e9 frete cobrado quando o esperado \u00e9 zero.\n2. Execute o mesmo teste ap\u00f3s a corre\u00e7\u00e3o e confirme que passa. Rode tamb\u00e9m os testes existentes do c\u00e1lculo de frete para detectar efeitos sobre as faixas vizinhas.\n3. Registre os comandos e resultados dessas execu\u00e7\u00f5es. S\u00f3 declare que o teste cobre a regress\u00e3o se houver evid\u00eancia de que ele detectava o defeito e passa com a corre\u00e7\u00e3o.\n\nSe o teste novo **j\u00e1 passava antes da corre\u00e7\u00e3o**, n\u00e3o o aceite como prova de regress\u00e3o. Verifique se o pedido realmente chega ao c\u00e1lculo alterado, se o subtotal usado \u00e9 exatamente R$ 200,00, se um cupom, configura\u00e7\u00e3o, mock ou arredondamento antecipa o frete gr\u00e1tis e se a asser\u00e7\u00e3o observa o valor final correto. Ajuste o cen\u00e1rio para reproduzir a falha e repita a sequ\u00eancia. Se o comportamento antigo n\u00e3o puder ser reproduzido, investigue a causa e relate essa limita\u00e7\u00e3o; n\u00e3o atribua ao teste uma prote\u00e7\u00e3o que ele n\u00e3o demonstrou.\n"}], "grading": {"expectations": [{"text": "Usa R$ 200 exatamente e espera frete gr\u00e1tis conforme o crit\u00e9rio de aceite.", "passed": true, "evidence": "R$ 200,00 ... frete calculado \u00e9 R$ 0,00"}, {"text": "Pede prova de que o teste falha na vers\u00e3o defeituosa e passa com a corre\u00e7\u00e3o, ou explica como recuperar essa prova.", "passed": true, "evidence": "vers\u00e3o com o bug ... falha; ap\u00f3s a corre\u00e7\u00e3o ... passa"}, {"text": "Se o teste j\u00e1 passava antes, investiga se exercita o caminho real, possui asser\u00e7\u00e3o adequada ou se o ambiente mudou.", "passed": true, "evidence": "pedido realmente chega ... cupom, configura\u00e7\u00e3o, mock ou arredondamento"}, {"text": "Inclui execu\u00e7\u00e3o da su\u00edte pertinente ap\u00f3s a mudan\u00e7a e separa evid\u00eancia observada de instru\u00e7\u00e3o futura.", "passed": true, "evidence": "testes existentes ... Registre os comandos e resultados"}, {"text": "N\u00e3o inventa comando executado nem status de teste.", "passed": true, "evidence": "Orienta\u00e7\u00f5es no imperativo, sem alegar que comandos foram executados"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-3-with_skill-run-1", "prompt": "Revise somente os testes em evals/fixtures/frete/ frente ao contrato do README e \u00e0 implementa\u00e7\u00e3o. Rode a su\u00edte se poss\u00edvel. Quero saber que defeitos podem passar com tudo verde, quais dois testes voc\u00ea adicionaria primeiro e por qu\u00ea. N\u00e3o edite os arquivos da fixture.", "eval_id": 3, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Revis\u00e3o dos testes de frete\n\n**Resultado observado:** `node --test` passou: 2 testes, 2 aprovados. O verde n\u00e3o comprova todo o contrato do [README](../../../../../../fixtures/frete/README.md): a implementa\u00e7\u00e3o atual devolve `1500` para `20000` centavos e tamb\u00e9m para `-1`, embora o contrato exija frete zero no primeiro caso e rejei\u00e7\u00e3o no segundo. Confirmei ambos por chamada direta a `calcularFrete`, sem modificar a fixture.\n\n## Achados, por prioridade\n\n1. **Limite inclusivo sem teste \u2014 `frete.test.js:5-7`.** O \u00fanico caso de frete gr\u00e1tis usa `20100`. Se a condi\u00e7\u00e3o for `subtotal > 20000`, como em `frete.js:2`, o teste passa mesmo cobrando R$ 15,00 para uma compra de exatamente R$ 200,00. Acrescentar o caso `calcularFrete(20000) === 0` detecta essa falha concreta.\n2. **Subtotal negativo sem teste \u2014 `frete.test.js:5-11`.** Nenhum caso exige rejei\u00e7\u00e3o. A implementa\u00e7\u00e3o atual devolve `1500` para `-1`, aceitando uma entrada que o contrato pro\u00edbe. Acrescentar uma chamada com `-1` e verificar rejei\u00e7\u00e3o pela conven\u00e7\u00e3o da API. Se a conven\u00e7\u00e3o for lan\u00e7ar exce\u00e7\u00e3o, `assert.throws(() => calcularFrete(-1))` \u00e9 uma asser\u00e7\u00e3o apropriada; o README n\u00e3o define tipo ou mensagem da exce\u00e7\u00e3o.\n3. **Valor abaixo do limite pouco protegido \u2014 `frete.test.js:9-11`.** `assert.ok(calcularFrete(10000) > 0)` aceita, por exemplo, `1` centavo ou `2000` centavos, apesar do pre\u00e7o contratado de `1500`. Trocar por `assert.equal(calcularFrete(10000), 1500)` protegeria o valor exato. Este risco ainda escaparia ap\u00f3s os dois testes priorit\u00e1rios.\n\n## Dois testes a adicionar primeiro\n\n```js\ntest('frete \u00e9 zero no subtotal de R$ 200,00', () => {\n  assert.equal(calcularFrete(20000), 0);\n});\n\ntest('subtotal negativo \u00e9 rejeitado', () => {\n  assert.throws(() => calcularFrete(-1));\n});\n```\n\nEscolho esses dois primeiro porque cada um detecta um defeito **j\u00e1 presente** e cobre uma promessa independente do contrato: a inclusividade do limite e a validade da entrada. O teste de valor exato abaixo do limite vem em seguida; sua asser\u00e7\u00e3o atual ainda permite pre\u00e7o incorreto. Para o segundo teste, a equipe deve confirmar que \u201crejeitado\u201d significa lan\u00e7ar exce\u00e7\u00e3o na API s\u00edncrona; o contrato n\u00e3o especifica a forma da rejei\u00e7\u00e3o.\n\n**Verifica\u00e7\u00e3o:** `node --test` no diret\u00f3rio `frete` terminou com c\u00f3digo 0 (2/2 aprovados). Chamadas diretas retornaram `calcularFrete(20000) === 1500`, `calcularFrete(-1) === 1500` e `calcularFrete(10000) === 1500`. Nenhum arquivo da fixture foi editado.\n"}], "grading": {"expectations": [{"text": "Executa a su\u00edte e relata que os dois testes existentes passam sem provar conformidade com o contrato.", "passed": true, "evidence": "node --test ... 2 testes, 2 aprovados; verde n\u00e3o comprova contrato"}, {"text": "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condi\u00e7\u00e3o > 20000 retorna 1500.", "passed": true, "evidence": "frete.js:2 usa > 20000; calcularFrete(20000) retorna 1500, esperado 0"}, {"text": "Mostra que assert.ok(frete > 0) n\u00e3o garante o valor contratual de 1500 centavos.", "passed": true, "evidence": "assert.ok(calcularFrete(10000) > 0) tamb\u00e9m aceitaria 1 ou 2000"}, {"text": "Identifica que subtotal negativo deveria ser rejeitado, mas n\u00e3o h\u00e1 teste para isso.", "passed": true, "evidence": "calcularFrete(-1) retorna 1500 e nenhum teste exige rejei\u00e7\u00e3o"}, {"text": "Prioriza dois testes com resultado esperado preciso e mant\u00e9m os arquivos de entrada intactos.", "passed": true, "evidence": "Prioriza limite 20000 e rejei\u00e7\u00e3o de -1; hashes da fixture preservados"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}, {"id": "eval-3-without_skill-run-1", "prompt": "Revise somente os testes em evals/fixtures/frete/ frente ao contrato do README e \u00e0 implementa\u00e7\u00e3o. Rode a su\u00edte se poss\u00edvel. Quero saber que defeitos podem passar com tudo verde, quais dois testes voc\u00ea adicionaria primeiro e por qu\u00ea. N\u00e3o edite os arquivos da fixture.", "eval_id": 3, "outputs": [{"name": "resposta.md", "type": "text", "content": "# Revis\u00e3o dos testes de frete\n\nExecutei `node --test` na fixture: **2 testes passaram, nenhum falhou**. Esse resultado n\u00e3o demonstra conformidade com o contrato do README.\n\n## Defeitos que passam com a su\u00edte verde\n\n- **Limite inclusivo incorreto, j\u00e1 presente na implementa\u00e7\u00e3o.** O contrato d\u00e1 frete gr\u00e1tis a partir de 20.000 centavos, inclusive. `calcularFrete(20000)` retorna 1.500 porque a condi\u00e7\u00e3o usa `> 20000`. O teste de frete gr\u00e1tis usa somente 20.100 centavos.\n- **Subtotal negativo aceito, j\u00e1 presente na implementa\u00e7\u00e3o.** `calcularFrete(-1)` retorna 1.500, embora o contrato exija rejei\u00e7\u00e3o. N\u00e3o h\u00e1 teste para entrada negativa.\n- **Valor incorreto abaixo do limite pode passar.** O teste com 10.000 centavos exige apenas resultado maior que zero. Uma implementa\u00e7\u00e3o que cobrasse 1, 1.499 ou 2.000 centavos passaria nesse caso, apesar de o valor contratado ser exatamente 1.500 centavos. Outros subtotais abaixo do limite, inclusive zero e 19.999, tamb\u00e9m n\u00e3o s\u00e3o exercitados.\n\n## Dois testes que adicionaria primeiro\n\n```js\ntest('frete gratis no limite inclusivo de R$ 200', () => {\n  assert.equal(calcularFrete(20000), 0);\n});\n\ntest('rejeita subtotal negativo', () => {\n  assert.throws(() => calcularFrete(-1));\n});\n```\n\nEsses dois testes cobrem regras expl\u00edcitas sem qualquer verifica\u00e7\u00e3o atual e **falham na implementa\u00e7\u00e3o existente**, revelando defeitos reais mesmo com a su\u00edte atual verde. Em seguida, trocaria a asser\u00e7\u00e3o `> 0` por `=== 1500` e verificaria o valor imediatamente abaixo do limite (19.999 centavos).\n\nNenhum arquivo da fixture foi alterado.\n"}], "grading": {"expectations": [{"text": "Executa a su\u00edte e relata que os dois testes existentes passam sem provar conformidade com o contrato.", "passed": true, "evidence": "node --test: 2 testes passaram, nenhum falhou"}, {"text": "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condi\u00e7\u00e3o > 20000 retorna 1500.", "passed": true, "evidence": "calcularFrete(20000) retorna 1500 por > 20000, esperado 0"}, {"text": "Mostra que assert.ok(frete > 0) n\u00e3o garante o valor contratual de 1500 centavos.", "passed": true, "evidence": "asser\u00e7\u00e3o > 0 aceitaria 1, 1499 ou 2000 em vez de 1500"}, {"text": "Identifica que subtotal negativo deveria ser rejeitado, mas n\u00e3o h\u00e1 teste para isso.", "passed": true, "evidence": "calcularFrete(-1) retorna 1500 e n\u00e3o h\u00e1 teste para negativo"}, {"text": "Prioriza dois testes com resultado esperado preciso e mant\u00e9m os arquivos de entrada intactos.", "passed": true, "evidence": "Prioriza limite 20000 e rejei\u00e7\u00e3o de -1; hashes da fixture preservados"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "user_notes_summary": {"uncertainties": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."], "needs_review": [], "workarounds": []}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "software-testing", "skill_path": ".agents/skills/software-testing", "executor_model": "n\u00e3o registrado", "analyzer_model": "avalia\u00e7\u00e3o manual", "timestamp": "2026-10-21T21:45:19Z", "evals_run": [0, 1, 2, 3], "runs_per_configuration": 1}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.", "passed": true, "evidence": "R$ 99,99 e de R$ 100,00; R$ 101,00 ... desconto R$ 10,10"}, {"text": "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.", "passed": true, "evidence": "R$ 310,00 ... desconto R$ 30,00"}, {"text": "Verifica o valor enviado ou cobrado pelo gateway e explicita que dubl\u00ea n\u00e3o prova o contrato real do fornecedor.", "passed": true, "evidence": "cobran\u00e7a de R$ 90,90 ... dubl\u00ea n\u00e3o prova compatibilidade"}, {"text": "Distingue teste da regra de teste de integra\u00e7\u00e3o com a fronteira externa.", "passed": true, "evidence": "Primeira fronteira \u2014 regra de pre\u00e7o; Segunda fronteira \u2014 checkout e cobran\u00e7a"}, {"text": "N\u00e3o escreve c\u00f3digo nem imp\u00f5e meta arbitr\u00e1ria de cobertura.", "passed": true, "evidence": "Planejamento em tabela e prosa, sem c\u00f3digo execut\u00e1vel ou meta de cobertura"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Mostra que verificar save no mock n\u00e3o prova nem o total gravado nem a query real em PostgreSQL.", "passed": true, "evidence": "save ... continua passando se o total calculado for 0; n\u00e3o comprova PostgreSQL"}, {"text": "Prop\u00f5e asser\u00e7\u00e3o do resultado persistido com banco isolado para o risco de persist\u00eancia.", "passed": true, "evidence": "grava\u00e7\u00e3o no PostgreSQL de teste e leia o total persistido"}, {"text": "Explica a instabilidade potencial de esperar cinco segundos e prop\u00f5e sincroniza\u00e7\u00e3o por condi\u00e7\u00e3o quando necess\u00e1ria.", "passed": true, "evidence": "dura\u00e7\u00e3o n\u00e3o \u00e9 uma condi\u00e7\u00e3o de conclus\u00e3o; consultar a condi\u00e7\u00e3o observ\u00e1vel"}, {"text": "Diferencia riscos inferidos da descri\u00e7\u00e3o de defeitos confirmados e n\u00e3o afirma ter executado testes.", "passed": true, "evidence": "lacunas de evid\u00eancia ... n\u00e3o defeitos confirmados; nenhum teste foi executado"}, {"text": "Mant\u00e9m o escopo de revis\u00e3o sem editar arquivos.", "passed": true, "evidence": "Nenhum arquivo ... foi alterado"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Usa R$ 200 exatamente e espera frete gr\u00e1tis conforme o crit\u00e9rio de aceite.", "passed": true, "evidence": "R$ 200,00 ... frete de R$ 0,00"}, {"text": "Pede prova de que o teste falha na vers\u00e3o defeituosa e passa com a corre\u00e7\u00e3o, ou explica como recuperar essa prova.", "passed": true, "evidence": "falhar ... vers\u00e3o com o bug; passar com corre\u00e7\u00e3o; reintroduza temporariamente"}, {"text": "Se o teste j\u00e1 passava antes, investiga se exercita o caminho real, possui asser\u00e7\u00e3o adequada ou se o ambiente mudou.", "passed": true, "evidence": "se executou a vers\u00e3o anterior ... mocks, descontos ou outra condi\u00e7\u00e3o"}, {"text": "Inclui execu\u00e7\u00e3o da su\u00edte pertinente ap\u00f3s a mudan\u00e7a e separa evid\u00eancia observada de instru\u00e7\u00e3o futura.", "passed": true, "evidence": "testes pr\u00f3ximos ... gates pertinentes; estrat\u00e9gia, n\u00e3o relato executado"}, {"text": "N\u00e3o inventa comando executado nem status de teste.", "passed": true, "evidence": "Sem acesso ao c\u00f3digo ... n\u00e3o um relato de testes executados"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Executa a su\u00edte e relata que os dois testes existentes passam sem provar conformidade com o contrato.", "passed": true, "evidence": "node --test ... 2 testes, 2 aprovados; verde n\u00e3o comprova contrato"}, {"text": "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condi\u00e7\u00e3o > 20000 retorna 1500.", "passed": true, "evidence": "frete.js:2 usa > 20000; calcularFrete(20000) retorna 1500, esperado 0"}, {"text": "Mostra que assert.ok(frete > 0) n\u00e3o garante o valor contratual de 1500 centavos.", "passed": true, "evidence": "assert.ok(calcularFrete(10000) > 0) tamb\u00e9m aceitaria 1 ou 2000"}, {"text": "Identifica que subtotal negativo deveria ser rejeitado, mas n\u00e3o h\u00e1 teste para isso.", "passed": true, "evidence": "calcularFrete(-1) retorna 1500 e nenhum teste exige rejei\u00e7\u00e3o"}, {"text": "Prioriza dois testes com resultado esperado preciso e mant\u00e9m os arquivos de entrada intactos.", "passed": true, "evidence": "Prioriza limite 20000 e rejei\u00e7\u00e3o de -1; hashes da fixture preservados"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.", "passed": true, "evidence": "R$ 100,00 sem desconto; R$ 100,10 com desconto R$ 10,01"}, {"text": "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.", "passed": true, "evidence": "R$ 300,10 com desconto R$ 30,00"}, {"text": "Verifica o valor enviado ou cobrado pelo gateway e explicita que dubl\u00ea n\u00e3o prova o contrato real do fornecedor.", "passed": true, "evidence": "valor enviado ... total calculado; dubl\u00ea n\u00e3o prova ... provedor"}, {"text": "Distingue teste da regra de teste de integra\u00e7\u00e3o com a fronteira externa.", "passed": true, "evidence": "Unidade \u2014 regra de pre\u00e7o; Integra\u00e7\u00e3o do checkout \u2014 orquestra\u00e7\u00e3o"}, {"text": "N\u00e3o escreve c\u00f3digo nem imp\u00f5e meta arbitr\u00e1ria de cobertura.", "passed": true, "evidence": "Plano em tabela e prosa, sem c\u00f3digo execut\u00e1vel ou meta de cobertura"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Mostra que verificar save no mock n\u00e3o prova nem o total gravado nem a query real em PostgreSQL.", "passed": true, "evidence": "save ... passa se o total enviado estiver errado; n\u00e3o demonstra PostgreSQL"}, {"text": "Prop\u00f5e asser\u00e7\u00e3o do resultado persistido com banco isolado para o risco de persist\u00eancia.", "passed": true, "evidence": "teste de integra\u00e7\u00e3o com PostgreSQL ... compare o total gravado"}, {"text": "Explica a instabilidade potencial de esperar cinco segundos e prop\u00f5e sincroniza\u00e7\u00e3o por condi\u00e7\u00e3o quando necess\u00e1ria.", "passed": true, "evidence": "espera fixa de 5 segundos ... consultar repetidamente at\u00e9 encontrar o registro"}, {"text": "Diferencia riscos inferidos da descri\u00e7\u00e3o de defeitos confirmados e n\u00e3o afirma ter executado testes.", "passed": true, "evidence": "n\u00e3o h\u00e1 evid\u00eancia de defeito na implementa\u00e7\u00e3o, apenas de lacunas"}, {"text": "Mant\u00e9m o escopo de revis\u00e3o sem editar arquivos.", "passed": true, "evidence": "Resposta somente de revis\u00e3o; nenhum arquivo do caso foi editado"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Usa R$ 200 exatamente e espera frete gr\u00e1tis conforme o crit\u00e9rio de aceite.", "passed": true, "evidence": "R$ 200,00 ... frete calculado \u00e9 R$ 0,00"}, {"text": "Pede prova de que o teste falha na vers\u00e3o defeituosa e passa com a corre\u00e7\u00e3o, ou explica como recuperar essa prova.", "passed": true, "evidence": "vers\u00e3o com o bug ... falha; ap\u00f3s a corre\u00e7\u00e3o ... passa"}, {"text": "Se o teste j\u00e1 passava antes, investiga se exercita o caminho real, possui asser\u00e7\u00e3o adequada ou se o ambiente mudou.", "passed": true, "evidence": "pedido realmente chega ... cupom, configura\u00e7\u00e3o, mock ou arredondamento"}, {"text": "Inclui execu\u00e7\u00e3o da su\u00edte pertinente ap\u00f3s a mudan\u00e7a e separa evid\u00eancia observada de instru\u00e7\u00e3o futura.", "passed": true, "evidence": "testes existentes ... Registre os comandos e resultados"}, {"text": "N\u00e3o inventa comando executado nem status de teste.", "passed": true, "evidence": "Orienta\u00e7\u00f5es no imperativo, sem alegar que comandos foram executados"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Executa a su\u00edte e relata que os dois testes existentes passam sem provar conformidade com o contrato.", "passed": true, "evidence": "node --test: 2 testes passaram, nenhum falhou"}, {"text": "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condi\u00e7\u00e3o > 20000 retorna 1500.", "passed": true, "evidence": "calcularFrete(20000) retorna 1500 por > 20000, esperado 0"}, {"text": "Mostra que assert.ok(frete > 0) n\u00e3o garante o valor contratual de 1500 centavos.", "passed": true, "evidence": "asser\u00e7\u00e3o > 0 aceitaria 1, 1499 ou 2000 em vez de 1500"}, {"text": "Identifica que subtotal negativo deveria ser rejeitado, mas n\u00e3o h\u00e1 teste para isso.", "passed": true, "evidence": "calcularFrete(-1) retorna 1500 e n\u00e3o h\u00e1 teste para negativo"}, {"text": "Prioriza dois testes com resultado esperado preciso e mant\u00e9m os arquivos de entrada intactos.", "passed": true, "evidence": "Prioriza limite 20000 e rejei\u00e7\u00e3o de -1; hashes da fixture preservados"}], "notes": ["Cen\u00e1rio textual sem c\u00f3digo real; a avalia\u00e7\u00e3o mede a resposta, n\u00e3o execu\u00e7\u00e3o de testes."]}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "without_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "delta": {"pass_rate": "+0.00", "time_seconds": "+0.0", "tokens": "+0"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

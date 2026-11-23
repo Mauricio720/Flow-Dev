@@ -27,8 +27,10 @@ Run every item against the draft, fix what fails, and report the score in the ha
 ## Testability and coverage
 15. Does every story have Given/When/Then scenarios with concrete data, including at least one failure scenario?
 16. Can every REQ, story scenario and edge case (B-xx) be traced to a row of the verification matrix through its "Cobre" column?
-17. Is the matrix compact (one row per requirement group or story, typically 8–15 rows), with each row naming its test level(s) and its cases in a few words?
+17. Is the matrix compact (one row per requirement group or story, typically 8–15 rows), with each row naming its cases in a few words?
 18. Does the Definition of Done use the project's real commands?
+18a. Does each matrix row name the failure it must catch and the boundary it exercises for real, with expected results taken from the requirements rather than from code (per the project's testing skill)?
+18b. Are doubles limited to slow, variable, costly or external dependencies, with a real database used wherever SQL, transactions or constraints are the risk, and with end-to-end tests reserved for the few critical journeys?
 
 ## Uncertainty
 19. Is every load-bearing unknown either answered or marked `[PRECISA ESCLARECER: …]`, with a suggestion and a matching Q-xx entry?

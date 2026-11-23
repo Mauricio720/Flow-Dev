@@ -1,0 +1,42 @@
+{
+  "expectations": [
+    {
+      "text": "Executa a suíte e relata que os dois testes existentes passam sem provar conformidade com o contrato.",
+      "passed": true,
+      "evidence": "node --test ... 2 testes, 2 aprovados; verde não comprova contrato"
+    },
+    {
+      "text": "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condição > 20000 retorna 1500.",
+      "passed": true,
+      "evidence": "frete.js:2 usa > 20000; calcularFrete(20000) retorna 1500, esperado 0"
+    },
+    {
+      "text": "Mostra que assert.ok(frete > 0) não garante o valor contratual de 1500 centavos.",
+      "passed": true,
+      "evidence": "assert.ok(calcularFrete(10000) > 0) também aceitaria 1 ou 2000"
+    },
+    {
+      "text": "Identifica que subtotal negativo deveria ser rejeitado, mas não há teste para isso.",
+      "passed": true,
+      "evidence": "calcularFrete(-1) retorna 1500 e nenhum teste exige rejeição"
+    },
+    {
+      "text": "Prioriza dois testes com resultado esperado preciso e mantém os arquivos de entrada intactos.",
+      "passed": true,
+      "evidence": "Prioriza limite 20000 e rejeição de -1; hashes da fixture preservados"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "user_notes_summary": {
+    "uncertainties": [
+      "Cenário textual sem código real; a avaliação mede a resposta, não execução de testes."
+    ],
+    "needs_review": [],
+    "workarounds": []
+  }
+}

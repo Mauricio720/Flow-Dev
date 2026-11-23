@@ -1,0 +1,42 @@
+{
+  "expectations": [
+    {
+      "text": "Mostra que verificar save no mock não prova nem o total gravado nem a query real em PostgreSQL.",
+      "passed": true,
+      "evidence": "save ... continua passando se o total calculado for 0; não comprova PostgreSQL"
+    },
+    {
+      "text": "Propõe asserção do resultado persistido com banco isolado para o risco de persistência.",
+      "passed": true,
+      "evidence": "gravação no PostgreSQL de teste e leia o total persistido"
+    },
+    {
+      "text": "Explica a instabilidade potencial de esperar cinco segundos e propõe sincronização por condição quando necessária.",
+      "passed": true,
+      "evidence": "duração não é uma condição de conclusão; consultar a condição observável"
+    },
+    {
+      "text": "Diferencia riscos inferidos da descrição de defeitos confirmados e não afirma ter executado testes.",
+      "passed": true,
+      "evidence": "lacunas de evidência ... não defeitos confirmados; nenhum teste foi executado"
+    },
+    {
+      "text": "Mantém o escopo de revisão sem editar arquivos.",
+      "passed": true,
+      "evidence": "Nenhum arquivo ... foi alterado"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "user_notes_summary": {
+    "uncertainties": [
+      "Cenário textual sem código real; a avaliação mede a resposta, não execução de testes."
+    ],
+    "needs_review": [],
+    "workarounds": []
+  }
+}

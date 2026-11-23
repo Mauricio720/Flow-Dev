@@ -1,0 +1,62 @@
+{
+  "skill_name": "software-testing",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Vou adicionar cupom ao checkout em TypeScript. A regra é: cupom de 10% só vale para subtotal acima de R$ 100, com teto de desconto de R$ 30; em R$ 100 exatos não vale. Há uma cobrança via gateway externo. Planeje os testes antes de implementar: casos, fronteiras, dublês e o que cada nível ainda não prova. Não escreva código.",
+      "expected_output": "Plano curto baseado no contrato: casos em 100, abaixo e acima, teto, combinação com gateway, resultados exatos e limites da simulação. Sem código ou meta arbitrária de cobertura.",
+      "files": [],
+      "expectations": [
+        "Inclui R$ 100 sem desconto e ao menos um valor acima de R$ 100 com desconto exato de 10%.",
+        "Inclui um caso acima de R$ 300 que aplica o teto de R$ 30.",
+        "Verifica o valor enviado ou cobrado pelo gateway e explicita que dublê não prova o contrato real do fornecedor.",
+        "Distingue teste da regra de teste de integração com a fronteira externa.",
+        "Não escreve código nem impõe meta arbitrária de cobertura."
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Revise somente os testes de um PR. A implementação calcula total de pedidos e grava em PostgreSQL. O PR inclui um teste que mocka o repositório e verifica somente que save foi chamado, e um teste que espera 5 segundos antes de consultar o resultado. Aponte riscos demonstráveis, menor correção e quais evidências faltam. Não altere arquivos.",
+      "expected_output": "Revisão sem edição que identifica ausência de prova da persistência real, asserção fraca de chamada, espera fixa potencialmente instável e propõe asserção de resultado observável, integração isolada com PostgreSQL e espera por condição quando assíncrono. Diferencia hipótese de prova.",
+      "files": [],
+      "expectations": [
+        "Mostra que verificar save no mock não prova nem o total gravado nem a query real em PostgreSQL.",
+        "Propõe asserção do resultado persistido com banco isolado para o risco de persistência.",
+        "Explica a instabilidade potencial de esperar cinco segundos e propõe sincronização por condição quando necessária.",
+        "Diferencia riscos inferidos da descrição de defeitos confirmados e não afirma ter executado testes.",
+        "Mantém o escopo de revisão sem editar arquivos."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Corrigi um bug de cálculo de frete: pedidos com valor exatamente R$ 200 não recebiam frete grátis, apesar do critério de aceite dizer 'a partir de R$ 200'. Explique o teste de regressão e a sequência mínima de verificação para um agente de IA; indique o que fazer se o teste novo já passava antes da correção.",
+      "expected_output": "Exige reprodução no limite 200 antes do ajuste, teste com oráculo do critério de aceite, red-green depois da correção, verificação da suíte pertinente e investigação se o teste já era verde; não inventa resultado de execução.",
+      "files": [],
+      "expectations": [
+        "Usa R$ 200 exatamente e espera frete grátis conforme o critério de aceite.",
+        "Pede prova de que o teste falha na versão defeituosa e passa com a correção, ou explica como recuperar essa prova.",
+        "Se o teste já passava antes, investiga se exercita o caminho real, possui asserção adequada ou se o ambiente mudou.",
+        "Inclui execução da suíte pertinente após a mudança e separa evidência observada de instrução futura.",
+        "Não inventa comando executado nem status de teste."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Revise somente os testes em evals/fixtures/frete/ frente ao contrato do README e à implementação. Rode a suíte se possível. Quero saber que defeitos podem passar com tudo verde, quais dois testes você adicionaria primeiro e por quê. Não edite os arquivos da fixture.",
+      "expected_output": "Revisão com evidência de teste verde apesar do bug no limite inclusivo de R$ 200; aponta asserção >0 fraca, ausência de teste para subtotal negativo, sugere dois casos prioritários com resultados exatos, localiza código e testes, não edita fixture.",
+      "files": [
+        "evals/fixtures/frete/README.md",
+        "evals/fixtures/frete/frete.js",
+        "evals/fixtures/frete/frete.test.js",
+        "evals/fixtures/frete/package.json"
+      ],
+      "expectations": [
+        "Executa a suíte e relata que os dois testes existentes passam sem provar conformidade com o contrato.",
+        "Identifica o defeito em R$ 200,00: o contrato espera frete zero, mas a condição > 20000 retorna 1500.",
+        "Mostra que assert.ok(frete > 0) não garante o valor contratual de 1500 centavos.",
+        "Identifica que subtotal negativo deveria ser rejeitado, mas não há teste para isso.",
+        "Prioriza dois testes com resultado esperado preciso e mantém os arquivos de entrada intactos."
+      ]
+    }
+  ]
+}

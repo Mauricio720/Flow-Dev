@@ -125,14 +125,15 @@ Como <papel>, quero <capacidade>, para <benefício>.
 # Parte 3 — Verificação
 
 ## 22. Estratégia de testes
-<!-- Frameworks and harnesses already in the project, what each level covers for this feature, fixtures, and where fakes are allowed (I/O boundaries only). -->
+<!-- Based on the project's testing skill (e.g. `software-testing`). State: the frameworks and harnesses already in the project; which boundaries are exercised for real for this feature (database, HTTP, external providers, UI) and what is replaced by doubles, and why; how variable inputs are controlled (clock, randomness, IDs, concurrency); the 1–3 critical end-to-end journeys; and which important risk still has no automated proof (exploration or manual check). No fixed ratio between levels. -->
 
 ## 23. Matriz de verificação
 <!-- Compact: one row per requirement group or story, not one row per scenario. Every REQ, every story scenario and every edge case (B-xx) must be traceable to a row through the "Cobre" column. Name the test cases in a few words; spec-to-tasks turns them into concrete tests later. A typical L3 feature lands at 8–15 rows. -->
-| ID | Cobre | Componente | Nível(is) | Casos (resumo) |
+<!-- Each row is a risk card from the testing skill. "Falha que detecta" is the plausible wrong implementation the row must catch. "Fronteira real" names what is exercised for real and what is a double. The expected results in "Casos" come from the requirements (the oracle), never from the code. -->
+| ID | Cobre | Falha que detecta | Fronteira real | Casos (resumo) |
 |---|---|---|---|---|
-| V-01 | US-01 (cen. 1–3), REQ-001–003, B-02 | <componente> | integração + unidade | cria; lista em ordem; recusa sem acesso |
-| V-02 | US-01–02 ponta a ponta | <tela> | e2e | membro comenta, outro vê, autor edita e exclui |
+| V-01 | US-01 (cen. 1–3), REQ-001–003, B-02 | comentário salvo sem autor; lista fora de ordem; não membro consegue ler | serviço + Postgres de teste real; sem dublê | cria; lista em ordem; recusa sem acesso (FORBIDDEN) |
+| V-02 | US-01–02 ponta a ponta | partes não conectadas na tela | UI + API + banco de teste | membro comenta, outro vê, autor edita e exclui |
 
 ## 24. Definição de pronto
 <!-- Real commands from the project (e.g. `pnpm --dir packages/api test`, `pnpm typecheck`); the e2e scenario that proves the P1 stories; no [PRECISA ESCLARECER] left; spec updated with what changed during implementation. -->

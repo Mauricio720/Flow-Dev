@@ -74,10 +74,11 @@ A small diff can still depend on important local rules, so do not skip an applic
 
 ## Phase 3 — Prepare and reconnoiter
 
-Use `$prepare-test-environment` before implementation and choose the lightest preparation gate that provides trustworthy evidence:
+Before implementation, choose the lightest verification that provides trustworthy evidence, following the `Verificação` section of `AGENTS.md`, and design the tests with `$software-testing`:
 
-- ordinary DIRECT work: prefer package-scoped checks plus `pnpm test:prepare:preflight`;
-- DB schema/migrations, seed data, Supabase Auth users, Stripe/payments, E2E fixtures, ownership-sensitive data, or workflows dependent on remote state without fresh evidence: use `pnpm test:prepare:full`.
+- ordinary DIRECT work: the affected test files (`pnpm --dir <pacote> exec vitest run <arquivo>`) and the typecheck of the changed package;
+- database schema, migrations or persistence: also `pnpm --dir packages/api test:integration`, which starts a disposable PostgreSQL by itself (it needs `pg_config`, `initdb` and `pg_ctl`; do not set `TEST_DATABASE_URL` locally);
+- a user-visible flow covered by a Playwright spec: only the affected spec (`.agents/rules/e2e-testing.md`).
 
 Before editing:
 

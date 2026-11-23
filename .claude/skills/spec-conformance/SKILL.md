@@ -81,7 +81,8 @@ Read `references/instruction-sources.md` and collect every instruction that appl
 - the root CLAUDE.md and AGENTS.md, including their `@imports`;
 - nested AGENTS.md or CLAUDE.md files in the directories the diff touches;
 - the rules files they reference (e.g. `.agents/rules/*.md`);
-- the skills the instructions make **mandatory** for the kind of change, at least their core rules.
+- the skills the instructions make **mandatory** for the kind of change, at least their core rules;
+- **the project's testing skill** (in this user's projects, `software-testing`), whether or not the instructions name it. It is the yardstick for judging the tests in step 5.
 
 Turn them into a short checklist of **normative, checkable statements**: "never", "must", "always", limits, required patterns, required verification. Prefer concrete checks: "no `.ts` file over 100 lines" is checkable; "write clean code" is not, so leave it out.
 
@@ -134,6 +135,13 @@ For each spec item, assign a status:
 - ⛔ **Fora de escopo:** something the spec excludes is present, or something unrequested was added.
 
 For each project rule, record either compliance or the violations with evidence.
+
+**Judge the tests with the project's testing skill.** For `software-testing`, follow its review guide, `references/revisao-e-diagnostico.md`:
+- For each test that covers a spec item, try to write the counterexample: "if the function always returned zero", "if the database did not persist", "if the provider returned 500". Would the test fail for the right reason?
+- Check that the expected values come from the spec, not from re-running the implementation's own logic.
+- Check that the doubles match the risk. A mocked repository proves nothing about a query.
+- Look for flakiness: time, order, shared state, fixed sleeps.
+- Report each test finding as **local → evidence → behavior that escapes → consequence → minimal fix**. Distinguish findings confirmed by running tests from findings inferred from reading the code.
 
 Then walk through `references/noise-patterns.md`. It is the catalog of how cheaper models typically go wrong, and each pattern comes with a way to check it. Pay particular attention to:
 - tests that would still pass if the feature were deleted;
