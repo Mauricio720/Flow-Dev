@@ -56,7 +56,7 @@ O que as skills produzem fica só no clone local da pessoa: spec-writer salva `d
 - **Mapa do projeto:** feature futura.
 - **Capturar código, diff ou outros tipos de arquivo:** decidido só Markdown.
 - **Capturar Markdown escrito sem skill ativa:** decidido "o que a skill produzir".
-- **Controlar a sessão pelo Flow Dev** (mandar mensagens, interromper, encerrar): o Flow Dev só observa.
+- **Controlar a sessão pelo Flow Dev** (mandar mensagens, interromper, encerrar): o Flow Dev só observa. *(Trazido para o escopo pela [Spec C](../sessao-no-flow-dev/spec.md).)*
 - **Gravar a saída dos comandos ou o conteúdo dos arquivos editados:** decidido registrar só o resumo (REQ-019); os artefatos são a única exceção, e só para Markdown de skill.
 - **Sessões abertas fora do Flow Dev:** sem os hooks, o Flow Dev não sabe delas.
 
@@ -99,8 +99,8 @@ Como pessoa operadora, quero que os documentos que as skills escrevem fiquem gua
   - encerrada (motivo).
 - **REQ-019** (US-03): O sistema NÃO DEVE gravar a saída de comandos nem o conteúdo dos arquivos editados, salvo os artefatos da US-05.
 - **REQ-020** (US-03): QUANDO um evento for registrado, o sistema DEVE mostrá-lo em até 5 s a quem estiver com a tarefa aberta.
-- **REQ-021** (US-03): SE não chegar sinal de início em 60 s depois da abertura, ENTÃO a sessão DEVE ir para "Não confirmada" com a mensagem do cenário US-03.4.
-- **REQ-022** (US-03): ENQUANTO uma sessão ativa estiver há 30 min sem eventos, o sistema DEVE mostrar "Sem sinal desde HH:MM" ao lado do estado, sem mudá-lo.
+- **REQ-021** (US-03) *(nas sessões do Flow Dev, a mensagem é a da REQ-081 da [Spec C](../sessao-no-flow-dev/spec.md))*: SE não chegar sinal de início em 60 s depois da abertura, ENTÃO a sessão DEVE ir para "Não confirmada" com a mensagem do cenário US-03.4.
+- **REQ-022** (US-03) *(sem efeito nas sessões do Flow Dev, REQ-082 da [Spec C](../sessao-no-flow-dev/spec.md))*: ENQUANTO uma sessão ativa estiver há 30 min sem eventos, o sistema DEVE mostrar "Sem sinal desde HH:MM" ao lado do estado, sem mudá-lo.
 - **REQ-023** (US-03): O sistema DEVE listar as sessões anteriores da tarefa com a pessoa, a rota usada, o início e o fim, e mostrar os eventos de cada uma ao expandir.
 - **REQ-024** (US-03, US-05): O sistema DEVE mostrar a etapa, os eventos e os artefatos em modo leitura a quem pode ver a tarefa e não é a pessoa operadora.
 - **REQ-026** (US-03): SE chegar um evento que não pertence a uma sessão aberta, ENTÃO o sistema DEVE recusá-lo sem gravar nada.
@@ -301,7 +301,7 @@ Nunca devolve JSON de decisão, para não interferir no Claude. O corpo traz tam
 
 ## 17. Decisões técnicas
 
-### DEC-02 — Acompanhamento por hooks HTTP injetados com `--settings`
+### DEC-02 — Acompanhamento por hooks HTTP injetados com `--settings` *(só para as sessões antigas; as novas usam a DEC-18 da [Spec C](../sessao-no-flow-dev/spec.md))*
 - **Decisão:** a sessão recebe, só para ela, hooks `type: "http"` que fazem POST no Flow Dev.
 - **Alternativas consideradas:** seguir o transcript JSONL em `~/.claude/projects`, que é um formato interno, exige um processo vigiando arquivos e quebra entre versões; um wrapper com pty capturando a saída, que é frágil e capturaria a saída inteira (contra REQ-019).
 - **Consequências:** os eventos são oficiais e tipados, e as configurações da pessoa continuam valendo, porque `--settings` soma uma camada.
@@ -463,3 +463,4 @@ Nenhuma.
   - `last_capture_at` guarda a marca d'água do maior `occurred_at` capturado, e a ingestão toma o horário dentro da trava da sessão, para que nenhum evento fique para trás de uma captura;
   - o erro `artifact_unavailable` (NOT_FOUND) cobre artefato ou versão inexistente.
 - 2026-11-22 — Revisão final (review-001): `Smoke V-19` na tela marcado como pendente (P-G); linha do tempo passa a respeitar o modo leitura (P-J); `summary` dos eventos é cortado em 500 em todos os tipos; sessão em estado final recebe `204` antes da leitura do corpo; a expiração de "Não confirmada" filtra pelo projeto; o horário do artefato reflete só a última versão.
+- 2026-11-22 — A [Spec C](../sessao-no-flow-dev/spec.md) leva a sessão para dentro do Flow Dev: novos estados (7.2), eventos por callbacks do SDK (DEC-18), nova mensagem da REQ-021 (REQ-081) e REQ-022 sem efeito nas sessões novas (REQ-082).

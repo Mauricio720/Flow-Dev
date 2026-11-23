@@ -115,12 +115,12 @@ US-03 e US-05 estão na Spec B.
 - **REQ-007** (US-02): O sistema DEVE montar o prompt pré-preenchido conforme a seção 7.3, a partir da Issue publicada que o planejamento aprovado analisou.
 - **REQ-008** (US-02): SE a pasta vinculada tiver mudanças não commitadas, ENTÃO o diálogo DEVE mostrar o aviso do cenário US-02.4 sem bloquear a abertura.
 - **REQ-009** (US-02): SE a pessoa não tiver vínculo para o projeto, ENTÃO o diálogo DEVE explicar a falta, oferecer o caminho para as Configurações e não oferecer a confirmação.
-- **REQ-010** (US-02): QUANDO a pessoa confirmar, o sistema DEVE abrir uma janela de terminal na pasta vinculada, com o Claude Code em modo interativo, todas as permissões liberadas e o texto editado (mais a seção "Anexos", se houver) como primeira mensagem.
+- **REQ-010** (US-02) *(substituída pela REQ-051 da [Spec C](../sessao-no-flow-dev/spec.md))*: QUANDO a pessoa confirmar, o sistema DEVE abrir uma janela de terminal na pasta vinculada, com o Claude Code em modo interativo, todas as permissões liberadas e o texto editado (mais a seção "Anexos", se houver) como primeira mensagem.
 - **REQ-011** (US-02): SE, no momento de confirmar, a pasta não passar mais nas validações da seção 7.1, ENTÃO o sistema DEVE recusar com "A pasta vinculada não é mais um clone válido de <owner/repo>. Atualize o vínculo nas Configurações." e não abrir nada.
-- **REQ-012** (US-02): SE o Claude Code ou o terminal não estiverem disponíveis na máquina, ENTÃO o sistema DEVE recusar com uma mensagem que nomeia o que falta ("Claude Code não encontrado no PATH." ou "GNOME Terminal não encontrado.").
+- **REQ-012** (US-02) *(a parte do terminal saiu com a [Spec C](../sessao-no-flow-dev/spec.md))*: SE o Claude Code ou o terminal não estiverem disponíveis na máquina, ENTÃO o sistema DEVE recusar com uma mensagem que nomeia o que falta ("Claude Code não encontrado no PATH." ou "GNOME Terminal não encontrado.").
 - **REQ-013** (US-02): SE o prompt estiver vazio ou passar de 20.000 caracteres, ENTÃO o sistema DEVE impedir a confirmação e mostrar o limite.
 - **REQ-014:** movido para a Spec B.
-- **REQ-015** (US-02): SE a mesma confirmação for enviada duas vezes (duplo clique ou reenvio após perder a resposta), ENTÃO o sistema DEVE abrir uma única janela e devolver a mesma sessão.
+- **REQ-015** (US-02) *(vale para a sessão, não mais para a janela, com a [Spec C](../sessao-no-flow-dev/spec.md))*: SE a mesma confirmação for enviada duas vezes (duplo clique ou reenvio após perder a resposta), ENTÃO o sistema DEVE abrir uma única janela e devolver a mesma sessão.
 - **REQ-016 a REQ-024:** movidos para a Spec B.
 - **REQ-025** (US-02, US-04): QUANDO a Issue for excluída do Flow Dev, o sistema DEVE excluir junto as sessões e os anexos da tarefa, tanto os registros quanto os arquivos.
 - **REQ-026:** movido para a Spec B.
@@ -244,7 +244,7 @@ NFR-02, NFR-03 e NFR-04 estão na Spec B.
 ## 11. Premissas e dependências
 
 - **P-01:** o Flow Dev roda na própria máquina da pessoa, que tem o Claude Code logado (mesma premissa da spec de agentes locais). Ver Q-01.
-- **P-02:** Linux com GNOME Terminal, que é o ambiente atual (Cinnamon, `gnome-terminal` instalado).
+- **P-02** *(obsoleta com a [Spec C](../sessao-no-flow-dev/spec.md))*: Linux com GNOME Terminal, que é o ambiente atual (Cinnamon, `gnome-terminal` instalado).
 - **P-03:** Claude Code 2.1.329, a versão instalada.
 - **P-04:** a sessão usa o login e a configuração pessoal do Claude Code da pessoa (DEC-05).
 - **P-05:** "a Issue que o planejamento analisou" é o snapshot referenciado pela decisão aprovada.
@@ -327,6 +327,8 @@ gnome-terminal --working-directory=<checkout> -- claude --dangerously-skip-permi
 
 ## 16. Fluxos principais
 
+> **Substituído pela [Spec C](../sessao-no-flow-dev/spec.md):** o disparo do `gnome-terminal` (o passo 3 de "Abrir" e o comando da §15) deixou de existir. O `open` só grava a sessão, com `runtime = flow_dev`, o modo de permissões e o `host_id`, e prepara `contexto/`, os anexos e o prompt (`prompt.md`); o serviço de sessões inicia o Claude. Validações, prompt, anexos, skills e a trava `FLOW_DEV_TERMINAL_ENABLED` continuam como estão aqui.
+
 **Anexar (REQ-027–032, REQ-035)**
 1. O diálogo envia cada arquivo assim que ele é escolhido.
 2. O handler confere a mesma origem, a sessão e a operadora.
@@ -345,7 +347,7 @@ gnome-terminal --working-directory=<checkout> -- claude --dangerously-skip-permi
 
 ## 17. Decisões técnicas
 
-### DEC-01 — Terminal nativo disparado pelo servidor local
+### DEC-01 — Terminal nativo disparado pelo servidor local *(substituída pela DEC-15 da [Spec C](../sessao-no-flow-dev/spec.md))*
 - **Decisão:** o servidor do Next, que roda na máquina (P-01), dispara `gnome-terminal` por `execFile`.
 - **Alternativas consideradas:** terminal no navegador com xterm.js e node-pty, que traz dependência nativa, um canal WebSocket e uma superfície de ataque bem maior (recusado pelo usuário); só copiar o comando, sem integração.
 - **Consequências:** a pessoa usa o Claude Code completo; só funciona com o Flow Dev local e com o GNOME Terminal.
@@ -494,3 +496,4 @@ V-05 a V-08 estão na Spec B.
 - 2026-11-22 — Skills do Flow Dev entregues à sessão e acionadas pelo prompt (REQ-036–040, 7.7, DEC-11, Q-03). A spec foi dividida porque passou do limite de tamanho: acompanhamento e artefatos foram para a Spec B, com os mesmos IDs (US-03, REQ-014, REQ-016–024, REQ-026, REQ-034, 7.2, NFR-02–04, DEC-02–04, DEC-07, DEC-08, B-05–07, B-10, B-11, V-05–V-08). REQ-033 passou a contar a partir do último sinal.
 - 2026-11-22 — Tech Spec e PRD passam a usar o mesmo prompt de `/spec-writer` (7.3, V-02), porque a skill produz as duas partes num documento só. As três rotas do planejamento continuam como estão.
 - 2026-11-22 — Implementada. Mudanças em relação ao plano: `--plugin-dir` no lugar de `--add-dir` e comandos `/flow-dev:<skill>` (V-00); `projectId` nas entradas e no multipart; `terminal_disabled` (Q-01); `launch_failed_at` e `launch_error`; o lançador passa só um ambiente permitido (sem `CLAUDE*`); `useDialogFocus` promovido para `src/hooks/`.
+- 2026-11-22 — A [Spec C](../sessao-no-flow-dev/spec.md) leva a sessão para dentro do Flow Dev: substitui REQ-010, a parte do terminal da REQ-012, DEC-01 e P-02.
