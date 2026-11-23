@@ -30,11 +30,20 @@ export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   startedAt: timestamp("started_at", { withTimezone: true }),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   lastCaptureAt: timestamp("last_capture_at", { withTimezone: true }),
+  runtime: text("runtime").notNull().default("terminal"),
+  permissionMode: text("permission_mode").notNull().default("bypass"),
+  hostId: text("host_id"),
+  workerId: text("worker_id"),
+  interruptRequestedAt: timestamp("interrupt_requested_at", { withTimezone: true }),
+  endRequestedAt: timestamp("end_requested_at", { withTimezone: true }),
 }, (table) => [
   check("task_terminal_sessions_route_check", sql`${table.route} in ('direct_execution','tech_spec','prd')`),
-  check("task_terminal_sessions_status_check", sql`${table.status} in ('opening','running','waiting','unconfirmed','ended','launch_failed')`),
+  check("task_terminal_sessions_status_check", sql`${table.status} in ('opening','running','waiting','unconfirmed','ended','launch_failed','asking','interrupted')`),
+  check("task_terminal_sessions_runtime_check", sql`${table.runtime} in ('terminal','flow_dev')`),
+  check("task_terminal_sessions_permission_mode_check", sql`${table.permissionMode} in ('bypass','accept_edits','ask_all')`),
   uniqueIndex("task_terminal_sessions_request_key_unique").on(table.userId, table.requestKey),
   index("task_terminal_sessions_task_opened_idx").on(table.taskId, table.openedAt.desc()),
+  index("task_terminal_sessions_host_status_idx").on(table.hostId, table.status).where(sql`${table.runtime} = 'flow_dev'`),
 ]);
 
 export const taskTerminalAttachments = pgTable("task_terminal_attachments", {

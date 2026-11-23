@@ -337,6 +337,13 @@
       "when": 1792784553324,
       "tag": "0047_terminal_tracking_artifacts",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1792870953324,
+      "tag": "0048_session_interaction",
+      "breakpoints": true
     }
   ]
 }

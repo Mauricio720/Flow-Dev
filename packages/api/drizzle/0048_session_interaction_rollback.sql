@@ -1,0 +1,16 @@
+DROP TABLE IF EXISTS "task_terminal_requests";
+DROP TABLE IF EXISTS "task_terminal_messages";
+DROP TABLE IF EXISTS "terminal_session_hosts";
+DROP INDEX IF EXISTS "task_terminal_sessions_host_status_idx";
+UPDATE "task_terminal_sessions" SET "status" = 'waiting' WHERE "status" = 'asking';
+UPDATE "task_terminal_sessions" SET "status" = 'unconfirmed' WHERE "status" = 'interrupted';
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_status_check";
+ALTER TABLE "task_terminal_sessions" ADD CONSTRAINT "task_terminal_sessions_status_check" CHECK ("task_terminal_sessions"."status" IN ('opening','running','waiting','unconfirmed','ended','launch_failed'));
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_permission_mode_check";
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_runtime_check";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "end_requested_at";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "interrupt_requested_at";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "worker_id";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "host_id";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "permission_mode";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "runtime";

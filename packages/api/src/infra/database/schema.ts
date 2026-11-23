@@ -126,4 +126,5 @@ export { projectAgentSettings } from "./schema/projectAgentSettings";
 export { projectLocalCheckouts } from "./schema/projectLocalCheckouts";
 export { taskTerminalAttachments, taskTerminalSessions } from "./schema/tasks/terminal";
 export { taskTerminalEvents } from "./schema/tasks/terminalEvents";
+export { taskTerminalMessages, taskTerminalRequests, terminalSessionHosts } from "./schema/tasks/sessionInteraction";
 export { taskArtifactVersions, taskArtifacts } from "./schema/tasks/artifacts";
