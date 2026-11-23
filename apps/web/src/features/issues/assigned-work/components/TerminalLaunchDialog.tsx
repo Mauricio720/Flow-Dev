@@ -27,13 +27,14 @@ export function TerminalLaunchDialog({ projectId, taskId, trigger, onClose, onOp
     requestAnimationFrame(() => trigger.current?.focus());
   };
   useDialogFocus(true, launch.phase === "sending", close, { trigger, dialog, heading });
-  async function confirm() {
-    const result = await launch.confirm({ attachmentIds: attachments.attachmentIds, issueImageIds: attachments.issueImageIds });
+  function finish(result: TerminalOpened | null) {
     if (!result) return;
     attachments.commit();
     onOpened(result);
     close();
   }
+  const confirm = async () => finish(await launch.confirm({ attachmentIds: attachments.attachmentIds, issueImageIds: attachments.issueImageIds }));
+  const confirmAdditional = async () => finish(await launch.confirmAdditional());
   return (
     <dialog ref={dialog} open aria-modal="true" aria-labelledby="terminal-title" className="fixed inset-0 z-50 m-0 flex min-h-full w-full max-w-none items-center justify-center border-0 bg-black/40 p-3 backdrop:bg-black/40 sm:p-6">
       <section className="max-h-[calc(100vh-2rem)] w-full max-w-2xl space-y-5 overflow-y-auto rounded-xl border border-line bg-raised p-5 text-ink shadow-raised sm:p-6">
@@ -42,7 +43,7 @@ export function TerminalLaunchDialog({ projectId, taskId, trigger, onClose, onOp
           <p className="text-sm leading-relaxed text-ink-2">{TERMINAL_DIALOG_INTRO}</p>
         </header>
         <TerminalLaunchBody launch={launch} projectId={projectId} attachments={attachments} />
-        <TerminalLaunchFooter launch={launch} attachments={attachments} onClose={close} onConfirm={() => void confirm()} />
+        <TerminalLaunchFooter launch={launch} attachments={attachments} onClose={close} onConfirm={() => void confirm()} onConfirmAdditional={() => void confirmAdditional()} />
       </section>
     </dialog>
   );

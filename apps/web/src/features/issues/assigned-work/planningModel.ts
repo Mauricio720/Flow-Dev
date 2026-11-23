@@ -1,9 +1,11 @@
 import type { PlanningDetail, TaskDetail } from "./contract";
+import { EXECUTION_STAGE_LABEL } from "./executionCopy";
+import { executionTimelineState, latestSession, sessionShortLabel } from "./executionModel";
 import { PLANNING_STATUS_LABEL } from "./planningCopy";
 
 export type PlanningLifecycle = keyof typeof PLANNING_STATUS_LABEL | "unknown";
 export type TimelineState = "done" | "current" | "failed" | "pending";
-export type TimelineEntry = { key: string; label: string; actor: string; state: TimelineState; at: string | null; action: string | null };
+export type TimelineEntry = { key: string; label: string; actor: string; state: TimelineState; at: string | null; action: string | null; detail?: string };
 
 const KNOWN: string[] = Object.keys(PLANNING_STATUS_LABEL);
 const ISSUE_AUTHOR = "Issue Author";
@@ -36,9 +38,15 @@ function originEntries(detail: TaskDetail, authorName: string): TimelineEntry[] 
   return [{ key: "intent", label: "Intenção refinada", actor: ISSUE_AUTHOR, state: "done", at: detail.task.createdAt, action: null }, published];
 }
 
-export function timelineEntries(detail: TaskDetail): TimelineEntry[] {
+function executionEntries(detail: TaskDetail, reader: boolean): TimelineEntry[] {
+  const session = latestSession(detail);
+  if (!session) return [];
+  return [{ key: "execution", label: EXECUTION_STAGE_LABEL, actor: session.userName, state: executionTimelineState(session), at: session.endedAt ?? session.openedAt, action: null, detail: sessionShortLabel(session, { reader }) }];
+}
+
+export function timelineEntries(detail: TaskDetail, options: { reader: boolean } = { reader: false }): TimelineEntry[] {
   const authorName = detail.task.authorName ?? "";
-  return [...originEntries(detail, authorName), ...planningEntries(detail, authorName)];
+  return [...originEntries(detail, authorName), ...planningEntries(detail, authorName), ...executionEntries(detail, options.reader)];
 }
 
 export function currentAction(detail: TaskDetail) {

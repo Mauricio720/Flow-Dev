@@ -13,6 +13,13 @@ export function promptProblemOf(prompt: string, maxLength: number): PromptProble
   return prompt.length > maxLength ? "too_long" : null;
 }
 
+const SESSION_ACTIVE_REASON = "session_already_active";
+
+function isSessionActive(error: unknown) {
+  const data = trpcData(error);
+  return Boolean(data && "reason" in data && data.reason === SESSION_ACTIVE_REASON);
+}
+
 function failureMessage(error: unknown) {
   const hasReason = Boolean(trpcData(error) && "reason" in trpcData(error)!);
   return error instanceof Error && hasReason ? error.message : OPEN_FAILED_MESSAGE;
@@ -35,32 +42,47 @@ function usePreflight(scope: TerminalScope) {
   return { preflight, prompt, setPrompt, phase, setPhase };
 }
 
-export function useTerminalLaunch(scope: TerminalScope) {
-  const load = usePreflight(scope);
+type Preflight = ReturnType<typeof usePreflight>;
+
+function useTerminalSender(scope: TerminalScope, load: Preflight) {
   const [failure, setFailure] = useState<string | null>(null);
   const [opened, setOpened] = useState<TerminalOpened | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const requestKey = useRef(crypto.randomUUID());
+  const lastExtra = useRef<TerminalExtra>(NO_EXTRA);
   const sending = useRef(false);
-  async function confirm(extra: TerminalExtra = NO_EXTRA): Promise<TerminalOpened | null> {
+  async function send(extra: TerminalExtra, allowAdditional: boolean): Promise<TerminalOpened | null> {
     if (sending.current || !load.preflight) return null;
     sending.current = true;
+    lastExtra.current = extra;
     load.setPhase("sending");
     setFailure(null);
+    setNeedsConfirmation(false);
     try {
-      const result = await openTerminal(scope, { prompt: load.prompt, requestKey: requestKey.current, ...extra });
+      const result = await openTerminal(scope, { prompt: load.prompt, requestKey: requestKey.current, allowAdditional, ...extra });
       setOpened(result);
       load.setPhase("opened");
       return result;
     } catch (error) {
-      setFailure(failureMessage(error));
+      if (isSessionActive(error)) setNeedsConfirmation(true);
+      else setFailure(failureMessage(error));
       load.setPhase("ready");
       return null;
     } finally {
       sending.current = false;
     }
   }
+  return { send, lastExtra, failure, opened, needsConfirmation, setNeedsConfirmation };
+}
+
+export function useTerminalLaunch(scope: TerminalScope) {
+  const load = usePreflight(scope);
+  const sender = useTerminalSender(scope, load);
+  const confirm = (extra: TerminalExtra = NO_EXTRA) => sender.send(extra, false);
+  const confirmAdditional = () => sender.send(sender.lastExtra.current, true);
+  const declineAdditional = () => sender.setNeedsConfirmation(false);
   const promptProblem = load.preflight ? promptProblemOf(load.prompt, load.preflight.maxPromptLength) : null;
-  return { preflight: load.preflight, prompt: load.prompt, setPrompt: load.setPrompt, promptProblem, confirm, phase: load.phase, failure, opened };
+  return { preflight: load.preflight, prompt: load.prompt, setPrompt: load.setPrompt, promptProblem, confirm, confirmAdditional, declineAdditional, needsConfirmation: sender.needsConfirmation, phase: load.phase, failure: sender.failure, opened: sender.opened };
 }
 
 export type TerminalLaunch = ReturnType<typeof useTerminalLaunch>;

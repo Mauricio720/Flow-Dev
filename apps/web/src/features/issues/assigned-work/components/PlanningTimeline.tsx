@@ -21,13 +21,13 @@ function StopCaption({ entry }: { entry: TimelineEntry }) {
     <div className="min-w-0 space-y-0.5 sm:mt-2.5">
       <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">{entry.label}</p>
       <p className="text-xs text-ink-3">{entry.actor}</p>
-      <p className={`text-xs ${STATE_INK[entry.state]}`}>{STATE_LABEL[entry.state]}{entry.at && <> · <time dateTime={entry.at} className="font-mono tabular-nums" suppressHydrationWarning>{formatMoment(entry.at)}</time></>}{entry.action && <span className="text-ink-2"> · Próximo passo: {entry.action}</span>}</p>
+      <p className={`text-xs ${STATE_INK[entry.state]}`}>{entry.detail ?? STATE_LABEL[entry.state]}{entry.at && <> · <time dateTime={entry.at} className="font-mono tabular-nums" suppressHydrationWarning>{formatMoment(entry.at)}</time></>}{entry.action && <span className="text-ink-2"> · Próximo passo: {entry.action}</span>}</p>
     </div>
   );
 }
 
-export function PlanningTimeline({ detail }: { detail: TaskDetail }) {
-  const entries = timelineEntries(detail);
+export function PlanningTimeline({ detail, reader = false }: { detail: TaskDetail; reader?: boolean }) {
+  const entries = timelineEntries(detail, { reader });
   return (
     <ol aria-label="Linha do tempo do planejamento" className="sm:grid sm:auto-cols-fr sm:grid-flow-col">
       {entries.map((entry, index) => {

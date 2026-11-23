@@ -1,13 +1,15 @@
 import { TRPC_BAD_REQUEST, TRPC_CONFLICT, TRPC_UNAUTHORIZED, type LocalCheckout } from "@/lib/projects/contract";
 import { trpc } from "@/lib/trpc/client";
 import { trpcCode } from "@/lib/trpc/error";
-import { LOCAL_CHECKOUT_GENERIC_MESSAGE, LOCAL_CHECKOUT_REMOVE_FAILED_MESSAGE } from "./localCheckoutCopy";
+import { LOCAL_CHECKOUT_GENERIC_MESSAGE, LOCAL_CHECKOUT_PICK_UNAVAILABLE_MESSAGE, LOCAL_CHECKOUT_REMOVE_FAILED_MESSAGE } from "./localCheckoutCopy";
 
 export type CheckoutOutcome =
   | { kind: "saved"; checkout: LocalCheckout }
   | { kind: "removed" }
   | { kind: "unauthorized" }
   | { kind: "failed"; message: string };
+
+export type PickOutcome = { kind: "picked"; path: string } | { kind: "cancelled" } | { kind: "unauthorized" } | { kind: "failed"; message: string };
 
 type SaveRequest = { projectId: string; path: string; expectedVersion: number };
 const SERVER_MESSAGE_CODES = new Set<string>([TRPC_BAD_REQUEST, TRPC_CONFLICT]);
@@ -33,5 +35,15 @@ export async function requestRemove(projectId: string): Promise<CheckoutOutcome>
     return { kind: "removed" };
   } catch (error) {
     return failure(error, LOCAL_CHECKOUT_REMOVE_FAILED_MESSAGE);
+  }
+}
+
+export async function requestPickFolder(projectId: string): Promise<PickOutcome> {
+  try {
+    const pick = await trpc.projects.localCheckout.pickFolder.mutate({ projectId });
+    return pick.kind === "unavailable" ? { kind: "failed", message: LOCAL_CHECKOUT_PICK_UNAVAILABLE_MESSAGE } : pick;
+  } catch (error) {
+    const outcome = failure(error, LOCAL_CHECKOUT_PICK_UNAVAILABLE_MESSAGE);
+    return outcome.kind === "failed" ? outcome : { kind: "unauthorized" };
   }
 }

@@ -66,7 +66,7 @@ export function PlanningStage({ detail, actions, onRefresh }: Props) {
         <PlanningStatusCapsule lifecycle={lifecycle} label={label} />
       </header>
       <div className="flex flex-col gap-4 px-5 py-4"><StageBody detail={detail} actions={actions} onRefresh={onRefresh} /></div>
-      <footer className="border-t border-line bg-surface px-5 py-4"><PlanningTimeline detail={detail} /></footer>
+      <footer className="border-t border-line bg-surface px-5 py-4"><PlanningTimeline detail={detail} reader={actions === null} /></footer>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { accessProblem } from "@/lib/tasks/taskFailure";
 import type { TaskFailure, WorkLoad, WorkSnapshot } from "./contract";
+import { hasActiveSession } from "./executionModel";
 
 export type WorkState = { snapshot: WorkSnapshot | null; failure: TaskFailure | null };
 export type WorkAction = { type: "loaded"; snapshot: WorkSnapshot } | { type: "failed"; failure: TaskFailure };
@@ -7,6 +8,7 @@ export type WorkAction = { type: "loaded"; snapshot: WorkSnapshot } | { type: "f
 const NOT_FOUND_CODE = "NOT_FOUND";
 const CLAIM_POLL_MS = 5_000;
 const PLANNING_POLL_MS = 2_000;
+const TERMINAL_POLL_MS = 3_000;
 const IDLE_POLL_MS = 15_000;
 const UNRESOLVED_CLAIMS = ["pending", "uncertain"];
 const ACTIVE_PLANNING = "in_progress";
@@ -29,5 +31,6 @@ export function workReducer(state: WorkState, action: WorkAction): WorkState {
 export function workPollInterval(state: WorkState) {
   if (lostAccess(state.failure) || !state.snapshot) return null;
   if (UNRESOLVED_CLAIMS.includes(state.snapshot.view.claim.state)) return CLAIM_POLL_MS;
-  return state.snapshot.detail.planning.status === ACTIVE_PLANNING ? PLANNING_POLL_MS : IDLE_POLL_MS;
+  if (state.snapshot.detail.planning.status === ACTIVE_PLANNING) return PLANNING_POLL_MS;
+  return hasActiveSession(state.snapshot.detail) ? TERMINAL_POLL_MS : IDLE_POLL_MS;
 }

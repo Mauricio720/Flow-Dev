@@ -13,6 +13,8 @@ export const LOADING_MESSAGE = "Preparando a abertura…";
 export const PREFLIGHT_FAILED_MESSAGE = "Não foi possível preparar a abertura agora. Feche e tente de novo.";
 export const OPEN_FAILED_MESSAGE = "Não foi possível abrir o terminal agora. Tente de novo; a mesma confirmação não abre duas janelas.";
 export const CANCEL_LABEL = "Cancelar";
+export const SESSION_ACTIVE_MESSAGE = "Já existe uma sessão aberta para esta tarefa. Abrir outra?";
+export const OPEN_ANOTHER_LABEL = "Abrir outra";
 export const SENDING_LABEL = "Abrindo…";
 
 export function branchLabel(branch: string | null, detachedSha: string | null) {

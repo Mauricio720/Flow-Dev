@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { expiredSessionPath, projectSettingsPath } from "@/lib/navigation/projectRoutes";
 import type { LocalCheckout } from "@/lib/projects/contract";
-import { requestRemove, requestSave, type CheckoutOutcome } from "../localCheckoutClient";
+import { requestPickFolder, requestRemove, requestSave, type CheckoutOutcome, type PickOutcome } from "../localCheckoutClient";
 
-type Status = "editing" | "saving" | "saved" | "removed";
+type Status = "editing" | "saving" | "picking" | "saved" | "removed";
 type State = { saved: LocalCheckout; path: string; status: Status; message: string | null };
 
 export function useLocalCheckout(projectId: string, initial: LocalCheckout) {
@@ -28,8 +28,18 @@ export function useLocalCheckout(projectId: string, initial: LocalCheckout) {
     patch({ message: null });
     apply(await requestRemove(projectId));
   }
+  function applyPick(outcome: PickOutcome) {
+    if (outcome.kind === "unauthorized") return router.replace(expiredSessionPath(projectSettingsPath(projectId)));
+    if (outcome.kind === "failed") return patch({ status: "editing", message: outcome.message });
+    patch(outcome.kind === "picked" ? { path: outcome.path, status: "editing" } : { status: "editing" });
+  }
+  async function pick() {
+    if (state.status === "saving" || state.status === "picking") return;
+    patch({ status: "picking", message: null });
+    applyPick(await requestPickFolder(projectId));
+  }
   const edit = (path: string) => patch({ path, status: "editing", message: null });
-  return { ...state, edit, save, remove };
+  return { ...state, edit, save, remove, pick };
 }
 
 export type LocalCheckoutEditor = ReturnType<typeof useLocalCheckout>;

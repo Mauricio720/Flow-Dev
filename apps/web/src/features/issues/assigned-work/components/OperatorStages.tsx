@@ -5,7 +5,9 @@ import type { TaskFailure, WorkSnapshot } from "../contract";
 import { usePlanningActions } from "../hooks/usePlanningActions";
 import { planningLifecycle } from "../planningModel";
 import { withOperatorPermissions } from "../planningPermissions";
-import { PLANNING_TAB_ID, PLANNING_TAB_LABEL, planningTabState, type StageTab } from "../stageTabs";
+import { executionTabState, latestSession } from "../executionModel";
+import { EXECUTION_TAB_ID, EXECUTION_TAB_LABEL, PLANNING_TAB_ID, PLANNING_TAB_LABEL, planningTabState, type StageTab } from "../stageTabs";
+import { ExecutionStage } from "./ExecutionStage";
 import { PlanningStage } from "./PlanningStage";
 import { StageTabs } from "./StageTabs";
 
@@ -18,5 +20,7 @@ export function OperatorStages({ project, snapshot, refresh, onFailure }: Props)
   const lifecycle = planningLifecycle(detail.planning);
   if (lifecycle === null) return null;
   const lead: StageTab = { id: PLANNING_TAB_ID, label: PLANNING_TAB_LABEL, state: planningTabState(detail.planning, lifecycle), panel: <PlanningStage detail={detail} actions={operate ? planning : null} onRefresh={() => void refresh()} /> };
-  return <StageTabs tabs={[lead]} current={lead.id} canAct={operate} />;
+  const session = latestSession(detail);
+  const execution: StageTab[] = session ? [{ id: EXECUTION_TAB_ID, label: EXECUTION_TAB_LABEL, state: executionTabState(session), panel: <ExecutionStage detail={detail} reader={!operate} /> }] : [];
+  return <StageTabs tabs={[lead, ...execution]} current={session ? EXECUTION_TAB_ID : lead.id} canAct={operate} />;
 }

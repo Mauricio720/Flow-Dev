@@ -24,7 +24,7 @@ vi.mock("@/lib/trpc/client", () => ({
       updateDetails: { mutate: vi.fn() },
       updateBoard: { mutate: vi.fn() },
       agentSettings: { get: { query: vi.fn() }, update: { mutate: vi.fn() } },
-      localCheckout: { get: { query: vi.fn() }, save: { mutate: vi.fn() }, remove: { mutate: vi.fn() } },
+      localCheckout: { get: { query: vi.fn() }, save: { mutate: vi.fn() }, remove: { mutate: vi.fn() }, pickFolder: { mutate: vi.fn() } },
     },
     tasks: {
       list: { query: vi.fn() },
@@ -39,6 +39,7 @@ vi.mock("@/lib/trpc/client", () => ({
       retryGeneration: { mutate: vi.fn() },
       publish: { mutate: vi.fn() },
       terminal: { preflight: { query: vi.fn() }, open: { mutate: vi.fn() } },
+      artifacts: { list: { query: vi.fn() }, get: { query: vi.fn() } },
       planning: {
         start: { mutate: vi.fn() },
         retry: { mutate: vi.fn() },

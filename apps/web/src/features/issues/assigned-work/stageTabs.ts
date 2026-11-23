@@ -7,6 +7,8 @@ export type StageTab = { id: string; label: string; state: StageTabState; panel:
 
 export const PLANNING_TAB_ID = "planning";
 export const PLANNING_TAB_LABEL = "Planejamento";
+export const EXECUTION_TAB_ID = "execution";
+export const EXECUTION_TAB_LABEL = "Execução no terminal";
 export const STAGE_TAB_STATE_LABELS: Record<StageTabState, string> = { done: "Concluída", current: "Em andamento", failed: "Falhou", pending: "Pendente", yours: "Aguardando você" };
 export const READER_TAB_STATE_LABELS: Record<StageTabState, string> = { ...STAGE_TAB_STATE_LABELS, yours: "Aguardando a pessoa operadora" };
 
