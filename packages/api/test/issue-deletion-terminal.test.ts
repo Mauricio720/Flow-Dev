@@ -61,4 +61,19 @@ describe("issueDeletion terminal files", () => {
     expect(await countWhere("task_artifact_versions", "artifact_id", artifact!.id)).toBe(0);
     expect(await countWhere("task_artifacts", "task_id", otherTask)).toBe(1);
   });
+
+  it("V-27d removes the messages and requests of a Flow Dev session with the Issue", async () => {
+    const spec = await seedSpecFlowTask(f.database, f.client, { projectId: f.project.id, authorId: f.member.id, messageCount: 3 });
+    const [decision] = await f.client`select id from task_planning_decisions where task_id = ${spec.task}`;
+    const [session] = await f.client`insert into task_terminal_sessions (task_id, project_id, user_id, planning_decision_id, route, request_key, checkout_path, dirty, runtime, host_id) values (${spec.task}, ${f.project.id}, ${f.member.id}, ${decision!.id}, 'tech_spec', ${crypto.randomUUID()}, '/work/shop', false, 'flow_dev', 'm:a') returning id`;
+    for (const role of ["user", "assistant", "system"]) await f.client`insert into task_terminal_messages (session_id, role, content) values (${session!.id}, ${role}, 'oi')`;
+    for (const kind of ["question", "permission"]) await f.client`insert into task_terminal_requests (session_id, kind, tool_use_id, payload) values (${session!.id}, ${kind}, 'toolu_1', '{}'::jsonb)`;
+    f.world.issue = { ...ISSUE_41, nodeId: "I_fixture_41", number: 41 };
+    const preview = await f.caller(f.member.id).preview({ kind: "task", projectId: f.project.id, taskId: spec.task });
+    await f.caller(f.member.id).start({ target: { kind: "task", projectId: f.project.id, taskId: spec.task }, fingerprint: preview.fingerprint, requestKey: crypto.randomUUID() });
+    await f.drain();
+    expect(await countWhere("task_terminal_messages", "session_id", session!.id)).toBe(0);
+    expect(await countWhere("task_terminal_requests", "session_id", session!.id)).toBe(0);
+    expect(await countWhere("task_terminal_sessions", "task_id", spec.task)).toBe(0);
+  });
 });

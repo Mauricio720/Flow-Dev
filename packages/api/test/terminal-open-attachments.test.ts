@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { taskImages, taskTerminalAttachments, taskTerminalSessions } from "../src/infra/database/schema";
 import { closeTaskFixture } from "./task-api-support";
 import { addPublishedTask } from "./planning-support";
-import { cleanupTerminalFolders, openInput } from "./terminal-support";
+import { cleanupTerminalFolders, openInput, readSessionPrompt } from "./terminal-support";
 import { attachmentWorld, imageId } from "./terminal-attachment-support";
 
 afterEach(async () => {
@@ -30,7 +30,7 @@ describe("tasks.terminal.open with attachments", () => {
     expect((await readdir(folder)).sort()).toEqual(["01-tela-a.png", "02-tela-b.png", "03-print-do-erro.png", "04-notas-acao.md"]);
     expect((await stat(join(folder, "04-notas-acao.md"))).mode & 0o777).toBe(0o600);
     expect(new Uint8Array(await readFile(join(folder, "03-print-do-erro.png")))).toEqual(PNG_UPLOAD);
-    const prompt = world.harness.launcher.commands[0]!.args.at(-1)!;
+    const prompt = await readSessionPrompt(world.harness.state, result.sessionId);
     const lines = prompt.split("\nAnexos (leia antes de começar):\n")[1]!.split("\n");
     expect(lines).toEqual([`- tela A (image/png): ${join(folder, "01-tela-a.png")}`, `- tela B (image/png): ${join(folder, "02-tela-b.png")}`, `- Print do erro.png (image/png): ${join(folder, "03-print-do-erro.png")}`, `- notas ação.md (text/markdown): ${join(folder, "04-notas-acao.md")}`]);
     const stagedFolder = join(world.harness.state, "flow-dev", "terminal-staging", world.setup.ownerId);
@@ -42,7 +42,7 @@ describe("tasks.terminal.open with attachments", () => {
     await world.setup.database.delete(taskImages).where(eq(taskImages.id, imageId(2)));
     const result = await world.open({ issueImageIds: [imageId(1), imageId(2)] });
     expect(result.unavailableIssueImages).toBe(1);
-    const prompt = world.harness.launcher.commands[0]!.args.at(-1)!;
+    const prompt = await readSessionPrompt(world.harness.state, result.sessionId);
     expect(prompt).toContain("- tela A (image/png)");
     expect(prompt).not.toContain("tela B");
   });
@@ -52,7 +52,6 @@ describe("tasks.terminal.open with attachments", () => {
     const ids: string[] = [];
     for (let index = 0; index < 8; index += 1) ids.push((await world.upload(`n${index}.md`, new Uint8Array(Buffer.from(`# ${index}`)))).id);
     expect(await reasonOf(world.open({ attachmentIds: ids, issueImageIds: [imageId(1), imageId(2), imageId(3)] }))).toBe("attachment_limit");
-    expect(world.harness.launcher.commands).toHaveLength(0);
     expect(await world.setup.database.select().from(taskTerminalSessions)).toHaveLength(0);
     const rows = await world.setup.database.select().from(taskTerminalAttachments);
     expect(rows.filter((row) => row.sessionId === null)).toHaveLength(8);
@@ -68,7 +67,7 @@ describe("tasks.terminal.open with attachments", () => {
     for (const id of [theirs!.id, elsewhere!.id, crypto.randomUUID()]) expect(await reasonOf(world.open({ attachmentIds: [id] }))).toBe("attachment_missing");
     await world.open({ attachmentIds: [mine.id] });
     expect(await reasonOf(world.open({ attachmentIds: [mine.id] }))).toBe("attachment_missing");
-    expect(world.harness.launcher.commands).toHaveLength(1);
+    expect(await world.setup.database.select().from(taskTerminalSessions)).toHaveLength(1);
   });
 
   it("V-11b leaves the task images untouched", async () => {
@@ -78,14 +77,14 @@ describe("tasks.terminal.open with attachments", () => {
     expect(JSON.stringify(await world.setup.database.select().from(taskImages))).toBe(before);
   });
 
-  it("returns the uploads to staging when the launch fails, so the same ids work on a retry", async () => {
+  it("returns the uploads to staging when the preparation fails, so the same ids work on a retry", async () => {
     const world = await attachmentWorld(0);
     const upload = await world.upload("a.md", MARKDOWN);
-    world.harness.launcher.failure = new Error("sem display");
+    world.harness.context.failure = new Error("sem espaço em disco");
     const input = openInput(world.setup, { attachmentIds: [upload.id] });
-    expect(await reasonOf(world.harness.caller.terminal.open(input as never))).toBe("terminal_unavailable");
-    world.harness.launcher.failure = null;
-    expect((await world.harness.caller.terminal.open(input as never)).sessionId).toBeTruthy();
-    expect(world.harness.launcher.commands[0]!.args.at(-1)).toContain("- a.md (text/markdown)");
+    await expect(world.harness.caller.terminal.open(input as never)).rejects.toThrow();
+    world.harness.context.failure = null;
+    const retried = await world.harness.caller.terminal.open(input as never);
+    expect(await readSessionPrompt(world.harness.state, retried.sessionId)).toContain("- a.md (text/markdown)");
   });
 });

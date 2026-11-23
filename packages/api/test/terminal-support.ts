@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { projectLocalCheckouts, taskIssueSnapshots, taskOperations, taskPlanningDecisions, tasks } from "../src/infra/database/schema";
 import { FLOW_DEV_SKILLS } from "../src/application/terminal/sessionContext";
-import type { TerminalCommand, TerminalLauncher } from "../src/application/terminal/terminalLauncher";
+import { FileSessionContextBuilder } from "../src/infra/terminal/fileSessionContextBuilder";
+import type { SessionContextPaths } from "../src/application/terminal/sessionContext";
 import { INPUT_HASH, PLAN_OPERATION_ID, REVIEW_ASSESSMENT, publishedTask, seedReview, type PlanningSetup } from "./planning-support";
 
 export const PROJECT_REMOTE = "git@github.com:acme/private.git";
@@ -21,14 +22,21 @@ export async function temporaryFolder(prefix: string) {
   return folder;
 }
 
-export class FakeLauncher implements TerminalLauncher {
-  commands: TerminalCommand[] = [];
+export class FailableContext extends FileSessionContextBuilder {
   failure: Error | null = null;
 
-  async launch(command: TerminalCommand) {
+  async prepare(sessionId: string): Promise<SessionContextPaths> {
     if (this.failure) throw this.failure;
-    this.commands.push(command);
+    return super.prepare(sessionId);
   }
+}
+
+export function sessionFolder(state: string, sessionId: string) {
+  return join(state, "flow-dev", "terminal-sessions", sessionId);
+}
+
+export async function readSessionPrompt(state: string, sessionId: string) {
+  return readFile(join(sessionFolder(state, sessionId), "prompt.md"), "utf8");
 }
 
 export async function gitClone(remote = PROJECT_REMOTE) {

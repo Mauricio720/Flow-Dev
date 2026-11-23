@@ -27,7 +27,6 @@ describe("tasks.terminal.open with an active session", () => {
     expect(refused).toMatchObject({ code: "CONFLICT", message: ALREADY_ACTIVE });
     expect(refused?.cause).toMatchObject({ reason: "session_already_active" });
     expect(await setup.database.select().from(taskTerminalSessions)).toHaveLength(1);
-    expect(harness.launcher.commands).toHaveLength(1);
     await harness.caller.terminal.open(openInput(setup, { allowAdditional: true }));
     expect(await setup.database.select().from(taskTerminalSessions)).toHaveLength(2);
   });

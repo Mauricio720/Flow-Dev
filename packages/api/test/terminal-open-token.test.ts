@@ -1,11 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { join } from "node:path";
 import { taskTerminalSessions } from "../src/infra/database/schema";
-import { hashSessionToken } from "../src/application/services/terminal/sessionToken";
 import { closeTaskFixture } from "./task-api-support";
-import { cleanupTerminalFolders, openInput } from "./terminal-support";
-import { HARNESS_APP_URL } from "./terminal-harness";
+import { cleanupTerminalFolders, openInput, sessionFolder } from "./terminal-support";
 import { readySetup } from "./terminal-open-support";
 
 afterEach(async () => {
@@ -13,25 +11,19 @@ afterEach(async () => {
   await cleanupTerminalFolders();
 });
 
-describe("tasks.terminal.open session token", () => {
-  it("V-07e stores only the token hash and keeps the token in the private settings file", async () => {
+describe("tasks.terminal.open without a session token", () => {
+  it("DEC-18 stores no token hash and writes no private settings for a Flow Dev session", async () => {
     const { setup, harness } = await readySetup();
     const result = await harness.caller.terminal.open(openInput(setup));
-    const settingsPath = join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "privado", "settings.json");
-    expect(((await stat(settingsPath)).mode & 0o777)).toBe(0o600);
-    const settings = JSON.parse(await readFile(settingsPath, "utf8"));
-    const hook = settings.hooks.Stop[0].hooks[0];
-    expect(hook.url).toBe(`${HARNESS_APP_URL}/api/terminal-sessions/events`);
-    const token = hook.headers.Authorization.replace("Bearer ", "");
     const [session] = await setup.database.select().from(taskTerminalSessions);
-    expect(session!.tokenHash).toBe(hashSessionToken(token));
-    expect(JSON.stringify(session)).not.toContain(token);
+    expect(session!.tokenHash).toBeNull();
+    await expect(stat(join(sessionFolder(harness.state, result.sessionId), "privado"))).rejects.toThrow();
   });
 
-  it("fails the launch when BETTER_AUTH_URL is missing", async () => {
+  it("does not need BETTER_AUTH_URL to open a Flow Dev session", async () => {
     const { setup, harness } = await readySetup({ env: { BETTER_AUTH_URL: "" } });
-    await expect(harness.caller.terminal.open(openInput(setup))).rejects.toThrow();
+    await harness.caller.terminal.open(openInput(setup));
     const [session] = await setup.database.select().from(taskTerminalSessions);
-    expect(session).toMatchObject({ status: "launch_failed" });
+    expect(session).toMatchObject({ status: "opening", runtime: "flow_dev" });
   });
 });

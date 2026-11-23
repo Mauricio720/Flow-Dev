@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { taskTerminalSessions } from "../src/infra/database/schema";
 import { closeTaskFixture } from "./task-api-support";
 import { publishedTask, planningCaller, planningBase, reviewState, seedReview } from "./planning-support";
-import { cleanupTerminalFolders, openInput } from "./terminal-support";
+import { cleanupTerminalFolders, openInput, readSessionPrompt, sessionFolder } from "./terminal-support";
+import { machineIdentity } from "../src/infra/terminal/machineIdentity";
 import { terminalHarness } from "./terminal-harness";
 import { fingerprint, readySetup, rowsOf } from "./terminal-open-support";
 
@@ -14,18 +15,17 @@ afterEach(async () => {
 });
 
 describe("tasks.terminal.open", () => {
-  it("opens one session, copies the skills and hands the launcher the spike command with the literal prompt", async () => {
+  it("opens one session as flow_dev, copies the skills and stores the literal prompt without starting any process", async () => {
     const { setup, clone, harness } = await readySetup();
     const prompt = "Teste \"aspas\" 'simples' $(whoami) `crase`\n\n--help";
     const result = await harness.caller.terminal.open(openInput(setup, { prompt }));
     expect(result.unavailableIssueImages).toBe(0);
-    const [command] = harness.launcher.commands;
-    const contextDir = join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "contexto");
-    expect(command!.file).toBe("gnome-terminal");
-    expect(command!.args).toEqual([`--working-directory=${clone}`, "--", "claude", "--dangerously-skip-permissions", "--plugin-dir", contextDir, "--settings", join(harness.state, "flow-dev", "terminal-sessions", result.sessionId, "privado", "settings.json"), "--", prompt]);
-    expect((await stat(join(contextDir, "skills", "direct-executor", "SKILL.md"))).isFile()).toBe(true);
+    const folder = sessionFolder(harness.state, result.sessionId);
+    expect((await stat(join(folder, "contexto", "skills", "direct-executor", "SKILL.md"))).isFile()).toBe(true);
+    expect(await readSessionPrompt(harness.state, result.sessionId)).toBe(prompt);
+    await expect(stat(join(folder, "privado"))).rejects.toThrow();
     const [session] = await setup.database.select().from(taskTerminalSessions);
-    expect(session).toMatchObject({ id: result.sessionId, taskId: setup.taskId, userId: setup.ownerId, route: "tech_spec", checkoutPath: clone, dirty: false, launchFailedAt: null });
+    expect(session).toMatchObject({ id: result.sessionId, taskId: setup.taskId, userId: setup.ownerId, route: "tech_spec", checkoutPath: clone, dirty: false, launchFailedAt: null, status: "opening", runtime: "flow_dev", permissionMode: "bypass", hostId: machineIdentity(), workerId: null, tokenHash: null });
     expect(session!.lastSignalAt).toEqual(session!.openedAt);
   });
 
@@ -38,24 +38,22 @@ describe("tasks.terminal.open", () => {
     const results = await Promise.all([harness.caller.terminal.open(concurrent), harness.caller.terminal.open(concurrent), harness.caller.terminal.open(concurrent)]);
     expect(new Set(results.map((result) => result.sessionId)).size).toBe(1);
     expect(await setup.database.select().from(taskTerminalSessions)).toHaveLength(2);
-    expect(harness.launcher.commands).toHaveLength(2);
   });
 
-  it("V-03j registers the launch failure, removes the session folder and lets the same key try again", async () => {
+  it("V-03j registers the preparation failure, removes the session folder and lets the same key try again", async () => {
     const { setup, harness } = await readySetup();
-    harness.launcher.failure = new Error("sem display");
+    harness.context.failure = new Error("sem espaço em disco");
     const input = openInput(setup);
-    const error = await harness.caller.terminal.open(input).then(() => null, (caught: unknown) => caught as Error & { cause?: { reason: string } });
-    expect(error?.cause?.reason).toBe("terminal_unavailable");
+    await expect(harness.caller.terminal.open(input)).rejects.toThrow();
     const [failed] = await setup.database.select().from(taskTerminalSessions);
-    expect(failed).toMatchObject({ launchError: "sem display", status: "launch_failed" });
+    expect(failed).toMatchObject({ launchError: "sem espaço em disco", status: "launch_failed" });
     expect(failed!.launchFailedAt).not.toBeNull();
-    await expect(stat(join(harness.state, "flow-dev", "terminal-sessions", failed!.id))).rejects.toThrow();
-    harness.launcher.failure = null;
+    await expect(stat(sessionFolder(harness.state, failed!.id))).rejects.toThrow();
+    harness.context.failure = null;
     expect((await harness.caller.terminal.open(input)).sessionId).toBe(failed!.id);
     const [retried] = await setup.database.select().from(taskTerminalSessions);
-    expect(retried).toMatchObject({ launchFailedAt: null, launchError: null, status: "opening" });
-    expect(harness.launcher.commands).toHaveLength(1);
+    expect(retried).toMatchObject({ launchFailedAt: null, launchError: null, status: "opening", runtime: "flow_dev", hostId: machineIdentity() });
+    expect((await stat(join(sessionFolder(harness.state, failed!.id), "contexto"))).isDirectory()).toBe(true);
   });
 
   it("shows the opening in tasks.byId only after a session opens", async () => {
@@ -75,7 +73,6 @@ describe("tasks.terminal.open", () => {
     const { version, decision } = await reviewState(setup);
     await planningCaller(setup).planning.approve({ ...planningBase(setup, version), decisionId: decision.id, expectedDecisionVersion: decision.version, reviewedRoute: decision.selectedRoute });
     expect(await setup.database.select().from(taskTerminalSessions)).toHaveLength(0);
-    expect(harness.launcher.commands).toHaveLength(0);
   });
 
   it("V-11d and V-11f leave status, claim and board untouched and write nothing to GitHub", async () => {

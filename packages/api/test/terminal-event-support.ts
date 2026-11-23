@@ -1,17 +1,31 @@
-import { readFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
-import { taskTerminalEvents, taskTerminalSessions } from "../src/infra/database/schema";
+import { hashSessionToken } from "../src/application/services/terminal/sessionToken";
+import { projectLocalCheckouts, taskPlanningDecisions, taskTerminalEvents, taskTerminalSessions } from "../src/infra/database/schema";
 import { createTerminalEventController } from "../src/infra/terminalEventComposition";
-import { openInput } from "./terminal-support";
+import { sessionFolder } from "./terminal-support";
 import { readySetup } from "./terminal-open-support";
 
 type World = Awaited<ReturnType<typeof readySetup>>;
 
-async function sessionHandle(world: World, sessionId: string) {
-  const settingsPath = join(world.harness.state, "flow-dev", "terminal-sessions", sessionId, "privado", "settings.json");
-  const settings = JSON.parse(await readFile(settingsPath, "utf8"));
-  const token: string = settings.hooks.Stop[0].hooks[0].headers.Authorization.replace("Bearer ", "");
+const TOKEN_BYTES = 32;
+
+async function legacyTerminalSession(world: World) {
+  const token = randomBytes(TOKEN_BYTES).toString("base64url");
+  const [decision] = await world.setup.database.select().from(taskPlanningDecisions);
+  const [link] = await world.setup.database.select().from(projectLocalCheckouts).where(eq(projectLocalCheckouts.userId, world.setup.ownerId));
+  const values = { taskId: world.setup.taskId, projectId: world.setup.project.id, userId: world.setup.ownerId, planningDecisionId: decision!.id, route: "tech_spec", requestKey: crypto.randomUUID(), checkoutPath: link!.path, dirty: false, tokenHash: hashSessionToken(token), runtime: "terminal" };
+  const [row] = await world.setup.database.insert(taskTerminalSessions).values(values as never).returning();
+  const settingsPath = join(sessionFolder(world.harness.state, row!.id), "privado", "settings.json");
+  await mkdir(join(settingsPath, ".."), { recursive: true });
+  await writeFile(settingsPath, "{}");
+  return { sessionId: row!.id, token, settingsPath };
+}
+
+async function sessionHandle(world: World) {
+  const { sessionId, token, settingsPath } = await legacyTerminalSession(world);
   const controller = createTerminalEventController(world.setup.database, { env: world.harness.env });
   const send = async (payload: unknown, bearer = token) => {
     const session = await controller.authenticate(bearer);
@@ -23,8 +37,7 @@ async function sessionHandle(world: World, sessionId: string) {
 }
 
 export async function openAnotherSession(world: World) {
-  const { sessionId } = await world.harness.caller.terminal.open(openInput(world.setup));
-  return sessionHandle(world, sessionId);
+  return sessionHandle(world);
 }
 
 export async function openedSession() {

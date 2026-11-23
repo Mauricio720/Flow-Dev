@@ -18,7 +18,6 @@ type Setup = Awaited<ReturnType<typeof approvedWork>>;
 async function refusal(setup: Setup, harness: Harness, input: Record<string, unknown> = {}) {
   const error = await harness.caller.terminal.open(openInput(setup, input) as never).then(() => null, (caught: unknown) => caught);
   expect(error).toBeInstanceOf(TRPCError);
-  expect(harness.launcher.commands).toHaveLength(0);
   expect(await setup.database.select().from(taskTerminalSessions)).toHaveLength(0);
   return error as TRPCError & { cause?: { reason: string } };
 }
@@ -55,11 +54,6 @@ describe("tasks.terminal.open guards", () => {
   it("V-03e names the missing Claude Code", async () => {
     const { setup, harness } = await readySetup({ missingTools: ["claude"] });
     expect((await refusal(setup, harness)).message).toBe("Claude Code não encontrado no PATH.");
-  });
-
-  it("V-03f names the missing GNOME Terminal", async () => {
-    const { setup, harness } = await readySetup({ missingTools: ["gnome-terminal"] });
-    expect((await refusal(setup, harness)).message).toBe("GNOME Terminal não encontrado.");
   });
 
   it("V-03g names the missing skill", async () => {
