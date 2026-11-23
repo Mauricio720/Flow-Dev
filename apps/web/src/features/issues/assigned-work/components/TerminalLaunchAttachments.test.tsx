@@ -13,7 +13,7 @@ vi.mock("../terminalAttachmentClient", async (importOriginal) => ({ ...(await im
 const preflight = vi.mocked(trpc.tasks.terminal.preflight.query);
 const open = vi.mocked(trpc.tasks.terminal.open.mutate);
 const upload = vi.mocked(uploadTerminalAttachment);
-const ACTION = { name: "Abrir no terminal" };
+const ACTION = { name: "Iniciar sessão" };
 const image = (number: number, preselected = true) => ({ id: `00000000-0000-4000-8000-0000000001${String(number).padStart(2, "0")}`, name: `tela ${number}`, contentType: "image/png", byteSize: 2048, preselected });
 
 async function openDialog(issueImages: TerminalPreflight["issueImages"] = []) {

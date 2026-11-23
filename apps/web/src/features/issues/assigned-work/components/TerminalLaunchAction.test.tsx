@@ -8,9 +8,9 @@ import { PlanningStage } from "./PlanningStage";
 
 const actions = () => ({ command: IDLE_COMMAND, draftRoute: null, setDraftRoute: vi.fn(), reconcile: vi.fn(), resend: vi.fn(), reviewed: vi.fn(), refresh: vi.fn(), dirty: false, approvalBlocked: false }) as unknown as PlanningActions;
 const noop = () => {};
-const ACTION = { name: "Abrir no terminal" };
+const ACTION = { name: "Iniciar sessão" };
 
-describe("Abrir no terminal action", () => {
+describe("Iniciar sessão action", () => {
   it("V-09a shows the action to the operator once the planning is approved", () => {
     render(<PlanningStage detail={withOperatorPermissions(approvedDetail(undefined, false))} actions={actions()} onRefresh={noop} />);
     expect(screen.getByRole("button", ACTION)).toBeTruthy();

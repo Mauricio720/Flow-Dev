@@ -8,7 +8,7 @@ import { TerminalLaunchAction } from "./TerminalLaunchAction";
 
 const preflight = vi.mocked(trpc.tasks.terminal.preflight.query);
 const open = vi.mocked(trpc.tasks.terminal.open.mutate);
-const ACTION = { name: "Abrir no terminal" };
+const ACTION = { name: "Iniciar sessão" };
 const QUESTION = "Já existe uma sessão aberta para esta tarefa. Abrir outra?";
 const SESSION = { sessionId: "00000000-0000-4000-8000-0000000000aa", unavailableIssueImages: 0 };
 

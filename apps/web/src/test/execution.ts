@@ -9,7 +9,7 @@ export function eventOf(patch: Partial<ExecutionEvent> = {}): ExecutionEvent {
 }
 
 export function sessionOf(patch: Partial<ExecutionSession> = {}): ExecutionSession {
-  return { id: "00000000-0000-4000-8000-0000000000e1", status: "running", route: "tech_spec", userName: "Ana", openedAt: OPENED, endedAt: null, lastEventAt: null, silentSince: null, droppedEvents: 0, hiddenEvents: 0, events: [], attachments: [], ...patch };
+  return { id: "00000000-0000-4000-8000-0000000000e1", status: "running", runtime: "terminal", route: "tech_spec", userName: "Ana", openedAt: OPENED, endedAt: null, lastEventAt: null, silentSince: null, droppedEvents: 0, hiddenEvents: 0, events: [], attachments: [], ...patch };
 }
 
 export function artifactOf(patch: Partial<ExecutionArtifact> = {}): ExecutionArtifact {

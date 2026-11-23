@@ -1,8 +1,15 @@
 import { formatTimeOfDay } from "@/lib/tasks/formatMoment";
 
-export const TERMINAL_ACTION_LABEL = "Abrir no terminal";
-export const TERMINAL_DIALOG_TITLE = "Abrir a execução no terminal";
-export const TERMINAL_DIALOG_INTRO = "O Claude Code abre numa janela do terminal, na pasta do seu clone, com todas as permissões liberadas e o prompt abaixo como primeira mensagem.";
+export const TERMINAL_ACTION_LABEL = "Iniciar sessão";
+export const TERMINAL_DIALOG_TITLE = "Iniciar a sessão do Claude";
+export const TERMINAL_DIALOG_INTRO = "O Claude Code roda por trás do Flow Dev, na pasta do seu clone, e a conversa aparece nesta tarefa. O prompt abaixo é a primeira mensagem.";
+export const SERVICE_OFFLINE_MESSAGE = "O serviço de sessões do Flow Dev não está rodando. Inicie o Flow Dev com pnpm dev e tente de novo.";
+export const PERMISSION_MODE_LEGEND = "Modo de permissões";
+export const PERMISSION_MODE_OPTIONS = [
+  { value: "bypass", label: "Tudo liberado", description: "O Claude não pede aprovação de nenhuma ferramenta. As perguntas com opções continuam aparecendo." },
+  { value: "accept_edits", label: "Aceitar edições, perguntar comandos", description: "Edições de arquivo no clone seguem sozinhas; comandos e as demais ferramentas pedem a sua aprovação." },
+  { value: "ask_all", label: "Perguntar tudo", description: "Edições, comandos e as demais ferramentas pedem a sua aprovação, salvo leituras e regras já liberadas." },
+] as const;
 export const CHECKOUT_FOLDER_LABEL = "Pasta";
 export const DIRTY_WARNING = "Há mudanças não commitadas nesta pasta. O Claude vai trabalhar sobre elas.";
 export const NO_CHECKOUT_MESSAGE = "Você ainda não vinculou o clone local deste projeto. Vincule a pasta nas Configurações para abrir a execução.";
@@ -11,11 +18,11 @@ export const PROMPT_LABEL = "Prompt";
 export const PROMPT_LIMIT_MESSAGE = "O prompt precisa ter entre 1 e 20.000 caracteres.";
 export const LOADING_MESSAGE = "Preparando a abertura…";
 export const PREFLIGHT_FAILED_MESSAGE = "Não foi possível preparar a abertura agora. Feche e tente de novo.";
-export const OPEN_FAILED_MESSAGE = "Não foi possível abrir o terminal agora. Tente de novo; a mesma confirmação não abre duas janelas.";
+export const OPEN_FAILED_MESSAGE = "Não foi possível iniciar a sessão agora. Tente de novo; a mesma confirmação não inicia duas sessões.";
 export const CANCEL_LABEL = "Cancelar";
 export const SESSION_ACTIVE_MESSAGE = "Já existe uma sessão aberta para esta tarefa. Abrir outra?";
 export const OPEN_ANOTHER_LABEL = "Abrir outra";
-export const SENDING_LABEL = "Abrindo…";
+export const SENDING_LABEL = "Iniciando…";
 
 export function branchLabel(branch: string | null, detachedSha: string | null) {
   return branch ? `Branch: ${branch}` : `HEAD destacado (${detachedSha ?? "desconhecido"})`;
@@ -26,7 +33,7 @@ export function characterCounter(length: number, maxLength: number) {
 }
 
 export function openedNote(userName: string, openedAt: string) {
-  return `Execução aberta no terminal por ${userName} às ${formatTimeOfDay(openedAt)}`;
+  return `Sessão iniciada por ${userName} às ${formatTimeOfDay(openedAt)}`;
 }
 
 export const ATTACHMENTS_HEADING = "Anexos";

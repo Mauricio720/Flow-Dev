@@ -20,7 +20,7 @@ describe("agent settings section", () => {
     expect(screen.getByText("gpt-6.1-sol")).toBeTruthy();
     expect(screen.getByText("Médio")).toBeTruthy();
     expect(screen.queryByRole("combobox")).toBeNull();
-    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual(["Salvar pasta"]);
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual(["Procurar…", "Salvar pasta"]);
   });
 
   it("V-09d warns that a saved model is no longer available", () => {

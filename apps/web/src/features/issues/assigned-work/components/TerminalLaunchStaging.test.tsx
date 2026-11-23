@@ -10,7 +10,7 @@ import { TerminalLaunchAction } from "./TerminalLaunchAction";
 
 vi.mock("../terminalAttachmentClient", async (importOriginal) => ({ ...(await importOriginal<typeof import("../terminalAttachmentClient")>()), uploadTerminalAttachment: vi.fn(), deleteTerminalAttachment: vi.fn(async () => true) }));
 
-const ACTION = { name: "Abrir no terminal" };
+const ACTION = { name: "Iniciar sessão" };
 const MEGABYTE = 1024 * 1024;
 const upload = vi.mocked(uploadTerminalAttachment);
 const discard = vi.mocked(deleteTerminalAttachment);

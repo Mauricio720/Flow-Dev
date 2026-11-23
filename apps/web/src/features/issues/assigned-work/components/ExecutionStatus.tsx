@@ -5,7 +5,7 @@ import { sessionStatusLabel } from "../executionModel";
 
 type Props = { session: ExecutionSession; reader: boolean };
 
-const STATUS_INK: Record<ExecutionSession["status"], string> = { opening: "text-ink", running: "text-ink", waiting: "text-clarify-ink", unconfirmed: "text-destructive", ended: "text-merge-ink", launch_failed: "text-destructive" };
+const STATUS_INK: Record<ExecutionSession["status"], string> = { opening: "text-ink", running: "text-ink", waiting: "text-clarify-ink", asking: "text-clarify-ink", interrupted: "text-ink", unconfirmed: "text-destructive", ended: "text-merge-ink", launch_failed: "text-destructive" };
 
 export function ExecutionStatus({ session, reader }: Props) {
   return (

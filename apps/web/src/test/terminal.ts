@@ -5,7 +5,7 @@ export const DEFAULT_PROMPT = "/flow-dev:direct-executor Implemente a Issue abai
 
 export function preflightOf(patch: Partial<TerminalPreflight> = {}): TerminalPreflight {
   const checkout = { path: CHECKOUT_PATH, branch: "main", detachedSha: null, dirty: false };
-  return { checkout, defaultPrompt: DEFAULT_PROMPT, maxPromptLength: 20_000, issueImages: [], ...patch };
+  return { checkout, defaultPrompt: DEFAULT_PROMPT, maxPromptLength: 20_000, issueImages: [], sessionService: { running: true }, ...patch };
 }
 
 export function terminalRejection(reason: string, message: string, code = "PRECONDITION_FAILED") {

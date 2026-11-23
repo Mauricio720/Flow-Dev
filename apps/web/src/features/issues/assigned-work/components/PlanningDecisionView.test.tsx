@@ -54,9 +54,9 @@ describe("PlanningDecisionView", () => {
     expect(screen.getByText("Rota salva").nextElementSibling?.textContent).toContain("Escolhida pela pessoa operadora");
   });
 
-  it("V-09h shows who opened the execution in the terminal in place of the not started note", () => {
+  it("V-09h shows who started the session in place of the not started note", () => {
     show(APPROVED, { userName: "Ana", openedAt: "2026-11-22T14:05:00.000Z" });
-    expect(screen.getByText(/Execução aberta no terminal por Ana às \d{2}:\d{2}/)).toBeTruthy();
+    expect(screen.getByText(/Sessão iniciada por Ana às \d{2}:\d{2}/)).toBeTruthy();
     expect(screen.queryByText(/A próxima atividade ainda não foi iniciada/)).toBeNull();
   });
 

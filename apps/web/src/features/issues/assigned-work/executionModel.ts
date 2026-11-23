@@ -1,14 +1,15 @@
 import type { TaskDetail } from "./contract";
 import type { ExecutionEvent, ExecutionSession, TerminalSessionStatus } from "./executionContract";
 import { EVENT_LABEL, READER_WAITING_LABEL, SESSION_STATUS_LABEL, UNCONFIRMED_MESSAGE } from "./executionCopy";
+import { FLOW_DEV_UNCONFIRMED_MESSAGE } from "./sessionCopy";
 import type { StageTabState } from "./stageTabs";
 import type { TimelineState } from "./planningModel";
 
 export type { ExecutionSession } from "./executionContract";
 
 const FINAL_STATUSES: readonly TerminalSessionStatus[] = ["ended", "launch_failed"];
-const TAB_STATE: Record<TerminalSessionStatus, StageTabState> = { opening: "current", running: "current", waiting: "yours", unconfirmed: "failed", ended: "done", launch_failed: "failed" };
-const TIMELINE_STATE: Record<TerminalSessionStatus, TimelineState> = { opening: "current", running: "current", waiting: "current", unconfirmed: "failed", ended: "done", launch_failed: "failed" };
+const TAB_STATE: Record<TerminalSessionStatus, StageTabState> = { opening: "current", running: "current", waiting: "yours", asking: "yours", interrupted: "yours", unconfirmed: "failed", ended: "done", launch_failed: "failed" };
+const TIMELINE_STATE: Record<TerminalSessionStatus, TimelineState> = { opening: "current", running: "current", waiting: "current", asking: "current", interrupted: "current", unconfirmed: "failed", ended: "done", launch_failed: "failed" };
 
 export function latestSession(detail: TaskDetail): ExecutionSession | null {
   return detail.execution.sessions[0] ?? null;
@@ -26,14 +27,15 @@ export function executionTimelineState(session: ExecutionSession): TimelineState
   return TIMELINE_STATE[session.status];
 }
 
+const READER_WAITING_STATUSES: readonly TerminalSessionStatus[] = ["waiting", "asking"];
+
 export function sessionStatusLabel(session: ExecutionSession, options: { reader: boolean }): string {
-  if (session.status === "unconfirmed") return UNCONFIRMED_MESSAGE;
-  if (session.status === "waiting" && options.reader) return READER_WAITING_LABEL;
-  return SESSION_STATUS_LABEL[session.status];
+  if (session.status === "unconfirmed") return session.runtime === "flow_dev" ? FLOW_DEV_UNCONFIRMED_MESSAGE : UNCONFIRMED_MESSAGE;
+  return sessionShortLabel(session, options);
 }
 
 export function sessionShortLabel(session: ExecutionSession, options: { reader: boolean }): string {
-  if (session.status === "waiting" && options.reader) return READER_WAITING_LABEL;
+  if (READER_WAITING_STATUSES.includes(session.status) && options.reader) return READER_WAITING_LABEL;
   return SESSION_STATUS_LABEL[session.status];
 }
 

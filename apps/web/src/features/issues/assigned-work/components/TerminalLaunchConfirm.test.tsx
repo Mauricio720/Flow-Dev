@@ -8,7 +8,7 @@ import { TerminalLaunchAction } from "./TerminalLaunchAction";
 
 const preflight = vi.mocked(trpc.tasks.terminal.preflight.query);
 const open = vi.mocked(trpc.tasks.terminal.open.mutate);
-const ACTION = { name: "Abrir no terminal" };
+const ACTION = { name: "Iniciar sessão" };
 const SESSION = { sessionId: "00000000-0000-4000-8000-0000000000aa", unavailableIssueImages: 0 };
 
 async function openDialog() {
@@ -38,7 +38,7 @@ describe("TerminalLaunchDialog confirmation", () => {
     const { confirm } = await openDialog();
     await userEvent.dblClick(confirm());
     expect(open).toHaveBeenCalledTimes(1);
-    expect((screen.getByRole("button", { name: "Abrindo…" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Iniciando…" }) as HTMLButtonElement).disabled).toBe(true);
     finish(SESSION);
   });
 
@@ -46,7 +46,7 @@ describe("TerminalLaunchDialog confirmation", () => {
     open.mockRejectedValueOnce(new Error("Failed to fetch")).mockResolvedValueOnce(SESSION);
     const { confirm, dialog } = await openDialog();
     await userEvent.click(confirm());
-    expect((await within(dialog).findByRole("alert")).textContent).toContain("Não foi possível abrir o terminal agora");
+    expect((await within(dialog).findByRole("alert")).textContent).toContain("Não foi possível iniciar a sessão agora");
     await userEvent.click(confirm());
     await waitFor(() => expect(open).toHaveBeenCalledTimes(2));
     const keys = open.mock.calls.map(([input]) => input.requestKey);

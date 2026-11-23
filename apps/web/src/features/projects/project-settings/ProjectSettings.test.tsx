@@ -74,6 +74,6 @@ describe("project settings", () => {
     expect(screen.getByText("Projeto Alfa")).toBeTruthy();
     expect(screen.getByText("acme/private")).toBeTruthy();
     expect(screen.getAllByRole("textbox").map((field) => field.id)).toEqual(["local-checkout-path"]);
-    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual(["Salvar pasta"]);
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual(["Procurar…", "Salvar pasta"]);
   });
 });

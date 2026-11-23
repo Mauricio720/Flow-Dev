@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trpcData } from "@/lib/trpc/error";
 import { fetchTerminalPreflight, openTerminal } from "../terminalClient";
-import type { PromptProblem, TerminalExtra, TerminalOpened, TerminalPhase, TerminalPreflight, TerminalScope } from "../terminalContract";
+import type { PermissionMode, PromptProblem, TerminalExtra, TerminalOpened, TerminalPhase, TerminalPreflight, TerminalScope } from "../terminalContract";
 import { OPEN_FAILED_MESSAGE } from "../terminalCopy";
 
 const NO_EXTRA: TerminalExtra = { attachmentIds: [], issueImageIds: [] };
@@ -14,6 +14,7 @@ export function promptProblemOf(prompt: string, maxLength: number): PromptProble
 }
 
 const SESSION_ACTIVE_REASON = "session_already_active";
+const DEFAULT_PERMISSION_MODE: PermissionMode = "bypass";
 
 function isSessionActive(error: unknown) {
   const data = trpcData(error);
@@ -44,7 +45,7 @@ function usePreflight(scope: TerminalScope) {
 
 type Preflight = ReturnType<typeof usePreflight>;
 
-function useTerminalSender(scope: TerminalScope, load: Preflight) {
+function useTerminalSender(scope: TerminalScope, load: Preflight, permissionMode: PermissionMode) {
   const [failure, setFailure] = useState<string | null>(null);
   const [opened, setOpened] = useState<TerminalOpened | null>(null);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
@@ -59,7 +60,7 @@ function useTerminalSender(scope: TerminalScope, load: Preflight) {
     setFailure(null);
     setNeedsConfirmation(false);
     try {
-      const result = await openTerminal(scope, { prompt: load.prompt, requestKey: requestKey.current, allowAdditional, ...extra });
+      const result = await openTerminal(scope, { prompt: load.prompt, requestKey: requestKey.current, allowAdditional, permissionMode, ...extra });
       setOpened(result);
       load.setPhase("opened");
       return result;
@@ -77,12 +78,14 @@ function useTerminalSender(scope: TerminalScope, load: Preflight) {
 
 export function useTerminalLaunch(scope: TerminalScope) {
   const load = usePreflight(scope);
-  const sender = useTerminalSender(scope, load);
+  const [permissionMode, setPermissionMode] = useState<PermissionMode>(DEFAULT_PERMISSION_MODE);
+  const sender = useTerminalSender(scope, load, permissionMode);
   const confirm = (extra: TerminalExtra = NO_EXTRA) => sender.send(extra, false);
   const confirmAdditional = () => sender.send(sender.lastExtra.current, true);
   const declineAdditional = () => sender.setNeedsConfirmation(false);
   const promptProblem = load.preflight ? promptProblemOf(load.prompt, load.preflight.maxPromptLength) : null;
-  return { preflight: load.preflight, prompt: load.prompt, setPrompt: load.setPrompt, promptProblem, confirm, confirmAdditional, declineAdditional, needsConfirmation: sender.needsConfirmation, phase: load.phase, failure: sender.failure, opened: sender.opened };
+  const serviceRunning = load.preflight?.sessionService.running ?? true;
+  return { preflight: load.preflight, serviceRunning, permissionMode, setPermissionMode, prompt: load.prompt, setPrompt: load.setPrompt, promptProblem, confirm, confirmAdditional, declineAdditional, needsConfirmation: sender.needsConfirmation, phase: load.phase, failure: sender.failure, opened: sender.opened };
 }
 
 export type TerminalLaunch = ReturnType<typeof useTerminalLaunch>;

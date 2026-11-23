@@ -1,8 +1,8 @@
 import type { TerminalEventKind, TerminalSessionStatus } from "./executionContract";
 
-export const EXECUTION_STAGE_LABEL = "Execução no terminal";
+export const EXECUTION_STAGE_LABEL = "Sessão do Claude";
 export const EXECUTION_TIMELINE_ACTOR = "Sessão do Claude";
-export const SESSION_STATUS_LABEL: Record<TerminalSessionStatus, string> = { opening: "Abrindo", running: "Em andamento", waiting: "Aguardando você", unconfirmed: "Não confirmada", ended: "Encerrada", launch_failed: "Falhou ao abrir" };
+export const SESSION_STATUS_LABEL: Record<TerminalSessionStatus, string> = { opening: "Abrindo", running: "Em andamento", waiting: "Aguardando você", asking: "Precisa de você", interrupted: "Interrompida", unconfirmed: "Não confirmada", ended: "Encerrada", launch_failed: "Falhou ao abrir" };
 export const UNCONFIRMED_MESSAGE = "Não confirmada: o Flow Dev não recebeu sinal do Claude. Confira a janela do terminal.";
 export const READER_WAITING_LABEL = "Aguardando a pessoa operadora";
 export const SILENT_SINCE_PREFIX = "Sem sinal desde";

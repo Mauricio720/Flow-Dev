@@ -7,7 +7,7 @@ import { CHECKOUT_PATH, DEFAULT_PROMPT, preflightOf } from "@/test/terminal";
 import { TerminalLaunchAction } from "./TerminalLaunchAction";
 
 const preflight = vi.mocked(trpc.tasks.terminal.preflight.query);
-const ACTION = { name: "Abrir no terminal" };
+const ACTION = { name: "Iniciar sessão" };
 
 async function openDialog(result = preflightOf()) {
   preflight.mockResolvedValue(result);
@@ -15,7 +15,7 @@ async function openDialog(result = preflightOf()) {
   render(<TerminalLaunchAction detail={approvedDetail()} onOpened={onOpened} />);
   const trigger = screen.getByRole("button", ACTION);
   await userEvent.click(trigger);
-  const dialog = await screen.findByRole("dialog", { name: "Abrir a execução no terminal" });
+  const dialog = await screen.findByRole("dialog", { name: "Iniciar a sessão do Claude" });
   await within(dialog).findByLabelText("Prompt");
   return { dialog, trigger, onOpened };
 }

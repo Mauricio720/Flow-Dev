@@ -13,7 +13,7 @@ export function TerminalLaunchFooter({ launch, attachments, onClose, onConfirm, 
   return (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
       {!sending && <Button type="button" variant="outline" onClick={onClose}>{CANCEL_LABEL}</Button>}
-      {launch.preflight?.checkout && <Button type="button" disabled={blocked} onClick={onConfirm}>{sending ? SENDING_LABEL : TERMINAL_ACTION_LABEL}</Button>}
+      {launch.preflight?.checkout && launch.serviceRunning && <Button type="button" disabled={blocked} onClick={onConfirm}>{sending ? SENDING_LABEL : TERMINAL_ACTION_LABEL}</Button>}
     </div>
   );
 }
