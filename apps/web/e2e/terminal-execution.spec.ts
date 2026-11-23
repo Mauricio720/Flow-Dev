@@ -1,7 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { createGitRepository } from "./fixtures/gitRepository";
-import { attachmentPathsOf, clearRecordedLaunch, readRecordedLaunch, sessionContextOf } from "./fixtures/terminalLaunch";
+import { attachmentPathsOf, readSessionPrompt, sessionContextOf } from "./fixtures/sessionFiles";
+import { JOURNEY_SCRIPT, writeSessionScript } from "./fixtures/sessionScript";
 
 const CONTROLLED_PROVIDERS_REASON = "Requer GitHub e quadro de projeto controlados, com acesso pessoal ao repositório: a tela do trabalho só libera a operadora com a verificação do GitHub.";
 
@@ -61,35 +62,37 @@ async function linkClone(page: Page, projectId: string, path: string) {
   await expect(page.getByText(/^Verificada em /)).toBeVisible();
 }
 
-async function openWithAttachments(page: Page, dialog: Locator) {
+async function startWithAttachments(page: Page, dialog: Locator) {
   await dialog.getByLabel("Prompt").fill(EDITED_PROMPT);
   await dialog.getByLabel(/print do erro/).uncheck();
   const files = [{ name: "nota.md", mimeType: "text/markdown", buffer: Buffer.from("# nota") }, { name: "print.png", mimeType: "image/png", buffer: PNG_BYTES }];
   await dialog.getByLabel("Anexar arquivos").setInputFiles(files);
   await expect(dialog.getByText(NOTE_SIZE_LABEL)).toBeVisible();
-  await dialog.getByRole("button", { name: "Abrir no terminal" }).click();
-  await expect(page.getByText(/Execução aberta no terminal por/)).toBeVisible();
+  await dialog.getByRole("button", { name: "Iniciar sessão" }).click();
+  await expect(page.getByText(/Sessão iniciada por/)).toBeVisible();
 }
 
-test.fixme("V-10a the operator opens the approved work in the terminal with attachments and the fake launcher", async ({ page, seed, workSeed, signInAs }) => {
+test.fixme("V-10a and V-32g the operator starts the approved work with attachments and the service stores the session, the prompt and the files", async ({ page, seed, workSeed, signInAs, db }) => {
   test.info().annotations.push({ type: "feature-gate", description: CONTROLLED_PROVIDERS_REASON });
   const operator = await seed.user();
   const project = await seed.project({ label: "Execução", assignedTo: [operator] });
   const clone = await createGitRepository(project.repository);
   const work = await workSeed.approvedWork(project, operator);
-  await clearRecordedLaunch();
+  await writeSessionScript(clone.path, JOURNEY_SCRIPT);
   await signInAs(page, operator);
   await linkClone(page, project.id, clone.path);
   await page.goto(`/projects/${project.id}/work/${work.taskId}`);
-  await page.getByRole("button", { name: "Abrir no terminal" }).click();
-  await openWithAttachments(page, page.getByRole("dialog", { name: "Abrir a execução no terminal" }));
-  const launch = await readRecordedLaunch();
-  const [text, section] = launch.args.at(-1)!.split(ATTACHMENTS_SECTION_SEPARATOR);
-  expect(launch.args[0]).toBe(`--working-directory=${clone.path}`);
+  await page.getByRole("button", { name: "Iniciar sessão" }).click();
+  await startWithAttachments(page, page.getByRole("dialog", { name: "Iniciar a sessão do Claude" }));
+  const [session] = await db`select id, runtime, permission_mode, checkout_path from task_terminal_sessions where task_id = ${work.taskId}`;
+  expect(session).toMatchObject({ runtime: "flow_dev", permission_mode: "bypass", checkout_path: clone.path });
+  const prompt = await readSessionPrompt(session!.id);
+  const [text, section] = prompt.split(ATTACHMENTS_SECTION_SEPARATOR);
   expect(text).toBe(EDITED_PROMPT);
-  expect(attachmentPathsOf(launch.args.at(-1)!)).toHaveLength(section!.split("\n").length);
-  const context = await sessionContextOf(launch.args.at(-1)!);
+  expect(attachmentPathsOf(prompt)).toHaveLength(section!.split("\n").length);
+  const context = await sessionContextOf(session!.id);
   expect(context.attachments.sort()).toEqual(["01-nota.md", "02-print.png"]);
   expect(context.skills.sort()).toEqual(FLOW_DEV_SKILLS);
+  await expect(page.getByText("Vou começar pela análise.")).toBeVisible();
   await clone.cleanup();
 });

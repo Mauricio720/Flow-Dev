@@ -1,16 +1,17 @@
-import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
-import { terminalStateDirectory } from "./e2e/fixtures/terminalLaunch";
+import { sessionScriptDirectory } from "./e2e/fixtures/sessionScript";
+import { terminalStateDirectory } from "./e2e/fixtures/sessionFiles";
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
 const terminalEnvironment = {
   FLOW_DEV_TERMINAL_ENABLED: "true",
-  FLOW_DEV_TERMINAL_FAKE_LAUNCH_FILE: join(terminalStateDirectory, "launch.json"),
+  FLOW_DEV_SESSION_FAKE_SCRIPT: sessionScriptDirectory,
   XDG_STATE_HOME: terminalStateDirectory,
 };
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/sessionWorkerSetup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: "list",

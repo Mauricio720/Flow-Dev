@@ -1,11 +1,11 @@
 import { test as base, type Page } from "@playwright/test";
-import postgres from "postgres";
+import postgres, { type Sql } from "postgres";
 import { E2E_SKIP_REASON, e2eConfigured, e2eDatabaseUrl } from "./environment";
 import { ProjectSeed, type SeededUser } from "./seed";
 import { WorkSeed } from "./workSeed";
 import { signIn } from "./session";
 
-type ProjectFixtures = { seed: ProjectSeed; workSeed: WorkSeed; signInAs: (page: Page, user: SeededUser) => Promise<void> };
+type ProjectFixtures = { seed: ProjectSeed; workSeed: WorkSeed; db: Sql; signInAs: (page: Page, user: SeededUser) => Promise<void> };
 
 export const test = base.extend<ProjectFixtures>({
   seed: async ({}, provide) => {
@@ -22,6 +22,12 @@ export const test = base.extend<ProjectFixtures>({
     const work = new WorkSeed(sql);
     await provide(work);
     await work.cleanup();
+    await sql.end();
+  },
+  db: async ({}, provide) => {
+    base.skip(!e2eConfigured, E2E_SKIP_REASON);
+    const sql = postgres(e2eDatabaseUrl ?? "", { max: 1 });
+    await provide(sql);
     await sql.end();
   },
   signInAs: async ({ baseURL }, provide) => {
