@@ -187,6 +187,27 @@
   }
 }
 
+.conversation-scroll {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%);
+}
+
+.conversation-scroll[data-at-start="false"] {
+  --fade-start: 1.5rem;
+}
+
+.conversation-scroll[data-at-end="false"] {
+  --fade-end: 3.5rem;
+}
+
+@keyframes jump-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
 /* The 24px cell grid the lanes snap to; visible only when the viewer switches it on. */
 .cell-grid {
   background-image:
