@@ -25,7 +25,7 @@ export function AccessFilters({ search, onSearch, projects, selectedProject, onS
         value={search}
         onChange={(event) => onSearch(event.target.value)}
         maxLength={SEARCH_MAX_LENGTH}
-        placeholder="login do GitHub"
+        placeholder="nome ou login do GitHub"
         className="mt-2 h-11"
       />
       <Label className="mt-4 block" htmlFor="project-target">

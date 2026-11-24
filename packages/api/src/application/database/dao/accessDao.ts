@@ -1,8 +1,10 @@
 import type { Page, ProjectRecord } from "./projectDao";
 
-export type UserRecord = { id: string; githubId: string; githubLogin: string; displayName?: string; avatarUrl?: string; lastProjectId: string | null; assignmentCount: number };
+export type UserRecord = { id: string; githubId: string | null; githubLogin: string | null; email: string | null; displayName?: string; avatarUrl?: string; lastProjectId: string | null; assignmentCount: number };
+export type LinkedMethods = { github: boolean; google: boolean; password: boolean };
 export interface AccessDao {
   findUser(id: string): Promise<UserRecord | null>;
+  findLinkedMethods(userId: string): Promise<LinkedMethods>;
   listUsers(query: { search?: string; cursor?: string }): Promise<Page<UserRecord>>;
   isAdmin(userId: string): Promise<boolean>;
   listAssignments(userId: string, cursor?: string): Promise<Page<ProjectRecord>>;

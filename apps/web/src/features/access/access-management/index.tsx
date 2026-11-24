@@ -56,7 +56,7 @@ export function AccessManagement({ initialPage, initialProjects }: { initialPage
     <section className="mx-auto w-full max-w-4xl px-6 py-12">
       <p className="font-mono text-xs text-ink-3">ADMINISTRAÇÃO</p>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight">Acesso aos projetos</h1>
-      <p className="mt-3 text-sm leading-6 text-ink-2">Atribua apenas projetos existentes a pessoas que já entraram com GitHub.</p>
+      <p className="mt-3 text-sm leading-6 text-ink-2">Atribua apenas projetos existentes a pessoas que já entraram no Flow Dev.</p>
       <AccessFilters search={search} onSearch={setSearch} projects={projects} selectedProject={selectedProject} onSelectProject={setSelectedProject} />
       {status && <p role="alert" className="mt-3 text-sm text-destructive">{status}</p>}
       <ul className="mt-6 divide-y divide-line rounded-xl border border-line bg-raised">

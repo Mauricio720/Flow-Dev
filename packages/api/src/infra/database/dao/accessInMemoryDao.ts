@@ -1,4 +1,4 @@
-import type { AccessDao, UserRecord } from "../../../application/database/dao/accessDao";
+import type { AccessDao, LinkedMethods, UserRecord } from "../../../application/database/dao/accessDao";
 import type { Page, ProjectRecord } from "../../../application/database/dao/projectDao";
 import { decodeCursor, encodeCursor } from "../../../application/pagination/cursor";
 import { InMemoryProjectDao } from "./projects/inMemoryProjectDao";
@@ -14,17 +14,22 @@ export class InMemoryAccessDao implements AccessDao {
     return user ? { ...user, assignmentCount: this.countAssignments(id) } : null;
   }
 
+  async findLinkedMethods(userId: string): Promise<LinkedMethods> {
+    return { github: !!this.users.get(userId)?.githubId, google: false, password: false };
+  }
+
   async listUsers(query: { search?: string; cursor?: string }): Promise<Page<UserRecord>> {
-    const all = [...this.users.values()].filter((user) => !query.search || user.githubLogin.includes(query.search)).sort((a, b) => a.githubLogin.localeCompare(b.githubLogin) || a.id.localeCompare(b.id));
+    const all = [...this.users.values()].filter((user) => this.matches(user, query.search)).sort((a, b) => this.sortKey(a).localeCompare(this.sortKey(b)) || a.id.localeCompare(b.id));
     const cursor = decodeCursor(query.cursor);
     const start = cursor ? all.findIndex((user) => user.id === cursor.id) + 1 : 0;
     const items = all.slice(start, start + 50).map((user) => ({ ...user, assignmentCount: this.countAssignments(user.id) }));
-    return { items, nextCursor: all.length > start + items.length ? encodeCursor({ key: items.at(-1)?.githubLogin ?? "", id: items.at(-1)?.id }) : null };
+    const last = items.at(-1);
+    return { items, nextCursor: last && all.length > start + items.length ? encodeCursor({ key: this.sortKey(last), id: last.id }) : null };
   }
 
   async isAdmin(userId: string) {
     const user = this.users.get(userId);
-    return !!user && this.admins.has(user.githubId);
+    return !!user?.githubId && this.admins.has(user.githubId);
   }
 
   async listAssignments(userId: string, cursor?: string) {
@@ -71,8 +76,16 @@ export class InMemoryAccessDao implements AccessDao {
     }
   }
 
-  seedUser(user: Omit<UserRecord, "assignmentCount"> & { assignmentCount?: number }) {
-    this.users.set(user.id, { ...user, assignmentCount: user.assignmentCount ?? 0 });
+  seedUser(user: Omit<UserRecord, "assignmentCount" | "email"> & { assignmentCount?: number; email?: string | null }) {
+    this.users.set(user.id, { ...user, email: user.email ?? null, assignmentCount: user.assignmentCount ?? 0 });
+  }
+
+  private sortKey(user: UserRecord) {
+    return user.githubLogin ?? user.displayName ?? user.id;
+  }
+
+  private matches(user: UserRecord, search?: string) {
+    return !search || [user.githubLogin, user.displayName].some((name) => name?.includes(search));
   }
 
   private key(userId: string, projectId: string) {

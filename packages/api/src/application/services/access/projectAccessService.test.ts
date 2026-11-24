@@ -13,6 +13,7 @@ describe("project access service", () => {
       isAdmin: async () => false,
       hasAssignment: async (_user, id) => id === last.id,
       findUser: async () => null,
+      findLinkedMethods: async () => ({ github: false, google: false, password: false }),
       listUsers: async () => ({ items: [], nextCursor: null }),
       listAssignments: async () => ({ items: [], nextCursor: null }),
       findProject: async () => null,
