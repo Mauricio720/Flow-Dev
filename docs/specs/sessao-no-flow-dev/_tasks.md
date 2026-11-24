@@ -77,6 +77,12 @@ Veja o progresso e a próxima mini-tarefa liberada a qualquer momento: `python3 
 <!-- spec-conformance appends one line per final review. -->
 - 2026-11-23 · review-001 · REPROVADO (parcial; 1 bloqueante, 5 importantes) · reviews/review-001.md
 - 2026-11-23 · review-002 · APROVADO COM RESSALVAS (0 bloqueantes, 1 importante; 07.3 e e2e dispensados pelo usuário) · reviews/review-002.md
+- 2026-11-23 · review-003 · REPROVADO (3 bloqueantes, 1 importante, 1 menor; dispensa de E2E/UI preservada) · reviews/review-003.md
+- 2026-11-23 · review-004 · APROVADO COM RESSALVAS (0 bloqueantes, 0 importantes, 0 menores; 2 atualizações documentais a discutir) · reviews/review-004.md
+- 2026-11-23 · review-005 · REPROVADO (4 bloqueantes, 1 importante; dispensa de E2E/UI preservada) · reviews/review-005.md
+- 2026-11-23 · review-006 · correções de review-005 revalidadas; sem bloqueantes/importantes novos no delta; dispensa E2E/UI preservada · reviews/review-006.md
+- 2026-11-23 · review-007 · REPROVADO (1 bloqueante, 1 importante, 3 menores; dispensa E2E/UI preservada) · reviews/review-007.md
+- 2026-11-23 · review-008 · APROVADO COM RESSALVAS (0 bloqueantes, 0 importantes, 1 menor; 3 pontos de spec a confirmar; dispensa E2E/UI preservada) · reviews/review-008.md
 
 ## Restrições globais
 - `.agents/rules/code-standards.md`: sem comentários, arquivos `.ts` com até 100 linhas, funções com até 30 linhas, até 3 parâmetros (senão um objeto), sem linhas em branco dentro de funções, constantes no lugar de números e strings mágicas.

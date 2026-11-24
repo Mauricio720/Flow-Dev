@@ -61,15 +61,15 @@ Com a spec capturada, a tarefa ganha a etapa "Tarefas". Nela a pessoa gera as ta
 <!-- Keep this table in sync with each task file's frontmatter `status`. The implementer updates it when starting and finishing a task. -->
 | Tarefa | Tipo | Complexidade | Depende de | Mini-tarefas | Status |
 |---|---|---|---|---|---|
-| [01 — Spike V-33 de modelo e esforço no SDK](task_01.md) | test | high | — | 0/2 | pending |
-| [02 — Leitura do conjunto de tarefas](task_02.md) | backend | medium | — | 0/3 | pending |
-| [03 — Migration 0049 e catálogo de agentes](task_03.md) | backend | high | 01 | 0/2 | pending |
-| [04 — Plano de execução: regras e salvamento](task_04.md) | backend | high | 02, 03 | 0/4 | pending |
-| [05 — Abertura com propósito e modelo no runtime](task_05.md) | backend | critical | 03, 04 | 0/5 | pending |
-| [06 — Captura nas sessões do plano](task_06.md) | backend | medium | 02, 03 | 0/2 | pending |
-| [07 — Tela: aba Tarefas e leitura](task_07.md) | frontend | medium | 02 | 0/2 | pending |
-| [08 — Tela: gerar tarefas e plano de execução](task_08.md) | frontend | high | 04, 05, 07 | 0/4 | pending |
-| [09 — Ponta a ponta, regressão e entrega](task_09.md) | test | medium | 06, 08 | 0/3 | pending |
+| [01 — Spike V-33 de modelo e esforço no SDK](task_01.md) | test | high | — | 2/2 | completed |
+| [02 — Leitura do conjunto de tarefas](task_02.md) | backend | medium | — | 3/3 | completed |
+| [03 — Migration 0050 e catálogo de agentes](task_03.md) | backend | high | 01 | 2/2 | completed |
+| [04 — Plano de execução: regras e salvamento](task_04.md) | backend | high | 02, 03 | 4/4 | completed |
+| [05 — Abertura com propósito e modelo no runtime](task_05.md) | backend | critical | 03, 04 | 5/5 | completed |
+| [06 — Captura nas sessões do plano](task_06.md) | backend | medium | 02, 03 | 2/2 | completed |
+| [07 — Tela: aba Tarefas e leitura](task_07.md) | frontend | medium | 02 | 2/2 | completed |
+| [08 — Tela: gerar tarefas e plano de execução](task_08.md) | frontend | high | 04, 05, 07 | 4/4 | completed |
+| [09 — Ponta a ponta, regressão e entrega](task_09.md) | test | medium | 06, 08 | 0/3 | in_progress |
 
 **Ondas:**
 1. 01 ‖ 02. O spike é manual e fica fora do código do produto. Os leitores puros e o `taskSet.get` só leem as tabelas de artefatos que já existem.
@@ -93,13 +93,16 @@ Veja o progresso e a próxima mini-tarefa liberada a qualquer momento: `python3 
 
 ## Revisão final
 <!-- spec-conformance appends one line per final review. -->
+- 2026-11-23 · review-001 · REPROVADO, parcial: tasks 01–08, sem a task_09 (1 bloqueante, 2 importantes, 3 menores) · reviews/review-001.md
+- 2026-11-23 · review-002 · REPROVADO, parcial: tasks 01–08 (0 bloqueantes, 1 importante, 2 menores; as correções da 001 conferem) · reviews/review-002.md
+- 2026-11-23 · review-003 · APROVADO COM RESSALVAS, parcial: tasks 01–08 (1 menor; o I-1 foi rebaixado depois de o usuário decidir que mudar de rumo é editar a spec da mesma pasta) · reviews/review-003.md
 
 ## Restrições globais
 - `.agents/rules/code-standards.md`: sem comentários, arquivos `.ts` com até 100 linhas, funções com até 30 linhas, até 3 parâmetros (senão um objeto), sem linhas em branco dentro de funções, constantes no lugar de números e strings mágicas, até 3 `if`/`else` encadeados.
 - Skills obrigatórias: `layered-backend` (controllers, services, DAOs), `trpc-nextjs` (procedures `tasks.taskSet.*`, `tasks.plan.*`, `tasks.terminal.*`), `nextjs-folder-structure` (arquivos da web), `software-testing` (todo teste). E2E segue `.agents/rules/e2e-testing.md`.
 - Contratos em `packages/api/src/application/`, implementações em `packages/api/src/infra/`. O Agent SDK só é importado em `packages/api/src/infra/terminal/`.
 - Toda a interface em português do Brasil, com os textos exatos da spec (seções 5, 6, 7 e 8).
-- Migration escrita à mão (`0049_session_plans.sql` e `_rollback.sql`), registrada em `packages/api/drizzle/meta/_journal.json` e em `FEATURE_MIGRATIONS` de `packages/api/test/databaseMigrations.ts`.
+- Migration escrita à mão (`0050_session_plans.sql` e `_rollback.sql`), registrada em `packages/api/drizzle/meta/_journal.json` e em `FEATURE_MIGRATIONS` de `packages/api/test/databaseMigrations.ts`.
 - Não tocar nas tabelas legadas `task_execution_plans` e `task_execution_runs`, nem nos agentes de planejamento (`packages/api/src/infra/agents/`, `application/agents/agentCatalog.ts`).
 - O Flow Dev não escreve no clone nem no GitHub; só a sessão do agente escreve (§9).
 - Verificação proporcional (AGENTS.md):
@@ -109,7 +112,9 @@ Veja o progresso e a próxima mini-tarefa liberada a qualquer momento: `python3 
 - `pnpm --dir packages/api test:integration` sem `TEST_DATABASE_URL` (Postgres descartável, cerca de 1 min). Não matar processos com `pkill -f` que case com o próprio comando.
 
 ## Premissas e bloqueios
-- **Bloqueio da 05 (decisão do usuário em 2026-11-23, opção a):** a Spec C tem a `review-001` REPROVADA (B-1: a parada normal do serviço encerra as sessões; I-1 a I-5). A 05 altera `sessionStarter.ts`, `sessionResume.ts`, `sessionWorkerParts.ts` e o supervisor, os mesmos arquivos da correção. Ela só começa depois de aplicado o prompt de correção de `docs/specs/sessao-no-flow-dev/reviews/review-001.md`. As tarefas 01 a 04, 06 e 07 não dependem disso.
+- **Bloqueio da 05 (decisão do usuário em 2026-11-23, opção a):** a Spec C tem a `review-001` REPROVADA (B-1: a parada normal do serviço encerra as sessões; I-1 a I-5). A 05 altera `sessionStarter.ts`, `sessionResume.ts`, `sessionWorkerParts.ts` e o supervisor, os mesmos arquivos da correção. Ela só começa depois de aplicado o prompt de correção de `docs/specs/sessao-no-flow-dev/reviews/review-001.md`. As tarefas 01 a 04, 06 e 07 não dependem disso. **Resolvido em 2026-11-23:** a Spec C chegou à `review-008` (APROVADO COM RESSALVAS) antes de a 05 começar.
+- **Migration 0050, não 0049:** a `0049_session_preparation` (correção da Spec C) já ocupava o número. A migration deste plano é a `0050_session_plans`.
+- **`plan.get` devolve `agents`:** acrescentado na 08.3, para o editor desabilitar o Codex sem chamar o `preflight`.
 - **P-14 e a 7.4** dependem do spike 01. Se o V-33 recusar combinações, a 01.2 ajusta a 7.4 e a P-14 da spec, e a 03.2 segue o `v33-spike.md`.
 - **Atalhos do plano na tela:** "Todas numa sessão", "Uma sessão por tarefa" e "Mesmo modelo para todas" são lógica do editor em `apps/web` (DEC-25: edição local, um salvamento). O servidor garante, pelo `planRules`, que as sessões iniciadas não mudam.
 - **Estado "Encerrada" e "Iniciar de novo":** a 7.5 lista a última execução com tarefas não concluídas tanto em "Pronta/Bloqueada" quanto em "Encerrada". Seguimos a US-14.4: o estado é `ended`, com "Iniciar de novo"; o `open` reavalia as dependências externas, e se houver alguma aberta exige `force` como na REQ-102.
@@ -154,7 +159,7 @@ Veja o progresso e a próxima mini-tarefa liberada a qualquer momento: `python3 
 | DEC-26 | `purpose` no `open` e no `preflight` | 05 · 05.3–05.5 |
 | DEC-27 | `yaml` fixado | 02 · 02.1 |
 | DEC-28 | registro de runtimes por agente | 05 · 05.1 |
-| §14 | migration 0049 | 03 · 03.1 |
+| §14 | migration 0050 | 03 · 03.1 |
 | §19 | logs `[plan]` e `[session]` com a escolha | 02 · 02.3; 04 · 04.4; 05 · 05.1, 05.5 |
 | §20 | sob `FLOW_DEV_TERMINAL_ENABLED`; ordem de rollout | 07 · 07.1; ondas acima |
 | §9 | o que não muda | 05 · 05.1, 05.2; 06 · 06.2; 09 · 09.2 |

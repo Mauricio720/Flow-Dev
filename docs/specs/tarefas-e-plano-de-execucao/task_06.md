@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Captura nas sessões do plano
 type: backend
 complexity: medium
@@ -37,11 +37,11 @@ Na sessão do plano, o agente marca as mini-tarefas e muda o `status` em `task_N
 
 ## Mini-tarefas
 
-- [ ] **06.1 — Regra de atribuição na ingestão**
+- [x] **06.1 — Regra de atribuição na ingestão**
   - **Arquivos:** `packages/api/src/application/services/terminal/planCaptureRule.ts` e `planCaptureRule.test.ts` (criar), `packages/api/src/application/database/dao/terminalEventDao.ts` (`planTasksFolder` em `LockedSession`), `packages/api/src/application/services/terminal/terminalEventIngestion.ts` (no `advance`, um `file_edit` sem skill ativa em sessão com `planTasksFolder`, cujo caminho passa em `isPlanTaskFile`, fica com `PLAN_EXECUTION_SKILL`)
   - **Testes:** V-39f
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run src/application/services/terminal/planCaptureRule.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
-- [ ] **06.2 — Pasta do plano no lock da sessão e a captura de ponta a ponta**
+- [x] **06.2 — Pasta do plano no lock da sessão e a captura de ponta a ponta**
   - **Arquivos:** `packages/api/src/infra/database/dao/terminal/drizzleTerminalEventDao.ts` (`withLockedSession` traz `tasks_folder` pelo `plan_item_id` → item → plano, com `left join`), `packages/api/test/plan-capture.test.ts` (criar)
   - **Testes:** V-39a, V-39b, V-39c, V-39d, V-39e
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/plan-capture.test.ts test/artifact-capture.test.ts test/terminal-event-ingestion.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
@@ -66,12 +66,12 @@ Na sessão do plano, o agente marca as mini-tarefas e muda o `status` em `task_N
 - A edição do `_tasks.md` pela sessão do plano também é capturada (está na pasta) e gera uma versão nova do manifesto. Isso não deixa o plano `stale`: a reconciliação da task_04 compara o grafo, não o número da versão (`_tasks.md`, "Premissas e bloqueios").
 
 ## Testes atribuídos
-- [ ] V-39f: `isPlanTaskFile("docs/specs/login/task_01.md", "docs/specs/login")` → verdadeiro; `"docs/specs/login-old/task_01.md"` → falso; `"docs/specs/login/notas.txt"` → falso; `"docs/specs/login/../x.md"` → falso; `"/abs/docs/specs/login/task_01.md"` → falso · função pura
-- [ ] V-39a: sessão com `plan_item_id` de um plano em `docs/specs/login`, sem skill ativa, edita `docs/specs/login/task_01.md` no clone temporário e termina a vez (`Stop`) → o evento `file_edit` tem `skill = 'plano-de-execucao'`, e `task_artifact_versions` ganha uma versão desse arquivo com `skill = 'plano-de-execucao'` e o conteúdo do disco (REQ-103) · ingestão + captura + Postgres + clone temporário
-- [ ] V-39b: a mesma sessão edita `README.md` e `docs/specs/outra/spec.md` → nenhum artefato desses caminhos, e os eventos ficam com `skill` nula (B-40) · ingestão + captura + Postgres + clone temporário
-- [ ] V-39c: sessão de rota (`plan_item_id` nulo), sem skill, edita `docs/specs/login/task_01.md` → nenhum artefato (§9, REQ-048) · ingestão + captura + Postgres + clone temporário
-- [ ] V-39d: sessão do plano com `spec-to-tasks` ativa edita `docs/specs/login/task_02.md` → versão com `skill = 'spec-to-tasks'` · ingestão + captura + Postgres + clone temporário
-- [ ] V-39e: `task_01.md` capturado com `status: in_progress`; o arquivo é apagado do clone e a sessão do plano registra outra edição dele e termina a vez → `task_artifacts.last_failure` com "Arquivo não encontrado no clone", nenhuma versão nova, e `readTaskSet` sobre as versões guardadas continua devolvendo a 01 `in_progress` (B-37) · ingestão + captura + Postgres + clone temporário
+- [x] V-39f: `isPlanTaskFile("docs/specs/login/task_01.md", "docs/specs/login")` → verdadeiro; `"docs/specs/login-old/task_01.md"` → falso; `"docs/specs/login/notas.txt"` → falso; `"docs/specs/login/../x.md"` → falso; `"/abs/docs/specs/login/task_01.md"` → falso · função pura
+- [x] V-39a: sessão com `plan_item_id` de um plano em `docs/specs/login`, sem skill ativa, edita `docs/specs/login/task_01.md` no clone temporário e termina a vez (`Stop`) → o evento `file_edit` tem `skill = 'plano-de-execucao'`, e `task_artifact_versions` ganha uma versão desse arquivo com `skill = 'plano-de-execucao'` e o conteúdo do disco (REQ-103) · ingestão + captura + Postgres + clone temporário
+- [x] V-39b: a mesma sessão edita `README.md` e `docs/specs/outra/spec.md` → nenhum artefato desses caminhos, e os eventos ficam com `skill` nula (B-40) · ingestão + captura + Postgres + clone temporário
+- [x] V-39c: sessão de rota (`plan_item_id` nulo), sem skill, edita `docs/specs/login/task_01.md` → nenhum artefato (§9, REQ-048) · ingestão + captura + Postgres + clone temporário
+- [x] V-39d: sessão do plano com `spec-to-tasks` ativa edita `docs/specs/login/task_02.md` → versão com `skill = 'spec-to-tasks'` · ingestão + captura + Postgres + clone temporário
+- [x] V-39e: `task_01.md` capturado com `status: in_progress`; o arquivo é apagado do clone e a sessão do plano registra outra edição dele e termina a vez → `task_artifacts.last_failure` com "Arquivo não encontrado no clone", nenhuma versão nova, e `readTaskSet` sobre as versões guardadas continua devolvendo a 01 `in_progress` (B-37) · ingestão + captura + Postgres + clone temporário
 
 ## Critérios de sucesso
 - Todas as mini-tarefas marcadas, cada uma com o "Pronto quando" executado.
@@ -81,3 +81,6 @@ Na sessão do plano, o agente marca as mini-tarefas e muda o `status` em `task_N
 
 ## Registro de execução
 <!-- Uma entrada por mini-tarefa: data, o que foi feito, comandos e resultado, desvios. -->
+- **2026-11-23 · 06.1** — `planCaptureRule.ts` (`PLAN_EXECUTION_SKILL = "plano-de-execucao"`, `isPlanTaskFile`: só `.md`, sem caminho absoluto nem `..`, normalizado com `path.posix`, com o prefixo da pasta terminado em `/`, então `login-old` não casa com `login`); `LockedSession.planTasksFolder`; `terminalEventIngestion.ts` (o `file_edit` sem skill ativa, numa sessão com pasta de plano e dentro dela, grava `plano-de-execucao`; a skill ativa continua mandando e a `activeSkill` da sessão não muda). `planCaptureRule.test.ts` (V-39f, mais pasta na raiz e barra final) e `terminalEventIngestionPlan.test.ts` (a regra dentro de `planIngestion`): 10 testes passando; typecheck sem erros.
+- **2026-11-23 · 06.2** — `withLockedSession` traz `tasks_folder` por `left join` de `task_session_plan_items` e `task_session_plans`, com o `for update of task_terminal_sessions` só na linha da sessão. `test/plan-capture.test.ts` (V-39a a V-39e, sobre o mundo da Spec B e com o plano semeado por `seedStoredPlan`): V-39a prova o evento e a versão de `plano-de-execucao` com o conteúdo do disco; V-39b e V-39c, nenhum artefato fora da pasta e em sessão de rota; V-39d, `spec-to-tasks` continua autora; V-39e, `last_failure = "Arquivo não encontrado no clone"`, nenhuma versão nova, e `tasks.taskSet.get` segue devolvendo a 01 `in_progress`. `vitest run --config vitest.integration.config.ts test/plan-capture.test.ts test/artifact-capture.test.ts test/terminal-event-ingestion.test.ts`: 18 testes passando. A captura é chamada direto pelo serviço (`captured`), como os testes V-16 da Spec B, e não pelo hook `Stop`.
+- **2026-11-23 · fecho** — `pnpm --dir packages/api test`: 112 arquivos, 756 testes passando. `pnpm --dir packages/api test:integration` (sem `TEST_DATABASE_URL`): 128 arquivos passando e 2 ignorados, 690 testes passando e 5 ignorados, 80 s (inclui `artifact-capture*` e `terminal-event*` da Spec B). `pnpm --dir packages/api typecheck` sem erros.

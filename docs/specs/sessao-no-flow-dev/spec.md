@@ -146,7 +146,7 @@ Como pessoa operadora, quero que uma sessão cortada por um reinício possa cont
 - **REQ-068** (US-07, US-08): ENQUANTO um pedido estiver pendente, o sistema DEVE mantê-lo aberto sem prazo, até a pessoa responder, interromper ou encerrar.
 
 **Interromper e encerrar**
-- **REQ-073** (US-09): ENQUANTO o Claude estiver no meio da vez, quem controla a sessão DEVE poder interromper; o sistema DEVE parar a vez em até 5 s e cancelar os pedidos pendentes, e a sessão DEVE ir para "Aguardando você".
+- **REQ-073** (US-09): ENQUANTO o Claude estiver no meio da vez, quem controla a sessão DEVE poder interromper; o sistema DEVE parar a vez em até 5 s e cancelar os pedidos pendentes, e a sessão DEVE ir para "Aguardando você". Se Stop chegar enquanto um pedido ainda estiver pendente, Interromper continua disponível e cancela esse pedido; sem vez ativa e sem pedido pendente, aplica-se B-30.
 - **REQ-074** (US-09): QUANDO a pessoa confirmar "Encerrar" ("Encerrar a sessão? O Claude para, e a conversa fica só para leitura."), o sistema DEVE parar o Claude, cancelar os pedidos pendentes, capturar os artefatos (REQ-043) e levar a sessão a "Encerrada".
 - **REQ-075** (US-09): ENQUANTO a sessão estiver num estado final, a etapa DEVE mostrar a conversa só para leitura, sem campo de mensagem e sem controles.
 
@@ -232,7 +232,7 @@ Leituras dentro do clone não pedem aprovação nos modos que perguntam, como no
 | B-27 | A aplicação web cai, e o serviço de sessões continua | O Claude segue; os pedidos esperam; tudo aparece quando a tela volta | REQ-068 |
 | B-28 | Sessões antigas, abertas no GNOME Terminal | Aparecem no histórico como "Aberta no terminal", só com os eventos e sem campo de mensagem | 7.2 |
 | B-29 | O Claude produz um texto com mais de 50.000 caracteres | Fica guardado cortado, com "[mensagem cortada]" | 7.5 |
-| B-30 | Interromper sem nada em andamento (corrida com o fim da vez) | Não muda nada e não mostra erro | REQ-073 |
+| B-30 | Interromper sem vez ativa nem pedido pendente (corrida com o fim da vez) | Não muda nada e não mostra erro | REQ-073 |
 | B-31 | Duas sessões ativas da mesma pessoa em tarefas diferentes | Cada uma tem a própria conversa e os próprios pedidos | REQ-055 |
 
 ## 9. Comportamento que não muda
@@ -297,19 +297,20 @@ A web só lê e escreve no banco, e a etapa consulta uma linha do tempo incremen
 
 ## 14. Modelo de dados
 
-Migration `0048_session_interaction.sql` com rollback `0048_session_interaction_rollback.sql`.
+Migrations `0048_session_interaction.sql` e `0049_session_preparation.sql`, com rollbacks correspondentes.
 
 - **`task_terminal_sessions`** (colunas novas):
   - `runtime` text, com check em `terminal` e `flow_dev`; o default `terminal` cobre as linhas existentes;
   - `permission_mode` text, com check em `bypass`, `accept_edits` e `ask_all`, default `bypass`;
   - `host_id` text null e `worker_id` text null;
   - `interrupt_requested_at` e `end_requested_at` null;
+  - `prepared_at` null até o contexto, os anexos e o prompt final estarem prontos; o worker só assume sessões `opening`/`unconfirmed` preparadas;
   - o check de `status` ganha `asking` e `interrupted`.
 - **`terminal_session_hosts`**: `host_id` text PK, `worker_id` text, `heartbeat_at` timestamptz. O serviço está "rodando" quando `heartbeat_at` tem menos de 15 s.
 - **`task_terminal_messages`**: `id` uuid, `session_id` FK (cascade), `role` text (check: `user`, `assistant`, `system`; `system` guarda as notas de interrupção e de retomada), `content` text (≤ 50.000), `truncated` bool, `request_key` uuid null, `delivered_at` null (nulo em `user` = na fila), `undelivered` bool default false, `occurred_at`. Unique (`session_id`, `request_key`); índice (`session_id`, `occurred_at`).
 - **`task_terminal_requests`**: `id` uuid, `session_id` FK (cascade), `kind` text (check: `question`, `permission`), `tool_use_id` text, `payload` jsonb (as perguntas, ou a ferramenta, o conteúdo exibido e a regra sugerida), `status` text (check: `pending`, `answered`, `cancelled`), `answer` jsonb null, `answered_by` FK users null, `created_at`, `answered_at` null. Índice (`session_id`, `status`).
 
-**Dados existentes:** as sessões atuais ficam com `runtime = terminal` e continuam pela Spec B. Não há backfill. A exclusão da Issue já apaga as sessões em cascata, o que cobre a REQ-062. Basta confirmar o `deletionPurge.ts` com as tabelas novas.
+**Dados existentes:** as sessões atuais ficam com `runtime = terminal` e continuam pela Spec B. A migration 0049 inicializa `prepared_at` nas sessões antigas ainda em `opening`/`unconfirmed`; isso só mantém o comportamento de abertura que já existia. A exclusão da Issue já apaga as sessões em cascata, o que cobre a REQ-062. Basta confirmar o `deletionPurge.ts` com as tabelas novas.
 
 ## 15. Interfaces e contratos
 
@@ -354,8 +355,8 @@ As opções exatas do `query()` (`plugins`, `settingSources`, `pathToClaudeCodeE
 ## 16. Fluxos principais
 
 **Iniciar (REQ-051–054, REQ-081)**
-1. `preflight` e `open` fazem as checagens da Spec A, mais o heartbeat do `host_id` local (`session_service_offline`). O `open` prepara `contexto/` e os anexos como hoje e cria a sessão `opening` com `runtime`, `permission_mode` e `host_id`.
-2. O supervisor assume a sessão com `UPDATE … WHERE worker_id IS NULL`, para iniciar uma vez só, e chama `runtime.start`.
+1. `preflight` e `open` fazem as checagens da Spec A, mais o heartbeat do `host_id` local (`session_service_offline`). O `open` cria a sessão `opening` ainda não preparada; depois prepara `contexto/`, entrega os anexos, grava o prompt final e marca `prepared_at`.
+2. O supervisor assume somente uma sessão `opening`/`unconfirmed` preparada, com `UPDATE … WHERE worker_id IS NULL`, para iniciar uma vez só; então lê o prompt completo e chama `runtime.start`.
 3. A primeira mensagem do SDK grava `claude_session_id` e leva a sessão a `running`. Uma falha de spawn ou de login leva a `launch_failed` (REQ-054).
 
 **Pedido (REQ-063–072)**
@@ -365,7 +366,7 @@ As opções exatas do `query()` (`plugins`, `settingSources`, `pathToClaudeCodeE
 
 **Mensagem, interromper e encerrar (REQ-058–060, REQ-073–075)**
 1. `send` insere a mensagem `user` com `request_key`, sem `delivered_at`. O supervisor passa as mensagens não entregues, em ordem, ao `handle.push` e grava `delivered_at`.
-2. `interrupt` e `end` só gravam `*_requested_at`. O supervisor chama `interrupt()` ou `close()` e resolve os pendentes como `deny` ("Interrompido pela pessoa"). No `end`, a captura da Spec B roda como no `SessionEnd`.
+2. `interrupt` e `end` só gravam `*_requested_at`. Um `end` gravado antes de o serviço assumir a sessão impede o início do Claude: o serviço a encerra sem chamar o `runtime.start`. Uma interrupção sem vez ativa é descartada ao assumir, retomar ou marcar a sessão como órfã. O supervisor chama `interrupt()` ou `close()` e resolve os pendentes como `deny` ("Interrompido pela pessoa"). No `end`, a captura da Spec B roda como no `SessionEnd`.
 
 **Reinício (REQ-076–079)**
 1. Ao subir com um `worker_id` novo, o serviço leva a `interrupted` as sessões não finais do seu `host_id` que têm outro `worker_id`: grava a nota `system` e cancela os pedidos. Um `onExit(crashed)` faz o mesmo com uma sessão.
@@ -387,9 +388,9 @@ As opções exatas do `query()` (`plugins`, `settingSources`, `pathToClaudeCodeE
 - **Consequências:** mais um processo no `pnpm dev`; mudar o código do serviço exige reiniciá-lo, e o reinício cai na REQ-076.
 
 ### DEC-17 — A app e o serviço conversam pelo Postgres
-- **Decisão:** mensagens, respostas e controles são linhas; o serviço consulta a cada 1 s e a tela a cada 1,5 s.
-- **Alternativas consideradas:** HTTP ou WebSocket entre os dois, com porta e autenticação novas (contra a NFR-12); `LISTEN/NOTIFY`, desnecessário para a NFR-10.
-- **Consequências:** tudo auditável e resistente a reinícios, ao custo de consultas indexadas por segundo com sessão ativa.
+- **Decisão:** mensagens, respostas e controles são linhas; o serviço consulta a cada 1 s e a tela a cada 1,5 s. Exceção aprovada para respostas secretas do Codex: a aplicação envia o conteúdo por `pg_notify` efêmero ao worker, que só depois de receber e validar a notificação grava o marcador `(resposta oculta)` e resolve o runtime em memória.
+- **Alternativas consideradas:** HTTP ou WebSocket entre os dois, com porta e autenticação novas (contra a NFR-12); persistir a resposta secreta em linha (contra REQ-118/NFR-20); `LISTEN/NOTIFY` para respostas comuns, desnecessário para a NFR-10.
+- **Consequências:** respostas comuns continuam auditáveis e resistentes a reinícios. O segredo não é durável nem repetido: sem worker/listener ativo, pedido pendente ou confirmação do worker, a resposta falha sem gravar marcador. Uma queda após o consumo encerra a conversa sem replay. Essa exceção usa a conexão Postgres compartilhada e não abre uma porta nova.
 
 ### DEC-18 — Eventos da Spec B por callbacks de hook do SDK
 - **Decisão:** sem `--settings` HTTP nas sessões novas; os callbacks dos mesmos seis hooks entregam o mesmo payload ao `TerminalEventController`.

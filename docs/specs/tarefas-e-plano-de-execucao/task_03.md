@@ -1,11 +1,11 @@
 ---
-status: pending
-title: Migration 0049 e catálogo de agentes
+status: completed
+title: Migration 0050 e catálogo de agentes
 type: backend
 complexity: high
 ---
 
-# Task 03: Migration 0049 e catálogo de agentes
+# Task 03: Migration 0050 e catálogo de agentes
 
 ## Visão geral
 Esta tarefa cria o esquema da feature. São duas tabelas do plano (`task_session_plans` e `task_session_plan_items`) e as colunas novas da sessão (`purpose`, `plan_item_id`, `agent`, `model`, `effort`), sem mexer nas tabelas legadas. Também cria o catálogo puro de agentes, modelos e esforços (7.4), com o padrão Claude Code · Opus · Máximo e a disponibilidade por agente (REQ-110), no formato que o spike V-33 fixou.
@@ -19,7 +19,7 @@ Esta tarefa cria o esquema da feature. São duas tabelas do plano (`task_session
 </critical>
 
 ## Requisitos
-- §14, a migration `0049_session_plans.sql` com o rollback `0049_session_plans_rollback.sql`:
+- §14, a migration `0050_session_plans.sql` com o rollback `0050_session_plans_rollback.sql`:
   - **`task_session_plans`:**
     - `id` uuid PK;
     - `task_id` FK `tasks`, cascade e unique;
@@ -68,12 +68,12 @@ Esta tarefa cria o esquema da feature. São duas tabelas do plano (`task_session
 
 ## Mini-tarefas
 
-- [ ] **03.1 — Migration 0049, rollback e esquema Drizzle**
-  - **Arquivos:** `packages/api/drizzle/0049_session_plans.sql` e `0049_session_plans_rollback.sql` (criar), `packages/api/drizzle/meta/_journal.json` (entrada `idx: 49`), `packages/api/test/databaseMigrations.ts` (`"0049_session_plans"` no fim de `FEATURE_MIGRATIONS`), `packages/api/src/infra/database/schema/tasks/sessionPlans.ts` (criar), `packages/api/src/infra/database/schema/tasks/terminal.ts` (colunas novas), `packages/api/src/infra/database/schema.ts` (exportar), `packages/api/test/session-plans-migration.test.ts` (criar)
+- [x] **03.1 — Migration 0050, rollback e esquema Drizzle**
+  - **Arquivos:** `packages/api/drizzle/0050_session_plans.sql` e `0050_session_plans_rollback.sql` (criar), `packages/api/drizzle/meta/_journal.json` (entrada `idx: 50`), `packages/api/test/databaseMigrations.ts` (`"0050_session_plans"` no fim de `FEATURE_MIGRATIONS`), `packages/api/src/infra/database/schema/tasks/sessionPlans.ts` (criar), `packages/api/src/infra/database/schema/tasks/terminal.ts` (colunas novas), `packages/api/src/infra/database/schema.ts` (exportar), `packages/api/test/session-plans-migration.test.ts` (criar)
   - **Testes:** V-43a, V-43b, V-43c
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/session-plans-migration.test.ts test/session-interaction-migration.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
   - **Nota:** `terminal.ts` já tem 68 linhas. Se passar de 100, mova as colunas novas para um helper de colunas no mesmo diretório, em vez de criar uma tabela nova.
-- [ ] **03.2 — Catálogo de agentes da sessão**
+- [x] **03.2 — Catálogo de agentes da sessão**
   - **Arquivos:** `packages/api/src/application/terminal/sessionAgentCatalog.ts` e `sessionAgentCatalog.test.ts` (criar)
   - **Testes:** V-44a, V-44b, V-44c
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run src/application/terminal/sessionAgentCatalog.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
@@ -100,18 +100,21 @@ Esta tarefa cria o esquema da feature. São duas tabelas do plano (`task_session
 - Se o V-33 mostrar que um esforço só vale para alguns modelos, `AgentAvailability` ganha `effortsByModel: Record<string, string[]>` no lugar de `efforts`. Registre o desvio no log desta tarefa e na §15 da spec (Histórico).
 
 ## Testes atribuídos
-- [ ] V-43a: uma sessão da Spec C inserida com o rollback aplicado, e a 0049 reaplicada → a linha fica com `purpose = 'route'`, `agent = 'claude'`, `model`, `effort` e `plan_item_id` nulos · migração + Postgres
-- [ ] V-43b: plano com um item e um artefato com versão; aplicar o rollback → `task_session_plans` e `task_session_plan_items` não existem, `task_terminal_sessions` não tem `purpose`, e o artefato e a versão continuam · migração + Postgres
-- [ ] V-43c: `agent = 'gemini'`, `purpose = 'review'`, `task_ids` vazio ou com 31 itens, `model` com 65 caracteres, dois itens com a mesma `position` no mesmo plano, e dois planos para a mesma tarefa → todos recusados pelo banco; apagar a tarefa apaga o plano e os itens; apagar um item deixa a sessão com `plan_item_id` nulo · migração + Postgres
-- [ ] V-44a: `choiceProblem` com `{claude, opus, max}` → `null`; `{claude, gpt-6.1-sol, high}` → `choice_invalid`; `{claude, opus, turbo}` → `choice_invalid`; as combinações recusadas no `v33-spike.md` → `choice_invalid` · função pura
-- [ ] V-44b: `registered` só com `claude` → `agentAvailability` devolve o Codex com `available: false`, `reason: "O Codex ainda não conduz sessões no Flow Dev."` e `models: []`, e o Claude com `available: true`, os modelos `opus`, `sonnet`, `haiku` e os esforços aceitos; `choiceProblem({codex, gpt-6.1-sol, high})` → `agent_unavailable` · função pura
-- [ ] V-44c: `DEFAULT_SESSION_CHOICE` → `{ agent: "claude", model: "opus", effort: "max" }`, e `choiceProblem` dele com `claude` registrado → `null` · função pura
+- [x] V-43a: uma sessão da Spec C inserida com o rollback aplicado, e a 0050 reaplicada → a linha fica com `purpose = 'route'`, `agent = 'claude'`, `model`, `effort` e `plan_item_id` nulos · migração + Postgres
+- [x] V-43b: plano com um item e um artefato com versão; aplicar o rollback → `task_session_plans` e `task_session_plan_items` não existem, `task_terminal_sessions` não tem `purpose`, e o artefato e a versão continuam · migração + Postgres
+- [x] V-43c: `agent = 'gemini'`, `purpose = 'review'`, `task_ids` vazio ou com 31 itens, `model` com 65 caracteres, dois itens com a mesma `position` no mesmo plano, e dois planos para a mesma tarefa → todos recusados pelo banco; apagar a tarefa apaga o plano e os itens; apagar um item deixa a sessão com `plan_item_id` nulo · migração + Postgres
+- [x] V-44a: `choiceProblem` com `{claude, opus, max}` → `null`; `{claude, gpt-6.1-sol, high}` → `choice_invalid`; `{claude, opus, turbo}` → `choice_invalid`; as combinações recusadas no `v33-spike.md` → `choice_invalid` · função pura
+- [x] V-44b: `registered` só com `claude` → `agentAvailability` devolve o Codex com `available: false`, `reason: "O Codex ainda não conduz sessões no Flow Dev."` e `models: []`, e o Claude com `available: true`, os modelos `opus`, `sonnet`, `haiku` e os esforços aceitos; `choiceProblem({codex, gpt-6.1-sol, high})` → `agent_unavailable` · função pura
+- [x] V-44c: `DEFAULT_SESSION_CHOICE` → `{ agent: "claude", model: "opus", effort: "max" }`, e `choiceProblem` dele com `claude` registrado → `null` · função pura
 
 ## Critérios de sucesso
 - Todas as mini-tarefas marcadas, cada uma com o "Pronto quando" executado.
 - Todos os testes atribuídos implementados e passando.
-- `pnpm --dir packages/api test` e `pnpm --dir packages/api test:integration` passando ao fim da tarefa (a suíte inteira roda com a 0049).
+- `pnpm --dir packages/api test` e `pnpm --dir packages/api test:integration` passando ao fim da tarefa (a suíte inteira roda com a 0050).
 - `pnpm --dir packages/api typecheck` sem erros; `git diff` sem mudança em `taskExecutionPlans.ts` e `taskExecutionRuns.ts`.
 
 ## Registro de execução
 <!-- Uma entrada por mini-tarefa: data, o que foi feito, comandos e resultado, desvios. -->
+- **2026-11-23 · 03.1** — **Desvio de numeração:** `0049_session_preparation` (correção da Spec C, com `prepared_at`) já ocupa o número 0049 e está no `_journal.json` (idx 49). A migration deste plano é a **`0050_session_plans.sql`** com o rollback `0050_session_plans_rollback.sql`, `idx: 50` no journal e `"0050_session_plans"` no fim de `FEATURE_MIGRATIONS`. A spec (§14, §20 e Histórico), o `_tasks.md` e as tarefas 03 e 09 foram atualizados. Criados `schema/tasks/sessionPlans.ts` (`taskSessionPlans`, `taskSessionPlanItems`), exportados por `schema/tasks/terminalTables.ts`, e as colunas `purpose`, `planItemId`, `agent`, `model`, `effort` em `terminal.ts` (78 linhas), com os checks `purpose`, `agent` e o índice parcial `task_terminal_sessions_plan_item_idx`. Os checks de `task_ids` usam `cardinality` de 1 a 30 e a regex `^task_[0-9]{2}(,task_[0-9]{2})*$` sobre `array_to_string(…, ',', '#')`, que também rejeita elementos nulos. A FK de `plan_item_id` tem o nome curto `task_terminal_sessions_plan_item_fk` (o nome gerado passaria dos 63 caracteres). `vitest run --config vitest.integration.config.ts test/session-plans-migration.test.ts test/session-interaction-migration.test.ts`: 11 testes passando (V-43a, V-43b, V-43c); typecheck sem erros. O V-43c prova o cascata com uma tarefa descartável, porque apagar a tarefa do mundo de teste esbarra nos `RESTRICT` de outras tabelas (a exclusão real passa pelo `deletionPurge`, task_04).
+- **2026-11-23 · 03.2** — `application/terminal/sessionAgentCatalog.ts` (`SESSION_AGENTS`, `AgentChoice`, `AgentAvailability`, `DEFAULT_SESSION_CHOICE`, `AGENT_UNAVAILABLE_REASON`, `agentAvailability`, `choiceProblem`), com os nomes do `v33-spike.md` (`opus`, `sonnet`, `haiku`; `low`, `medium`, `high`, `xhigh`, `max`). O V-33 não recusou nenhuma combinação, então o catálogo é o produto cartesiano e `efforts` fica por agente (sem `effortsByModel`). O Claude indisponível usa a razão "O Claude Code não está disponível nesta máquina.". `vitest run src/application/terminal/sessionAgentCatalog.test.ts`: 20 testes passando (V-44a com as 15 combinações, V-44b, V-44c); typecheck sem erros.
+- **2026-11-23 · fecho** — `pnpm --dir packages/api test`: 105 arquivos, 710 testes passando. `pnpm --dir packages/api test:integration` (sem `TEST_DATABASE_URL`): 118 arquivos passando e 2 ignorados, 643 testes passando e 5 ignorados, 66 s. `pnpm --dir packages/api typecheck` sem erros. `git status` sem mudança em `taskExecutionPlans.ts` nem em `taskExecutionRuns.ts`.

@@ -136,8 +136,14 @@ Nenhuma.
 - `claimOpening` passou a pegar também sessões `unconfirmed` sem dono (a tabela 7.2 leva "Não confirmada" a "Em andamento" quando o serviço enfim inicia).
 - Testes: `session-timeline.test.ts` e `session-timeline-access.test.ts` (V-27e, V-23c), `session-runtime-read.test.ts` (V-21d, V-21e) e o novo caso V-27d em `issue-deletion-terminal.test.ts` passam, junto com `terminal-execution-read.test.ts`.
 
+### 2026-11-23 — Correção da review-005 (B-1)
+- As respostas de pedidos agora exigem sessão ativa no controller e o DAO revalida sob `FOR UPDATE` que a sessão continua ativa, sem interrupção/encerramento pendente. A atualização da resposta fica na mesma transação do bloqueio da linha da sessão, impedindo resposta após a finalização.
+- Verificação de banco em `session-interaction-dao.test.ts`: resposta e inserção tardias são recusadas após encerramento ou controle de fim persistido.
+
 ### 2026-11-23 — Fechamento da tarefa
 - `pnpm --dir packages/api typecheck`: sem erros. `pnpm --dir packages/api test`: 93 arquivos, 633 testes passam (caiu de 648 porque os testes do lançador e do gerador de settings saíram). `pnpm --dir packages/api test:integration`: 102 arquivos, 582 testes passam. `pnpm --dir apps/web typecheck`: sem erros. Nenhuma referência a `gnome-terminal` em `packages/api/src`.
 - O pacote não tem script `lint`. Nenhum arquivo novo passa de 100 linhas (testes grandes foram divididos); `schema.ts` (barrel, 130 linhas) já passava e só ganhou uma linha de exportação.
 - Os specs e2e `terminal-execution.spec.ts` e `terminal-tracking.spec.ts` ficam quebrados até a 07.1, como o plano avisa.
 
+### 2026-11-23 — Correção da review-007 (M-1)
+- `session-request-final.test.ts` usa a chave da pergunta (`Qual?`) e afirma `reason: "session_not_active"`, de modo que só a guarda do controller o satisfaz.

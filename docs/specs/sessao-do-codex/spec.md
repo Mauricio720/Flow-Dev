@@ -146,17 +146,17 @@ Como pessoa operadora, quero escolher agente, modelo e esforço também ao abrir
 |---|---|
 | Serviço de sessões fora do ar | a da REQ-053 |
 | `codex` fora do PATH | "Codex não encontrado. Instale o Codex CLI e tente de novo." |
-| Versão menor que 0.159.3 (ou a mínima do V-45) | "Atualize o Codex para a versão <mínima> ou mais nova." |
+| Versão menor que 0.159.3 | "Atualize o Codex para a versão 0.159.3 ou mais nova." |
 | Sem login | "Faça login no Codex: rode `codex login`." |
 
 ### 7.14 Modos de permissões no Codex
-| Modo (Spec C 7.11) | Política do Codex (a confirmar no V-45) | Esperado |
+| Modo (Spec C 7.11) | Codex e tradução do Flow Dev | Esperado |
 |---|---|---|
 | Tudo liberado | aprovação `never`, sandbox `danger-full-access` | nada pede aprovação; as perguntas continuam (REQ-072) |
-| Aceitar edições, perguntar comandos | aprovação `untrusted`, sandbox `workspace-write` | edições no clone seguem sozinhas; comandos fora da lista confiável do Codex pedem |
-| Perguntar tudo | aprovação `untrusted`, sandbox `read-only` | edições e comandos fora da lista confiável pedem; leituras não |
+| Aceitar edições, perguntar comandos | aprovação `untrusted`, sandbox `workspace-write`; o Flow Dev aceita automaticamente `fileChange` e ações de comando `read`, `listFiles` e `search` restritas ao clone | edições no clone e leituras classificadas seguem sozinhas; outros comandos pedem |
+| Perguntar tudo | aprovação `untrusted`, sandbox `workspace-write`; o Flow Dev aceita automaticamente somente ações de comando `read`, `listFiles` e `search` restritas ao clone | leituras classificadas seguem sozinhas; edições e demais comandos pedem |
 
-Se o V-45 mostrar que uma linha não produz o "Esperado", a tradução muda nesta tabela, e o comportamento esperado continua o mesmo.
+O Codex real em `untrusted` pede aprovação também para leituras por comando, e `read-only` não remove esses pedidos. Por isso os dois modos usam `workspace-write`; o Flow Dev classifica as ações pelos tipos estruturados `read`, `listFiles` e `search`, e pela raiz do clone, antes de responder ao app-server. Ações `unknown`, caminhos fora do clone e pedidos de arquivo no modo “Perguntar tudo” permanecem visíveis para aprovação. Essa regra pertence ao tradutor de permissões e deve ter testes de fronteira.
 
 ### 7.15 Acionar uma skill no Codex
 O prompt de rota, o de "Gerar tarefas" e o do plano acionam a skill com uma entrada `skill`, com o nome e o caminho da skill no contexto da sessão. O texto da instrução é o mesmo do Claude, sem o `/flow-dev:…`. Na conversa, o prompt aparece como no Claude, com a skill entre colchetes: `[spec-writer] Escreva a spec da Issue abaixo…`. Uma mensagem da pessoa que comece com `$<nome-da-skill>` de uma skill do Flow Dev também a aciona.
@@ -192,15 +192,15 @@ O prompt de rota, o de "Gerar tarefas" e o do plano acionam a skill com uma entr
 
 - **NFR-18** (desempenho): uma mensagem ou resposta chega ao Codex em até 2 s no p95 local, e o texto e os pedidos dele aparecem na tela em até 3 s, como a NFR-10. O `preflight` não abre o Codex: lê a disponibilidade e o catálogo publicados (DEC-32) em até 200 ms.
 - **NFR-19** (segurança): o serviço executa só o `codex` do PATH, com argumentos fixos e sem shell. Fala com ele só por stdio, sem porta de rede e sem o daemon compartilhado. Ele mata o grupo do processo ao encerrar (NFR-12).
-- **NFR-20** (privacidade): diffs mostrados em pedidos ficam no banco como o conteúdo dos pedidos do Claude (NFR-13); respostas secretas não são guardadas (REQ-118).
+- **NFR-20** (privacidade): diffs mostrados em pedidos ficam no banco como o conteúdo dos pedidos do Claude (NFR-13); o conteúdo de respostas secretas nunca é persistido. Conforme a exceção aprovada da DEC-17 da Spec C, somente `(resposta oculta)` é gravado após o worker receber e validar o `pg_notify` efêmero (REQ-118).
 - **NFR-21** (compatibilidade): a versão do Codex usada fica registrada na sessão e no log, e uma versão abaixo da mínima nunca inicia sessão.
 
 ## 11. Premissas e dependências
 
-- **P-17:** com `-c features.default_mode_request_user_input=true`, o Codex 0.159.3 oferece a ferramenta de perguntas fora do modo plano e a envia por `item/tool/requestUserInput`. A confirmar no V-45; se falhar, vale a REQ-119.
-- **P-18:** um `thread/resume` com o id da conversa funciona depois de o processo do `app-server` morrer, inclusive no meio de um comando. A confirmar no V-45.
-- **P-19:** `skills/extraRoots/set` com a pasta `skills/` do contexto da sessão torna as skills do Flow Dev acionáveis pela entrada `skill`, sem copiá-las para o `~/.codex`. A confirmar no V-45.
-- **P-20:** a tradução da 7.14 produz o comportamento esperado em cada modo. A confirmar no V-45.
+- **P-17:** confirmado no Codex 0.159.3 com `--enable default_mode_request_user_input`: `item/tool/requestUserInput` funciona fora do modo plano nos três pares exercitados. A REQ-119 permanece como fallback para versões futuras.
+- **P-18:** confirmado no Codex 0.159.3: `thread/resume` restaurou conversa ociosa e conversa interrompida durante `sleep 30` após SIGKILL do app-server. Se uma versão futura não retomar, vale a REQ-078.
+- **P-19:** confirmado no Codex 0.159.3: `skills/extraRoots/set` e entrada `skill` por caminho acionaram a skill do contexto sem copiá-la para o perfil pessoal; o canário distinguiu duas skills homônimas.
+- **P-20:** o comportamento bruto de `untrusted` foi confirmado e não oferece a tabela sozinho. A tradução efetiva da §7.14 está definida como regra do Flow Dev: ações estruturadas de leitura restritas ao clone são aceitas automaticamente; ações desconhecidas ou fora dele pedem; `fileChange` só é aceito automaticamente em “Aceitar edições”. O teste unitário desta tradução é atribuído a V-48.
 - **Dependências:** Spec C concluída; Spec D com o registro de runtimes (DEC-28), a escolha de agente (REQ-109, REQ-110) e o `AgentChoiceField`.
 
 ---
@@ -239,7 +239,7 @@ O broker, o recorder, a máquina de estados, as tabelas e a tela não mudam. Mud
 
 ## 14. Modelo de dados
 
-Migration `0050_codex_sessions.sql` com rollback.
+Migration `0051_codex_sessions.sql` com rollback guarded: só pode remover `agent_version`, `codex_status` e kinds Codex quando não houver dados Codex que o rollback perderia. A 0050 pertence a `session_plans`.
 
 - **`task_terminal_sessions`:**
   - `agent_version` text null (versão do Codex ou do Claude Code na abertura, NFR-21);
@@ -354,7 +354,7 @@ Nova linha `[codex-catalog]` com a disponibilidade e o número de modelos a cada
 
 **Ordem:**
 1. V-45 registrado em `v45-spike.md`, com a 7.14, P-17 a P-20 e a versão mínima ajustadas.
-2. Migration 0050.
+2. Migration 0051 (0050 está ocupada por `session_plans`).
 3. Tradutores puros.
 4. Cliente RPC e runtime, contra o `app-server` falso.
 5. Registro no supervisor e catálogo publicado.
@@ -362,7 +362,7 @@ Nova linha `[codex-catalog]` com a disponibilidade e o número de modelos a cada
 
 O Codex aparece habilitado só depois do passo 5.
 
-**Rollback:** reverter o código tira o Codex do registro; as sessões do Codex ativas ficam sem runtime e caem na REQ-076 ("Interrompida"), sem retomada até o código voltar. O rollback da migration apaga `codex_status` e `agent_version`, e os pedidos `file_change` ficam inválidos. Reverta o código antes.
+**Rollback:** reverter o código tira o Codex do registro; as sessões do Codex ativas ficam sem runtime e caem na REQ-076 ("Interrompida"), sem retomada até o código voltar. Reverter a migration exige primeiro retirar os dados Codex e os pedidos `file_change`/`extra_permission`; caso contrário, o rollback falha sem apagá-los. Reverta o código antes.
 
 ## 21. Riscos técnicos
 
@@ -421,7 +421,7 @@ Base: `software-testing`.
 
 ## Questões em aberto
 
-Nenhuma de produto. P-17 a P-20 são fatos a confirmar no V-45. O plano B de cada uma está nas REQ-119 e REQ-078 e na tabela 7.14.
+Nenhuma de produto. P-17 a P-20 foram confirmadas para o Codex 0.159.3; a matriz da §7.14 registra as regras observadas e a tradução efetiva. O plano B para versões futuras está nas REQ-119 e REQ-078.
 
 ## Sugestões fora do escopo
 

@@ -26,9 +26,9 @@ Esta tarefa completa o `tick()` do serviço de sessões:
 - REQ-065: as respostas chegam ao Claude, e o pedido guarda a resposta dada.
 - REQ-068, B-27: um pedido pendente espera sem prazo, inclusive com a web fora do ar.
 - REQ-069, REQ-071, REQ-072: nos modos que perguntam, o pedido de aprovação vira uma linha com o resumo da 7.10 e a regra sugerida; "Permitir sempre" leva a sugestão com `localSettings`; em "Tudo liberado", nenhuma aprovação vira pedido.
-- REQ-057, NFR-10: uma mensagem ou resposta gravada chega ao runtime no ciclo seguinte (≤ 1 s), dentro dos 2 s da NFR-10.
+- REQ-057, NFR-10: o worker conclui um tick sequencial e então aguarda 1 s; o ensaio mede envio → runtime, emissão → persistência observada e primeiro polling da timeline para texto/pergunta, além de resposta persistida → resolução do runtime. Evidência, p95, máximos e limites: `latency-report.md`.
 - REQ-058, REQ-059: as mensagens na fila são entregues em ordem, exatamente como gravadas, e marcadas com `delivered_at`.
-- REQ-073, B-30: interromper chama `interrupt()`, cancela os pendentes, grava "Interrompido por você" e leva a `waiting`; sem vez ativa, não faz nada.
+- REQ-073, B-30: interromper uma vez ativa chama `interrupt()`, cancela os pendentes, grava "Interrompido por você" e leva a `waiting`. Uma pergunta que permanece pendente após Stop continua interruptível; sem vez ativa e sem pedido pendente, não faz nada.
 - REQ-074: encerrar chama `close()`, cancela os pendentes, roda a captura de artefatos da Spec B e leva a `ended`.
 - REQ-076, NFR-11: ao subir com um `worker_id` novo, as sessões não finais do `host_id` com outro `worker_id` vão para `interrupted`, com a nota `system` "Sessão interrompida às HH:MM. Envie uma mensagem para retomar." e os pedidos `cancelled`, no primeiro `tick()`. O mesmo vale para um `onExit(crashed)`.
 - REQ-077, B-23: uma mensagem numa sessão `interrupted` aciona `runtime.resume` com `claude_session_id` e entra como `firstMessage`.
@@ -115,7 +115,7 @@ Esta tarefa completa o `tick()` do serviço de sessões:
 - `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/session-requests.test.ts`: 6 testes passam (V-24c, V-24d com `allow_always` e com recusa e motivo, V-24e, V-24f e dois pedidos na mesma sessão).
 
 ### 2026-11-23 — 05.2 Mensagens, interromper e encerrar
-- `MessageDeliveryStep`: entrega em ordem, exatamente como gravadas, e marca `delivered_at` no mesmo tick. `SessionControlsStep`: interromper (só age com a vez em andamento, ou seja `running` ou `asking`; chama `interrupt()`, cancela e nega os pedidos, grava "Interrompido por você" e leva a `waiting`; em outro estado só limpa a flag, B-30) e encerrar (cancela os pedidos, `close()`, espera a fila de gravação, `markEnded` como reserva e limpa a flag). A captura de artefatos do encerramento sai pelo `SessionEnd` que o runtime sintetiza: o recorder chama a captura direto, sem `after()`.
+- `MessageDeliveryStep`: entrega em ordem, exatamente como gravadas, e marca `delivered_at` no mesmo tick. `SessionControlsStep`: interromper age com a vez em andamento (`running` ou `asking`) ou com pedido pendente; chama `interrupt()`, cancela e nega os pedidos, grava "Interrompido por você" e leva a `waiting`; sem atividade nem pedido pendente só limpa a flag, B-30. Encerrar cancela os pedidos, fecha o runtime, espera a fila de gravação, marca `ended` como reserva e limpa a flag. A captura de artefatos do encerramento sai pelo `SessionEnd` que o runtime sintetiza: o recorder chama a captura direto, sem `after()`.
 - `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/session-controls.test.ts test/session-delivery.test.ts`: 6 testes passam (V-24j, V-25a, V-25b, V-25c com a versão capturada do `spec.md` do clone temporário e `trigger = session_end`, e o cancelamento ao encerrar). O teste da 05.2 ficou em dois arquivos por causa das 100 linhas.
 
 ### 2026-11-23 — 05.3 Órfãs, crash e retomada
@@ -125,3 +125,13 @@ Esta tarefa completa o `tick()` do serviço de sessões:
 ### 2026-11-23 — Fechamento da tarefa
 - `pnpm --dir packages/api typecheck`: sem erros. `pnpm --dir packages/api test`: 98 arquivos, 652 testes passam. `pnpm --dir packages/api test:integration`: 109 arquivos, 616 testes passam. `sessionSupervisor.ts` tem 23 linhas, e cada passo mora no seu arquivo. Nenhum arquivo novo passa de 100 linhas.
 
+### 2026-11-23 — Correção da review-005 (B-1, B-2, B-3, I-1)
+- `SessionRequestGate` serializa abertura/registro e cancelamento por sessão; `insertRequest` e `answerIfPending` bloqueiam a linha da sessão e recusam gravações quando o estado é final ou há controle pendente. Testes cobrem barreiras antes do insert e antes do registro, além de respostas após fim.
+- Interromper também age em `waiting` quando existe pedido pendente. Stop → pedido e pedido → Stop foram verificados, preservando o caso sem atividade nem pedido (B-30).
+- `claimResume` inclui `end_requested_at IS NULL` no `UPDATE` atômico; a regressão grava end depois da consulta de sessões interrompidas e prova que não há claim/resume.
+- `session-latency.test.ts` mede emissão, persistência observada no Postgres, primeiro polling de texto e pergunta e entrega da resposta ao runtime durante carga e captura. Resultado atual: `latency-report.md`.
+
+### 2026-11-23 — Correção da review-007 (B-1, I-1)
+- `claimOpening` exige `end_requested_at IS NULL` e `controlRequests` passa a listar sessões `opening`/`unconfirmed` do host sem dono com encerramento pedido. O `SessionControlsStep` as encerra sem iniciar o runtime e limpa a flag.
+- `claimOpening`, `claimResume` e `markOrphans` zeram `interrupt_requested_at`: uma interrupção sem vez ativa não sobrevive para a vez seguinte (B-30).
+- Regressões em `test/session-control-before-start.test.ts`, com Postgres e o worker reais: fim pedido antes do claim (`opening` e `unconfirmed`), abertura normal preservada, e retomada sem interrupção herdada. Os três primeiros falham sem a correção.

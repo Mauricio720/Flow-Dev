@@ -63,7 +63,7 @@ Esta tarefa cria o serviço de sessões e o runtime que envolve o Claude Agent S
 ## Detalhes de implementação
 - O `tick()` do supervisor, nesta tarefa:
   1. `beat()` a cada 5 s;
-  2. `claimOpening(hostId, workerId)` para cada sessão `opening` do `host_id`;
+  2. `claimOpening(hostId, workerId)` para cada sessão `opening` preparada do `host_id`; `prepared_at` só é marcado após contexto, anexos e prompt final estarem prontos;
   3. `runtime.start(...)`, guardando o handle num mapa por `sessionId`.
 
   A task_05 acrescenta mensagens, pedidos, controles e órfãs ao mesmo `tick()`.

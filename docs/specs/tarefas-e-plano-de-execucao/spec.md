@@ -1,6 +1,6 @@
 # Spec D: Tarefas e plano de execução
 
-> **Status:** Rascunho · **Data:** 2026-11-23 · **Nível:** L4 ancorada (vai para spec-to-tasks) · **Depende de:** [Spec C](../sessao-no-flow-dev/spec.md) (tarefa 07 em andamento) e [Spec B](../acompanhamento-e-artefatos/spec.md); as opções do Codex dependem da [Spec E](../sessao-do-codex/spec.md), "Sessão do Codex no Flow Dev". Os IDs continuam a numeração das Specs A–C e nunca se repetem.
+> **Status:** Rascunho · **Data:** 2026-11-23 · **Nível:** L4 ancorada (vai para spec-to-tasks) · **Depende de:** [Spec C](../sessao-no-flow-dev/spec.md) e [Spec B](../acompanhamento-e-artefatos/spec.md). As sessões Codex seguem o contrato da [Spec E](../sessao-do-codex/spec.md). Os IDs continuam a numeração das Specs A–C e nunca se repetem.
 > **Contexto lido:** Specs A, B e C; `apps/web/PRODUCT.md`; `.claude/skills/spec-to-tasks/` (`SKILL.md`, `references/manifest-template.md`, `references/task-template.md`); `apps/web/src/features/issues/assigned-work/` (`stageTabs.ts`, `components/OperatorStages.tsx`, `ExecutionStage.tsx`, `ArtifactSection.tsx`, `ArtifactList.tsx`, `ArtifactViewer.tsx`, `artifactMarkdown.ts`); `packages/api/src/application/services/terminal/` (`terminalPromptCopy.ts`, `terminalEventIngestion.ts`, `artifactCapturePlan.ts`); `packages/api/src/application/terminal/sessionContext.ts`; `packages/api/src/infra/terminal/agentSdkQueryOptions.ts`; `packages/api/src/application/agents/agentCatalog.ts`; `packages/api/src/infra/database/schema/tasks/` (`artifacts.ts`, `terminal.ts`, `taskExecutionPlans.ts`); `sdk.d.ts` do `@anthropic-ai/claude-agent-sdk` 0.3.330 (`Options.model`, `Options.effort`); `packages/api/src/infra/agents/codexArguments.ts`; `codex --help` e `codex app-server --help` (CLI 0.159.3).
 
 ## Resumo para revisão
@@ -20,13 +20,13 @@
 - **Riscos principais:**
   - O agente esquece de marcar a tarefa como concluída, e a próxima sessão fica bloqueada. Mitigação: instrução no prompt e "Iniciar mesmo assim" (REQ-102).
   - Uma combinação de modelo e esforço não é aceita. Mitigação: o spike V-33 vem antes, e só aparecem as combinações aceitas.
-  - O Codex depende da Spec E, que ainda não existe. Mitigação: até lá, as opções dele aparecem desabilitadas (REQ-110), e o caminho Claude não espera.
+  - O Codex depende do CLI instalado, da versão mínima e do login local. A disponibilidade publicada pelo serviço mantém a escolha desabilitada enquanto qualquer requisito faltar (REQ-110, Spec E §7.13).
 - **Como vamos verificar:**
   - leitores e regras do plano puros;
   - controllers e captura com o Postgres de teste;
   - um e2e da jornada gerar → planejar → executar, com o runtime roteirizado;
   - smoke real (V-33, V-42).
-- **Pendências:** nenhuma de produto. Para o Codex funcionar, falta escrever e implementar a Spec E (P-16).
+- **Pendências:** nenhuma de produto. A disponibilidade do Codex depende das condições locais da Spec E §7.13.
 
 ---
 
@@ -95,7 +95,7 @@ Como pessoa operadora, quero decidir quantas sessões usar e o modelo e o esfor�
   2. **Dado** esse plano, **quando** Ana aciona "Uma sessão por tarefa", troca a Sessão 3 para "Sonnet · Alto" e salva, **então** ao recarregar há três sessões; a 1 e a 2 estão em "Opus · Máximo", e a 3 em "Sonnet · Alto".
   3. **Dado** três sessões não iniciadas, **quando** Ana aciona "Mesmo modelo para todas" com "Haiku · Médio", **então** as três passam a "Haiku · Médio".
   4. **Dado** que a 02 depende da 01, **quando** Ana coloca a 01 na Sessão 2 e a 02 na Sessão 1 e salva, **então** vê "A tarefa 02 depende da 01, que está numa sessão posterior.", e nada é salvo.
-  5. **Dado** que a Spec E ainda não foi implementada, **quando** Ana abre o seletor de agente da Sessão 2, **então** "Codex" aparece desabilitado com "O Codex ainda não conduz sessões no Flow Dev."; depois da Spec E, ela escolhe "Codex · gpt-6.1-sol · Alto" e salva.
+  5. **Dado** o Codex instalado, atualizado e autenticado nesta máquina, **quando** Ana abre o seletor de agente da Sessão 2, **então** ela pode escolher um modelo e esforço publicados pelo catálogo local; sem uma dessas condições, Codex aparece desabilitado com o motivo da Spec E §7.13.
 
 ### US-14 — Executar uma sessão do plano (P1)
 Como pessoa operadora, quero iniciar cada sessão do plano com o agente e o modelo escolhidos e ver a próxima liberar quando as dependências terminarem, para controlar a execução passo a passo.
@@ -115,7 +115,7 @@ Como pessoa operadora, quero iniciar cada sessão do plano com o agente e o mode
 - **REQ-085** (US-11): SE a tarefa tiver mais de uma spec capturada, ENTÃO o diálogo DEVE pedir qual quebrar, com a de versão mais recente selecionada.
 - **REQ-086** (US-11): QUANDO qualquer sessão da tarefa capturar um `_tasks.md`, o sistema DEVE reconhecer o conjunto de tarefas da pasta dele e mostrar a etapa "Tarefas", seja qual for o prompt ou o agente que a originou.
 - **REQ-109** (US-11): O diálogo de "Gerar tarefas" DEVE oferecer agente, modelo e esforço (7.4), começando em Claude Code · Opus · Máximo, e a sessão de geração DEVE rodar com a escolha confirmada.
-- **REQ-110** (US-11, US-13, US-14): SE um agente não puder conduzir sessões nesta máquina (o Codex antes da Spec E, o binário ausente ou sem login), ENTÃO as opções dele DEVEM aparecer desabilitadas com o motivo ("O Codex ainda não conduz sessões no Flow Dev." ou o que a checagem da máquina informar), e o `open` DEVE recusar esse agente.
+- **REQ-110** (US-11, US-13, US-14): SE um agente não puder conduzir sessões nesta máquina (por exemplo, Codex ausente, desatualizado ou sem login), ENTÃO as opções dele DEVEM aparecer desabilitadas com o motivo informado pela checagem da máquina, e o `open` DEVE recusar esse agente.
 
 **Leitura**
 - **REQ-087** (US-12): A etapa DEVE listar as tarefas na ordem do manifesto com número, título, tipo, complexidade, dependências, mini-tarefas concluídas sobre o total e status (7.2).
@@ -179,6 +179,7 @@ Os motivos mostrados são: "o frontmatter está ausente ou inválido", "o grafo 
 | Codex | os que o Codex instalado informa (7.12 da Spec E) | os que cada modelo informa como suportados (7.12 da Spec E) |
 
 - **Padrão** da divisão e de toda sessão nova do plano: Claude Code · Opus · Máximo (REQ-094, REQ-109). Não há padrão por projeto.
+- A rota aprovada também permite escolher agente, modelo e esforço; começa em Claude Code · Opus · Máximo (REQ-126 da Spec E).
 - Uma combinação recusada (V-33 no Claude, o spike da Spec E no Codex) não é oferecida.
 - Um agente indisponível aparece desabilitado (REQ-110).
 
@@ -226,7 +227,7 @@ Os dois são editáveis no diálogo, como na Spec A. O plano não muda se a pess
 
 ## 9. Comportamento que não muda
 
-- A abertura pela rota aprovada, o diálogo, os anexos, o modo de permissões e a conversa DEVEM CONTINUAR como nas Specs A e C. Nas sessões de rota, o sistema DEVE CONTINUAR A usar o Claude Code sem forçar modelo nem esforço, até a REQ-126 da Spec E.
+- A abertura pela rota aprovada, o diálogo, os anexos, o modo de permissões e a conversa DEVEM CONTINUAR como nas Specs A e C. A rota começa em Claude Code · Opus · Máximo e usa o agente, modelo e esforço confirmados no diálogo (REQ-126 e REQ-127 da Spec E).
 - A lista geral de artefatos da Spec B DEVE CONTINUAR a mostrar também os arquivos das tarefas.
 - Fora das sessões do plano, a captura DEVE CONTINUAR a exigir skill ativa (REQ-042, REQ-048).
 - A confirmação antes de uma segunda sessão na tarefa (REQ-014) DEVE CONTINUAR.
@@ -247,8 +248,8 @@ Os dois são editáveis no diálogo, como na Spec A. O plano não muda se a pess
 - **P-13:** "por padrão sempre vem no max" quer dizer Claude Code · Opus · Máximo, e é só o valor inicial (confirmado pelo usuário em 2026-11-23).
 - **P-14:** o SDK 0.3.330, com o `claude` do PATH, aplica `model` e `effort` em `query()`, também no `resume`. A confirmar no V-33, junto com as combinações aceitas por modelo.
 - **P-15:** a spec-to-tasks grava `_tasks.md` e `task_NN.md` na pasta da spec, no formato `compozy.tasks/v2` (`references/manifest-template.md`).
-- **P-16:** a [Spec E](../sessao-do-codex/spec.md) entrega um runtime do Codex que atende à mesma porta da Spec C (início, retomada, mensagem, interrupção, encerramento; texto, eventos de arquivo e pedidos), torna as skills do Flow Dev acionáveis no Codex e alimenta os eventos e a captura da Spec B. Sem ela, o Codex fica desabilitado (REQ-110), e o resto desta spec funciona.
-- **Dependência:** Spec E, só para o Codex. Spec C concluída (a tarefa 07 está em andamento e tem a review-001 reprovada para corrigir).
+- **P-16:** a [Spec E](../sessao-do-codex/spec.md) define o runtime Codex na porta compartilhada da Spec C, as skills e a captura da Spec B. O acesso continua condicionado à disponibilidade local do CLI (REQ-110).
+- **Dependência:** contrato da Spec E para sessões Codex; disponibilidade verificada por máquina. Spec C concluída.
 
 ---
 
@@ -283,7 +284,7 @@ Nada de infraestrutura nova. O **conjunto de tarefas** não tem tabela: um leito
 
 ## 14. Modelo de dados
 
-Migration `0049_session_plans.sql` com rollback `0049_session_plans_rollback.sql`. Os nomes evitam as tabelas legadas `task_execution_plans` e `task_execution_runs`, da etapa removida.
+Migration `0050_session_plans.sql` com rollback `0050_session_plans_rollback.sql`. Os nomes evitam as tabelas legadas `task_execution_plans` e `task_execution_runs`, da etapa removida.
 
 - **`task_session_plans`**:
   - `id` uuid PK; `task_id` FK `tasks` (cascade), unique;
@@ -414,7 +415,7 @@ O log `[session]` da Spec C passa a incluir o agente, o modelo e o esforço.
 
 **Ordem:**
 1. V-33 registrado em `v33-spike.md`.
-2. Migration 0049.
+2. Migration 0050.
 3. Leitores puros e `taskSet.get`.
 4. Plano (DAO, regras, procedures).
 5. `purpose`, prompts, registro de runtimes e modelo no runtime.
@@ -503,3 +504,6 @@ Nenhuma. A P-13 registra a interpretação de "max"; se estiver errada, muda só
   - a divisão é sempre feita pela spec-to-tasks.
 - 2026-11-23 — O usuário confirmou que Opus · Máximo é só o valor inicial (P-13), sem padrão por projeto, e pediu o Codex na divisão e na execução, com sessão completa. Como o runtime do Codex tem o tamanho da Spec C, ele foi separado na Spec E. Esta spec ganhou a escolha de agente (REQ-109, REQ-110, B-42, DEC-28, V-44), e o Codex fica desabilitado até a Spec E.
 - 2026-11-23 — A Spec E foi escrita. A escolha de agente na rota passou para ela (REQ-126), e o catálogo do Codex vem do próprio Codex (7.12 da Spec E).
+- 2026-11-23 — A numeração da migration mudou de 0049 para 0050: a `0049_session_preparation` (correção da Spec C, com a coluna `prepared_at`) já ocupava o número. Nenhuma outra regra mudou.
+- 2026-11-23 — V-33 executado (`v33-spike.md`): as 15 combinações da 7.4 foram aceitas e o `resume` mantém o modelo. A 7.4 e a P-14 não divergiram. O SDK **não recusa** um esforço fora do enum, então a validação do servidor (NFR-16) é a única barreira.
+- 2026-11-23 — `tasks.plan.get` ganhou o campo `agents` (disponibilidade de cada agente, a mesma do `preflight`), para o editor do plano desabilitar o Codex com o motivo sem chamar o `preflight`, que é pesado e tem efeitos (REQ-110, B-42). O restante da §15 não mudou.

@@ -32,7 +32,7 @@ Quem não controla a sessão vê tudo em leitura.
 - REQ-067: as mensagens "Este pedido já foi respondido." e "Este pedido não está mais aberto." para `request_answered` e `request_closed`.
 - REQ-069, REQ-070, 7.10: o cartão de aprovação mostra título e corpo, "Permitir", "Permitir sempre (<regra>)" só com regra sugerida, e "Recusar" com motivo opcional (até 2.000 caracteres).
 - REQ-058: o campo de mensagem aceita de 1 a 20.000 caracteres e mostra "Na fila" nas mensagens sem entrega; "Não entregue" nas `undelivered`.
-- REQ-073, REQ-074: "Interromper" aparece em Em andamento e Precisa de você; "Encerrar" pede a confirmação "Encerrar a sessão? O Claude para, e a conversa fica só para leitura.".
+- REQ-073, REQ-074: "Interromper" aparece em Em andamento e Precisa de você, e também enquanto houver pedido pendente após Stop; sem vez ativa nem pedido pendente, B-30 mantém o controle oculto. "Encerrar" pede a confirmação "Encerrar a sessão? O Claude para, e a conversa fica só para leitura.".
 - REQ-075, REQ-080, B-22: sem `canControl` ou em estado final, nem campo nem controles; com `canControl: false` numa sessão ativa, a nota "Só quem abriu a sessão, enquanto for a operadora, pode responder.".
 - B-28: sessões `runtime = terminal` aparecem como "Aberta no terminal", só com eventos e sem campo.
 - REQ-081: sessão `flow_dev` em "Não confirmada" mostra "O Flow Dev não conseguiu iniciar o Claude. Confira se o serviço de sessões está rodando."; as sessões `terminal` mantêm a mensagem da Spec B.
@@ -100,7 +100,7 @@ Nenhuma.
 - [x] V-28c: opção com `preview` "```\nA | B\n```" → a prévia aparece num bloco monoespaçado; `<script>` na prévia aparece como texto · componente (RTL)
 - [x] V-28d: pedido Bash com título "Rodar comando:", corpo "pnpm test" e `suggestedRule = "Bash(pnpm test:*)"` → três botões, "Permitir sempre (Bash(pnpm test:*))" incluído, e cada um manda a `decision` certa; sem `suggestedRule` → só "Permitir" e "Recusar"; "Recusar" com "Não apague o build, só rode o lint" → `decidePermission({ decision: "deny", reason })`; motivo de 2.001 caracteres → envio bloqueado com o limite · componente (RTL)
 - [x] V-28e: digitar "Rode também o lint" e Ctrl+Enter → `send` chamado com esse texto e um `requestKey`; Enter → quebra de linha, sem enviar; vazio ou 20.001 caracteres → envio desabilitado com o limite; mensagem com `queued: true` → "Na fila"; com `undelivered: true` → "Não entregue" · componente (RTL)
-- [x] V-28f: sessão `running` → "Interromper" chama `interrupt`; sessão `waiting` → sem "Interromper"; "Encerrar" abre a confirmação com o texto exato da REQ-074, Esc fecha sem chamar `end`, e confirmar chama `end` · componente (RTL)
+- [x] V-28f: sessão `running` → "Interromper" chama `interrupt`; sessão `waiting` com pergunta pendente mantém "Interromper", sem pedido não mostra o botão; "Encerrar" abre a confirmação com o texto exato da REQ-074, Esc fecha sem chamar `end`, e confirmar chama `end` · componente (RTL)
 
 ## Critérios de sucesso
 - Todas as mini-tarefas marcadas, cada uma com o "Pronto quando" executado.
@@ -131,7 +131,7 @@ Nenhuma.
 - `pnpm --dir apps/web exec vitest run src/features/issues/assigned-work/components/PermissionRequestCard.test.tsx`: 7 testes passam (V-28d e mais).
 
 ### 2026-11-23 — 06.5 Campo de mensagem e controles
-- `SessionComposer` (Ctrl+Enter ou Cmd+Enter envia, Enter quebra a linha, 1 a 20.000 caracteres com contador, `requestKey` gerado uma vez e reaproveitado até o envio dar certo), `SessionControls` ("Interromper" em Em andamento e Precisa de você; "Encerrar" sempre) e `SessionEndConfirm` (diálogo com `useDialogFocus`: foco preso, Esc fecha sem encerrar, o texto exato da REQ-074 e o botão "Encerrar sessão").
+- `SessionComposer` (Ctrl+Enter ou Cmd+Enter envia, Enter quebra a linha, 1 a 20.000 caracteres com contador, `requestKey` gerado uma vez e reaproveitado até o envio dar certo), `SessionControls` ("Interromper" em Em andamento e Precisa de você, ou em Esperando com pedido pendente; "Encerrar" sempre) e `SessionEndConfirm` (diálogo com `useDialogFocus`: foco preso, Esc fecha sem encerrar, o texto exato da REQ-074 e o botão "Encerrar sessão").
 - Desvio de rótulo: o botão que confirma o encerramento chama-se "Encerrar sessão", para não repetir o "Encerrar" do gatilho (nome acessível único dentro do diálogo e na tela).
 - `pnpm --dir apps/web exec vitest run src/features/issues/assigned-work/components/SessionComposer.test.tsx src/features/issues/assigned-work/components/SessionControls.test.tsx`: 16 testes passam (V-28e, V-28f e mais).
 
@@ -144,3 +144,7 @@ Nenhuma.
 - **I-3 (V-28e):** teste de que uma mensagem `undelivered: true` mostra "Não entregue" e não "Na fila".
 - **I-5:** `useSessionTimeline` ficou com 20 linhas (a lógica do polling está em `sessionPolling.ts`, testada pelos testes de `SessionConversationPolling.test.tsx`); os testes da conversa foram divididos em dois arquivos de até 100 linhas.
 - Verificação: `pnpm --dir apps/web test` (84 arquivos, 418 testes), `typecheck` e `lint` passam.
+
+### 2026-11-23 — Correção da review-005 (B-2, B-4)
+- `SessionConversation` mantém Interromper visível em `waiting` quando a timeline contém pergunta ou aprovação pendente. Sem pedido, o estado waiting mantém B-30.
+- `QuestionRequestCard` usa `useId` e o índice da pergunta para isolar grupos de rádio e IDs de “Outra” por cartão/pergunta, preservando o texto original como chave de resposta. RTL monta dois cartões com texto igual e verifica seleções, envio e ativação por teclado.

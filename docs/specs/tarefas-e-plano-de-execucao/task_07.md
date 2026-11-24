@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Tela: aba Tarefas e leitura"
 type: frontend
 complexity: medium
@@ -50,12 +50,12 @@ O botão "Gerar tarefas", o diálogo e o plano ficam na task_08. Aqui, o lugar d
 
 ## Mini-tarefas
 
-- [ ] **07.1 — Aba "Tarefas", leitura com polling e lista**
+- [x] **07.1 — Aba "Tarefas", leitura com polling e lista**
   - **Arquivos:** `apps/web/src/features/issues/assigned-work/taskSetContract.ts`, `taskSetClient.ts`, `taskSetCopy.ts`, `taskSetModel.ts` (linha formatada, rótulos, estado da aba) e `taskSetModel.test.ts` (criar), `hooks/useTaskSet.ts` (criar), `components/TasksStage.tsx`, `TaskList.tsx`, `TaskSetNotices.tsx` e `TasksStage.test.tsx` (criar), `stageTabs.ts` e `components/OperatorStages.tsx` (alterar), `apps/web/src/test/setup.ts` (mock de `trpc.tasks.taskSet.get`), `apps/web/src/test/taskSet.ts` (criar: construtores de `TaskSetView`)
   - **Testes:** V-40a, V-40b, V-40c, V-40d, V-40e, V-40f, V-40g
   - **Pronto quando:** `pnpm --dir apps/web exec vitest run src/features/issues/assigned-work/taskSetModel.test.ts src/features/issues/assigned-work/components/TasksStage.test.tsx` passa; `pnpm --dir apps/web typecheck` sem erros
   - **Nota:** `OperatorStages.tsx` já monta as abas de Planejamento e Execução. A leitura do conjunto precisa estar lá para decidir se a aba aparece. Use `useTaskSet` com `enabled` só quando o planejamento foi aprovado, e não faça polling com a aba fechada (passe a aba atual para o hook, ou faça o polling dentro de `TasksStage`, e no `OperatorStages` uma leitura só).
-- [ ] **07.2 — Conteúdo da tarefa, "Visão geral" e rótulo "Plano de execução"**
+- [x] **07.2 — Conteúdo da tarefa, "Visão geral" e rótulo "Plano de execução"**
   - **Arquivos:** `apps/web/src/features/issues/assigned-work/components/TaskViewer.tsx` e `TaskViewer.test.tsx` (criar; usam `useArtifactViewer` e `ArtifactViewer`), `components/TaskList.tsx` (abrir), `components/TasksStage.tsx` ("Visão geral"), `artifactCopy.ts` (`skillLabel`: `plano-de-execucao` → "Plano de execução"; os demais nomes ficam como estão), `components/ArtifactList.tsx` e `ArtifactVersionPicker.tsx` (usar `skillLabel`), `components/ArtifactViewer.test.tsx` (caso novo)
   - **Testes:** V-40h, V-40i, V-40j
   - **Pronto quando:** `pnpm --dir apps/web exec vitest run src/features/issues/assigned-work/components/TaskViewer.test.tsx src/features/issues/assigned-work/components/ArtifactViewer.test.tsx src/features/issues/assigned-work/components/ArtifactList.test.tsx` passa; `pnpm --dir apps/web typecheck` sem erros
@@ -88,16 +88,16 @@ O botão "Gerar tarefas", o diálogo e o plano ficam na task_08. Aqui, o lugar d
 - Nenhuma.
 
 ## Testes atribuídos
-- [ ] V-40a: `specs` com `docs/specs/login/spec.md` e `set: null` → a aba "Tarefas" aparece com "Nenhuma tarefa gerada ainda."; com `specs: []` e `set: null` (Execução direta) → a aba não aparece (B-38) · componentes (RTL)
-- [ ] V-40b: conjunto com 01 (`backend`, `medium`, sem dependência, 0/3, `pending`), 02 (depende de 01, 1/4, `in_progress`) e 03 → três itens na ordem, o primeiro com o texto "01 — Esquema e DAO · backend · medium · depende de — · 0/3 · Pendente", e o segundo com "depende de 01" e "Em andamento" · componentes (RTL)
-- [ ] V-40c: `problem: "o grafo de tarefas está ausente"` → `role="status"` com "Não foi possível ler o _tasks.md: o grafo de tarefas está ausente.", os arquivos da pasta listados como artefatos, e nenhuma lista de tarefas nem região de plano · componentes (RTL)
-- [ ] V-40d: tarefa 03 com `artifactId: null` e `status: "unknown"` → "Arquivo da tarefa não capturado" e "Desconhecido" na linha, sem botão para abrir · componentes (RTL)
-- [ ] V-40e: `otherFolders: ["docs/specs/old"]` → `role="status"` com "Há outro conjunto de tarefas em docs/specs/old." · componentes (RTL)
-- [ ] V-40f: planejamento aprovado, com conjunto e sem sessão ativa → abas na ordem Planejamento, Tarefas, sessão, e a aba inicial é "Tarefas"; com sessão ativa → a inicial é a da sessão; todas as tarefas `completed` → o estado da aba é "Concluída" (REQ-106) · componentes (RTL) + `taskSetModel` puro
-- [ ] V-40g: aba aberta com a 01 `pending`; o mock passa a devolver a 01 `completed`; avançar 5 s → a linha mostra "Concluída" sem recarregar (REQ-089); depois de desmontar, nenhuma chamada nova · componentes (RTL) + temporizadores falsos
-- [ ] V-40h: abrir a 02 → `article` com `docs/specs/login/task_02.md` renderizado, as caixas `- [x]` e `- [ ]` como `checkbox` desabilitados (uma marcada, uma não), e o seletor "Versão"; "Visão geral" → `_tasks.md` renderizado · componentes (RTL)
-- [ ] V-40i: a 02 com duas versões; escolher "Versão 1" → o conteúdo da versão 1, e a versão 2 continua no seletor (US-12.3) · componentes (RTL)
-- [ ] V-40j: versão com `skill: "plano-de-execucao"` → o item da lista mostra "task_01.md · Plano de execução · versão 2", e o seletor "Versão 2 · Plano de execução"; `spec-writer` continua "spec-writer" · componentes (RTL)
+- [x] V-40a: `specs` com `docs/specs/login/spec.md` e `set: null` → a aba "Tarefas" aparece com "Nenhuma tarefa gerada ainda."; com `specs: []` e `set: null` (Execução direta) → a aba não aparece (B-38) · componentes (RTL)
+- [x] V-40b: conjunto com 01 (`backend`, `medium`, sem dependência, 0/3, `pending`), 02 (depende de 01, 1/4, `in_progress`) e 03 → três itens na ordem, o primeiro com o texto "01 — Esquema e DAO · backend · medium · depende de — · 0/3 · Pendente", e o segundo com "depende de 01" e "Em andamento" · componentes (RTL)
+- [x] V-40c: `problem: "o grafo de tarefas está ausente"` → `role="status"` com "Não foi possível ler o _tasks.md: o grafo de tarefas está ausente.", os arquivos da pasta listados como artefatos, e nenhuma lista de tarefas nem região de plano · componentes (RTL)
+- [x] V-40d: tarefa 03 com `artifactId: null` e `status: "unknown"` → "Arquivo da tarefa não capturado" e "Desconhecido" na linha, sem botão para abrir · componentes (RTL)
+- [x] V-40e: `otherFolders: ["docs/specs/old"]` → `role="status"` com "Há outro conjunto de tarefas em docs/specs/old." · componentes (RTL)
+- [x] V-40f: planejamento aprovado, com conjunto e sem sessão ativa → abas na ordem Planejamento, Tarefas, sessão, e a aba inicial é "Tarefas"; com sessão ativa → a inicial é a da sessão; todas as tarefas `completed` → o estado da aba é "Concluída" (REQ-106) · componentes (RTL) + `taskSetModel` puro
+- [x] V-40g: aba aberta com a 01 `pending`; o mock passa a devolver a 01 `completed`; avançar 5 s → a linha mostra "Concluída" sem recarregar (REQ-089); depois de desmontar, nenhuma chamada nova · componentes (RTL) + temporizadores falsos
+- [x] V-40h: abrir a 02 → `article` com `docs/specs/login/task_02.md` renderizado, as caixas `- [x]` e `- [ ]` como `checkbox` desabilitados (uma marcada, uma não), e o seletor "Versão"; "Visão geral" → `_tasks.md` renderizado · componentes (RTL)
+- [x] V-40i: a 02 com duas versões; escolher "Versão 1" → o conteúdo da versão 1, e a versão 2 continua no seletor (US-12.3) · componentes (RTL)
+- [x] V-40j: versão com `skill: "plano-de-execucao"` → o item da lista mostra "task_01.md · Plano de execução · versão 2", e o seletor "Versão 2 · Plano de execução"; `spec-writer` continua "spec-writer" · componentes (RTL)
 
 ## Critérios de sucesso
 - Todas as mini-tarefas marcadas, cada uma com o "Pronto quando" executado.
@@ -107,3 +107,6 @@ O botão "Gerar tarefas", o diálogo e o plano ficam na task_08. Aqui, o lugar d
 
 ## Registro de execução
 <!-- Uma entrada por mini-tarefa: data, o que foi feito, comandos e resultado, desvios. -->
+- **2026-11-23 · 07.1** — Em `apps/web/src/features/issues/assigned-work/`: `taskSetContract.ts` (`TaskSetView` e tipos derivados do tRPC), `taskSetClient.ts`, `taskSetCopy.ts` (textos exatos da spec), `taskSetModel.ts` (`taskRowLabel`, `dependencyText`, `hasTasksTab`, `allTasksCompleted`, `isSetReadable`), `hooks/useTaskSet.ts` (leitura e polling de 5 s com limpeza no desmonte), `hooks/useTasksTab.tsx` (a leitura única do `OperatorStages` e a aba), `components/TasksStage.tsx`, `TaskSetBody.tsx`, `TaskList.tsx` e `TaskSetNotices.tsx`; `stageTabs.ts` ganhou `TASKS_TAB_ID`, `TASKS_TAB_LABEL` e `tasksTabState`; `OperatorStages.tsx` monta a aba entre Planejamento e a sessão, e a aba inicial é "Tarefas" quando há conjunto e nenhuma sessão ativa. Fora da lista: `src/test/taskSet.ts` (construtores), `src/test/setup.ts` (mocks de `tasks.taskSet.get` e `tasks.plan.*`), e os construtores `src/test/execution.ts` e `src/test/terminal.ts`, que quebraram o typecheck da web com os campos novos da API (`purpose`, `agent`, `model`, `effort`, `prompt`, `choice`, `agents`). **Decisão:** o polling fica no `TasksStage` (só enquanto a aba está aberta); o `OperatorStages` faz uma leitura e recebe as novas leituras do `TasksStage` por `onView`, então o estado da aba acompanha o polling. `vitest run …taskSetModel.test.ts …TasksStage.test.tsx`: 13 testes (V-40a a V-40g), mais `OperatorStages.test.tsx` com 6 (V-40f, B-38, REQ-024).
+- **2026-11-23 · 07.2** — `artifactCopy.ts` ganhou `skillLabel` (`plano-de-execucao` → "Plano de execução"), usado na lista e no seletor de versões. As caixas de mini-tarefa só para leitura já saem do `marked` com GFM (`disabled`); o V-40h confere. **Desvio:** não criei um `TaskViewer.tsx` separado: abrir uma tarefa e a "Visão geral" reaproveitam `useArtifactViewer` e `ArtifactViewer` direto no `TasksStage`, e um componente só repassando props não teria comportamento. O arquivo `components/TaskViewer.test.tsx` existe e cobre V-40h, V-40i e V-40j por esse caminho; `ArtifactViewer.test.tsx` ganhou o caso do rótulo no seletor. `vitest run …TaskViewer.test.tsx …ArtifactViewer.test.tsx …ArtifactList.test.tsx`: 9 testes passando.
+- **2026-11-23 · fecho** — `pnpm --dir apps/web test`: 89 arquivos, 445 testes passando. `pnpm --dir apps/web typecheck` e `pnpm --dir apps/web lint` sem erros.

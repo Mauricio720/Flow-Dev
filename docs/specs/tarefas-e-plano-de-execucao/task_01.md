@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Spike V-33 de modelo e esforço no SDK
 type: test
 complexity: high
@@ -34,12 +34,12 @@ O plano e a divisão rodam o Claude com o modelo e o esforço escolhidos, passad
 
 ## Mini-tarefas
 
-- [ ] **01.1 — Roteiro do spike de modelo e esforço**
+- [x] **01.1 — Roteiro do spike de modelo e esforço**
   - **Arquivos:** `docs/specs/tarefas-e-plano-de-execucao/spike/` (criar: `package.json` com `@anthropic-ai/claude-agent-sdk` 0.3.330 sem `^` e `tsx`, `tsconfig.json`, `modelEffort.ts`, `spikeRepo.ts` e `spikeLog.ts` copiados do spike da Spec C e reduzidos ao necessário); a saída vai para `spike/out/` (no `.gitignore` local do spike)
   - **Testes:** nenhum automatizado; o roteiro é a ferramenta do V-33
   - **Pronto quando:** `pnpm --dir docs/specs/tarefas-e-plano-de-execucao/spike install` e `pnpm --dir docs/specs/tarefas-e-plano-de-execucao/spike exec tsx modelEffort.ts --dry-run` listam as 15 combinações (3 modelos × 5 esforços) que vão rodar, sem chamar o Claude
   - **Nota:** use um repositório git temporário fora da pasta de rascunho do Claude Code (o `TMPDIR` longo quebra o `tsx`; ver a memória da Spec C). Prompt curto e barato por combinação ("Responda só OK."), `maxTurns: 1`, `permissionMode: "default"`.
-- [ ] **01.2 — Rodar a matriz, o resume e Opus · Máximo; registrar e ajustar a spec**
+- [x] **01.2 — Rodar a matriz, o resume e Opus · Máximo; registrar e ajustar a spec**
   - **Arquivos:** `docs/specs/tarefas-e-plano-de-execucao/spike/modelEffort.ts` (subcomandos `matrix`, `resume` e `max`), `docs/specs/tarefas-e-plano-de-execucao/v33-spike.md` (criar), `docs/specs/tarefas-e-plano-de-execucao/spec.md` (ajustar a 7.4 e a P-14 só se o resultado divergir, com uma linha no Histórico)
   - **Testes:** V-33a, V-33b, V-33c, V-33d, V-33e
   - **Pronto quando:** `pnpm --dir docs/specs/tarefas-e-plano-de-execucao/spike exec tsx modelEffort.ts matrix`, `… resume` e `… max` rodaram contra o Claude real, a saída está em `spike/out/*.log`, e o `v33-spike.md` tem a tabela das 15 combinações, o resultado do `resume` e os nomes para o catálogo
@@ -65,11 +65,11 @@ O plano e a divisão rodam o Claude com o modelo e o esforço escolhidos, passad
 - O usuário está logado no Claude Code desta máquina, com uma assinatura que inclui Opus.
 
 ## Testes atribuídos
-- [ ] V-33a: cada modelo (`opus`, `sonnet`, `haiku`) × cada esforço (`low`, `medium`, `high`, `xhigh`, `max`) com um prompt curto → cada uma das 15 combinações registrada como aceita, recusada (com a mensagem) ou ignorada · Claude real, repositório temporário
-- [ ] V-33b: sessão iniciada com `model: "haiku"` → a mensagem `system/init` mostra o modelo Haiku (o valor exato fica registrado) · Claude real
-- [ ] V-33c: sessão com `sonnet`/`high` retomada com `resume` e a mesma escolha → o `init` da retomada mostra Sonnet; retomada sem `model` → o modelo observado fica registrado (herda ou volta ao padrão) · Claude real
-- [ ] V-33d: Opus com `effort: "max"` e um prompt curto → responde com `result` sem erro · Claude real
-- [ ] V-33e: uma combinação recusada, se houver → a forma da falha registrada (exceção no `query()`, `result` com `is_error`, ou mensagem do assistente com `error`), para a task_05 tratá-la como "Falhou ao abrir" (B-39); sem nenhuma recusa, o registro diz isso · Claude real
+- [x] V-33a: cada modelo (`opus`, `sonnet`, `haiku`) × cada esforço (`low`, `medium`, `high`, `xhigh`, `max`) com um prompt curto → cada uma das 15 combinações registrada como aceita, recusada (com a mensagem) ou ignorada · Claude real, repositório temporário
+- [x] V-33b: sessão iniciada com `model: "haiku"` → a mensagem `system/init` mostra o modelo Haiku (o valor exato fica registrado) · Claude real
+- [x] V-33c: sessão com `sonnet`/`high` retomada com `resume` e a mesma escolha → o `init` da retomada mostra Sonnet; retomada sem `model` → o modelo observado fica registrado (herda ou volta ao padrão) · Claude real
+- [x] V-33d: Opus com `effort: "max"` e um prompt curto → responde com `result` sem erro · Claude real
+- [x] V-33e: uma combinação recusada, se houver → a forma da falha registrada (exceção no `query()`, `result` com `is_error`, ou mensagem do assistente com `error`), para a task_05 tratá-la como "Falhou ao abrir" (B-39); sem nenhuma recusa, o registro diz isso · Claude real
 
 ## Critérios de sucesso
 - Todas as mini-tarefas marcadas, cada uma com o "Pronto quando" executado.
@@ -79,3 +79,5 @@ O plano e a divisão rodam o Claude com o modelo e o esforço escolhidos, passad
 
 ## Registro de execução
 <!-- Uma entrada por mini-tarefa: data, o que foi feito, comandos e resultado, desvios. -->
+- **2026-11-23 · 01.1** — Criado `spike/` (`package.json` com o SDK 0.3.330 sem `^`, `tsconfig.json`, `paths.ts`, `spikeLog.ts`, `spikeRepo.ts`, `combos.ts`, `runCombo.ts`, `modelEffort.ts`). `pnpm --dir docs/specs/tarefas-e-plano-de-execucao/spike install --ignore-workspace` e `pnpm exec tsx modelEffort.ts --dry-run` listaram as 15 combinações (opus, sonnet, haiku × low, medium, high, xhigh, max) sem chamar o Claude; `tsc -p .` sem erros. **Desvio:** o `pnpm install` sem `--ignore-workspace` enxerga o `pnpm-workspace.yaml` da raiz e reinstala o monorepo (e o `tsx` do spike não aparece); com a flag instala só o spike. Depois do engano, `pnpm install --frozen-lockfile --offline` na raiz respondeu "Already up to date" e o `pnpm-lock.yaml` não mudou. O repositório git temporário e o `TMPDIR` ficaram em `/tmp` (`TMPDIR=/tmp SPIKE_TMP=/tmp`), como a nota da mini-tarefa pede, e não na pasta de rascunho do Claude Code.
+- **2026-11-23 · 01.2** — `tsx modelEffort.ts matrix`, `resume`, `max`, `haiku`, `models` e `invalid` rodaram contra o Claude real (2.1.330, assinatura da máquina); as saídas estão em `spike/out/*.log`. Resultado em `v33-spike.md`: as 15 combinações aceitas, com `init.model` igual a `claude-opus-5-5`, `claude-sonnet-5-5` e `claude-haiku-5-5`; `resume` com e sem `model`/`effort` mantém o Sonnet (herda); Opus · Máximo responde `success`; `supportedModels()` dá os cinco esforços para os três modelos. V-33e: nenhuma combinação válida foi recusada; o modelo inexistente falha com `error: "model_not_found"`, `is_error: true` com `subtype: "success"` e exceção no `query()`; o esforço fora do enum **não** é recusado pelo SDK, então a validação é do servidor. Spec: nenhuma divergência, sem ajuste na 7.4 nem na P-14. Acrescentado o subcomando `invalid` (fora da lista de três subcomandos da mini-tarefa) para obter a forma da falha do V-33e. Nada alterado em `apps/` nem em `packages/`.

@@ -128,3 +128,10 @@ Nenhuma.
 - **M-6:** `terminalPorts` só dispensa a checagem do `claude` com `NODE_ENV=test` e o roteiro definido (a mesma condição de `scriptFromEnvironment`; `terminalPorts.test.ts`). Consequência para os e2e: o servidor web roda com `NODE_ENV=development`, então a máquina que os rodar precisa ter o `claude` no PATH.
 - **M-1:** `SessionHandleRegistry.closeAll()` saiu (sem uso em produção); os smokes usam `abandonAll()`. `InflightTracker`, `worker.idle()` e `WorkerOverrides.messages` continuam: o rastreador evita esperas fixas nos testes e é a prova de que o broker terminou de gravar; ficam como decisão registrada, não como defeito.
 
+### 2026-11-23 — Correção da review-005 (I-1)
+- Atualizei o ensaio de latência para 20 respostas concorrentes durante captura, com texto e pergunta medidos desde os callbacks até a persistência observada e primeira resposta da timeline. Também mede persistência da resposta até sua resolução no runtime. O relatório separa o polling/API observados da rede/renderização do navegador e usa p95 de posto mais próximo, com máximo separado.
+- A dispensa expressa de V-30a/b, V-32g e V-31 manual em task_07.md permanece preservada; a verificação foi por teste de integração e UI local.
+
+### 2026-11-23 — Correção da review-007 (M-2, M-3)
+- `latency-report.md` declara o limite superior (persistência + intervalo + consulta, cerca de 1,9 s) como o número da REQ-057 e explica que o p95 do primeiro polling depende da fase.
+- `createTasksRouter` usa `lazyController` e as tabelas do terminal saíram do barrel `schema.ts` para `schema/tasks/terminalTables.ts`, sem mudar comportamento.
