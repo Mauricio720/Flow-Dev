@@ -4,7 +4,7 @@ import type { SeededProject, SeededUser } from "./seed";
 
 const PLANNING_REASONS = JSON.stringify(["Mudança pequena e isolada"]);
 const GUARDED_TRIGGERS = [["task_planning_decisions", "task_planning_decision_immutable"], ["task_issue_snapshots", "task_issue_snapshots_immutable"], ["task_draft_revisions", "task_draft_revisions_append_only"]] as const;
-const BEFORE_PLAN_OPERATIONS = ["task_terminal_attachments", "task_terminal_sessions", "task_images", "task_planning_decisions", "task_issue_claims"] as const;
+const BEFORE_PLAN_OPERATIONS = ["task_session_plans", "task_artifacts", "task_terminal_attachments", "task_terminal_sessions", "task_images", "task_planning_decisions", "task_issue_claims"] as const;
 const AFTER_PLAN_OPERATIONS = ["task_issue_snapshots", "task_issue_sources", "task_publication_attempts", "task_operations", "task_draft_revisions"] as const;
 
 export type SeededWork = { taskId: string; issueNumber: number; imageId: string };
@@ -38,6 +38,12 @@ export class WorkSeed {
     return { taskId, issueNumber: 42, imageId };
   }
 
+  async specArtifact(taskId: string, projectId: string, path: string) {
+    const sql = this.sql;
+    const [artifact] = await sql`insert into task_artifacts (task_id, project_id, relative_path, latest_version) values (${taskId}, ${projectId}, ${path}, 1) returning id`;
+    await sql`insert into task_artifact_versions (artifact_id, version, skill, content, sha256, byte_size, trigger) values (${artifact!.id}, 1, 'spec-writer', '# Spec do login', ${"d".repeat(64)}, 15, 'stop')`;
+  }
+
   async cleanup() {
     for (const taskId of this.taskIds) await this.purge(taskId);
   }
@@ -47,6 +53,8 @@ export class WorkSeed {
       await sql`alter table task_operations drop constraint task_operations_task_publication_fk`;
       for (const [table, trigger] of GUARDED_TRIGGERS) await sql.unsafe(`alter table ${table} disable trigger ${trigger}`);
       await sql`update tasks set current_revision_id = null, active_operation_id = null, planning_operation_id = null, planning_decision_id = null where id = ${taskId}`;
+      await sql`delete from task_session_plan_items where plan_id in (select id from task_session_plans where task_id = ${taskId})`;
+      await sql`delete from task_artifact_versions where artifact_id in (select id from task_artifacts where task_id = ${taskId})`;
       for (const table of BEFORE_PLAN_OPERATIONS) await sql`delete from ${sql(table)} where task_id = ${taskId}`;
       await sql`delete from task_operations where task_id = ${taskId} and kind = 'plan'`;
       for (const table of AFTER_PLAN_OPERATIONS) await sql`delete from ${sql(table)} where task_id = ${taskId}`;

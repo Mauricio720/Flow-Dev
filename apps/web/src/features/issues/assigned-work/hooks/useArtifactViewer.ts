@@ -31,8 +31,9 @@ export function useArtifactViewer(scope: TerminalScope) {
     }
   }
   const open = (id: string) => { setArtifactId(id); return load(id); };
+  const close = () => { latestRequest.current += 1; setArtifactId(null); setCurrent(null); setFailure(null); setLoading(false); };
   const selectVersion = (version: number) => (artifactId ? load(artifactId, version) : Promise.resolve());
-  return { open, selectVersion, current, versions, loading, failure, artifactId };
+  return { open, close, selectVersion, current, versions, loading, failure, artifactId };
 }
 
 export type ArtifactViewerState = ReturnType<typeof useArtifactViewer>;

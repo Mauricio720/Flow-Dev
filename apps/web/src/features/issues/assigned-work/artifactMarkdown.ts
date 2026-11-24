@@ -30,6 +30,16 @@ const markdown = new Marked({
   },
 });
 
+const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+const TABLE_SCROLL_OPEN = '<div class="md-table-scroll"><table>';
+const TABLE_SCROLL_CLOSE = "</table></div>";
+
+export function splitFrontmatter(source: string): { meta: string | null; body: string } {
+  const match = FRONTMATTER_PATTERN.exec(source);
+  return match ? { meta: match[1] ?? "", body: source.slice(match[0].length) } : { meta: null, body: source };
+}
+
 export function renderArtifactMarkdown(source: string): string {
-  return markdown.parse(source, { async: false });
+  const html = markdown.parse(source, { async: false });
+  return html.replaceAll("<table>", TABLE_SCROLL_OPEN).replaceAll("</table>", TABLE_SCROLL_CLOSE);
 }

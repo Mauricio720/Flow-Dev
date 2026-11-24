@@ -15,7 +15,7 @@ async function openDialog(result = preflightOf()) {
   render(<TerminalLaunchAction detail={approvedDetail()} onOpened={onOpened} />);
   const trigger = screen.getByRole("button", ACTION);
   await userEvent.click(trigger);
-  const dialog = await screen.findByRole("dialog", { name: "Iniciar a sessão do Claude" });
+  const dialog = await screen.findByRole("dialog", { name: "Iniciar sessão" });
   await within(dialog).findByLabelText("Prompt");
   return { dialog, trigger, onOpened };
 }
@@ -38,7 +38,7 @@ describe("TerminalLaunchDialog", () => {
 
   it("V-09d warns about uncommitted changes without blocking the confirmation", async () => {
     const { dialog } = await openDialog(preflightOf({ checkout: { path: CHECKOUT_PATH, branch: "main", detachedSha: null, dirty: true } }));
-    expect(within(dialog).getByText("Há mudanças não commitadas nesta pasta. O Claude vai trabalhar sobre elas.")).toBeTruthy();
+    expect(within(dialog).getByText("Há mudanças não commitadas nesta pasta. O agente vai trabalhar sobre elas.")).toBeTruthy();
     expect((within(dialog).getByRole("button", ACTION) as HTMLButtonElement).disabled).toBe(false);
   });
 

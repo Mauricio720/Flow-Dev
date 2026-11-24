@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { detailWith, eventOf, sessionOf } from "@/test/execution";
+import { codexSessionOf, detailWith, eventOf, sessionOf } from "@/test/execution";
 import { ExecutionStage } from "./ExecutionStage";
 
 const attachments = [
@@ -43,5 +43,27 @@ describe("ExecutionHistory", () => {
   it("V-08r tells a reader that the operator is awaited", () => {
     render(<ExecutionStage detail={detailWith([sessionOf({ status: "waiting" })])} reader />);
     expect(screen.getByText("Aguardando a pessoa operadora")).toBeTruthy();
+  });
+
+  it("V-40s shows the agent, the model and the effort of a plan session in the history, and nothing for a route session", () => {
+    const sessions = [
+      sessionOf({ id: "s1", status: "running" }),
+      sessionOf({ id: "s2", status: "ended", userName: "Bruno", purpose: "plan_item", model: "sonnet", effort: "high", endedAt: "2026-11-20T11:00:00.000Z" }),
+      sessionOf({ id: "s3", status: "ended", userName: "Carla", endedAt: "2026-11-19T11:00:00.000Z" }),
+    ];
+    render(<ExecutionStage detail={detailWith(sessions)} reader={false} />);
+    const history = screen.getByRole("list", { name: "Sessões anteriores" });
+    const [plan, route] = within(history).getAllByRole("button");
+    expect(plan!.textContent).toContain("Claude Code · Sonnet · Alto");
+    expect(route!.textContent).not.toMatch(/Claude Code|Opus|Sonnet|Haiku/);
+  });
+
+  it("V-51h shows Codex model and effort in route, generation and plan history", () => {
+    const purposes = ["route", "generate_tasks", "plan_item"] as const;
+    const history = purposes.map((purpose, index) => codexSessionOf({ id: `codex-${index}`, status: "ended", purpose, userName: `Pessoa ${index}`, endedAt: "2026-11-20T11:00:00.000Z" }));
+    render(<ExecutionStage detail={detailWith([sessionOf({ id: "active" }), ...history])} reader />);
+    const rows = within(screen.getByRole("list", { name: "Sessões anteriores" })).getAllByRole("button");
+    expect(rows).toHaveLength(3);
+    expect(rows.every((row) => row.textContent?.includes("Codex · gpt-6.1-sol · Alto"))).toBe(true);
   });
 });

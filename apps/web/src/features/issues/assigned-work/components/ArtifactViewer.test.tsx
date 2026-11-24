@@ -53,4 +53,12 @@ describe("ArtifactViewer", () => {
     await waitFor(() => expect(get).toHaveBeenLastCalledWith({ ...SCOPE, artifactId: "a1", version: 1 }));
     expect(await within(article).findByText("versão um")).toBeTruthy();
   });
+
+  it("V-40j writes a version made by the plan as Plano de execução in the picker, and keeps the other skills", async () => {
+    list.mockResolvedValue([{ id: "a1", path: SPEC.path, versions: [VERSIONS[0]!, { ...VERSIONS[1]!, skill: "plano-de-execucao" }] }]);
+    const article = await openSpec("conteúdo");
+    const picker = within(article).getByLabelText("Versão") as HTMLSelectElement;
+    await waitFor(() => expect(picker.options).toHaveLength(2));
+    expect([...picker.options].map((option) => option.text)).toEqual(["Versão 2 · Plano de execução", "Versão 1 · spec-writer"]);
+  });
 });

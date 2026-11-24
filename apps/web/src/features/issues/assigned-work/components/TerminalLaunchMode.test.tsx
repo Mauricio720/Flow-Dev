@@ -16,7 +16,7 @@ async function openDialog(result = preflightOf()) {
   preflight.mockResolvedValue(result);
   render(<TerminalLaunchAction detail={approvedDetail()} onOpened={vi.fn()} />);
   await userEvent.click(screen.getByRole("button", START));
-  const dialog = await screen.findByRole("dialog", { name: "Iniciar a sessão do Claude" });
+  const dialog = await screen.findByRole("dialog", { name: "Iniciar sessão" });
   await waitFor(() => expect(within(dialog).queryByText("Preparando a abertura…")).toBeNull());
   return dialog;
 }

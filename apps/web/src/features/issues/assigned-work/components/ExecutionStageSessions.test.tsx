@@ -7,7 +7,7 @@ import { messageOf, timelineOf } from "@/test/session";
 import { ExecutionStage } from "./ExecutionStage";
 
 const timeline = vi.mocked(trpc.tasks.session.timeline.query);
-const FLOW_DEV_UNCONFIRMED = "O Flow Dev não conseguiu iniciar o Claude. Confira se o serviço de sessões está rodando.";
+const FLOW_DEV_UNCONFIRMED = "O Flow Dev não conseguiu iniciar a sessão. Confira se o serviço de sessões está rodando.";
 const TERMINAL_UNCONFIRMED = "Não confirmada: o Flow Dev não recebeu sinal do Claude. Confira a janela do terminal.";
 
 const stageOf = (sessions: ReturnType<typeof sessionOf>[], reader = false) => <ExecutionStage detail={detailWith(sessions)} reader={reader} />;
@@ -44,11 +44,11 @@ describe("ExecutionStage sessions by runtime", () => {
     expect(screen.getByText(TERMINAL_UNCONFIRMED)).toBeTruthy();
   });
 
-  it("shows the conversation of the latest Flow Dev session under the stage name Sessão do Claude", async () => {
+  it("shows the conversation of the latest Flow Dev session under the neutral session name", async () => {
     timeline.mockResolvedValue(timelineOf({ entries: [messageOf()] }));
     render(stageOf([sessionOf({ runtime: "flow_dev" })]));
     await act(async () => undefined);
-    expect(screen.getByRole("region", { name: "Sessão do Claude" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Sessão do agente" })).toBeTruthy();
     expect(screen.getByText("Vou começar pela análise.")).toBeTruthy();
     expect(screen.queryByText("Aberta no terminal")).toBeNull();
   });

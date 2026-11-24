@@ -1,17 +1,17 @@
 import { formatTimeOfDay } from "@/lib/tasks/formatMoment";
 
 export const TERMINAL_ACTION_LABEL = "Iniciar sessão";
-export const TERMINAL_DIALOG_TITLE = "Iniciar a sessão do Claude";
-export const TERMINAL_DIALOG_INTRO = "O Claude Code roda por trás do Flow Dev, na pasta do seu clone, e a conversa aparece nesta tarefa. O prompt abaixo é a primeira mensagem.";
+export const TERMINAL_DIALOG_TITLE = "Iniciar sessão";
+export const TERMINAL_DIALOG_INTRO = "O agente escolhido roda por trás do Flow Dev, na pasta do seu clone, e a conversa aparece nesta tarefa. O prompt abaixo é a primeira mensagem.";
 export const SERVICE_OFFLINE_MESSAGE = "O serviço de sessões do Flow Dev não está rodando. Inicie o Flow Dev com pnpm dev e tente de novo.";
 export const PERMISSION_MODE_LEGEND = "Modo de permissões";
 export const PERMISSION_MODE_OPTIONS = [
-  { value: "bypass", label: "Tudo liberado", description: "O Claude não pede aprovação de nenhuma ferramenta. As perguntas com opções continuam aparecendo." },
+  { value: "bypass", label: "Tudo liberado", description: "O agente não pede aprovação de nenhuma ferramenta. As perguntas com opções continuam aparecendo." },
   { value: "accept_edits", label: "Aceitar edições, perguntar comandos", description: "Edições de arquivo no clone seguem sozinhas; comandos e as demais ferramentas pedem a sua aprovação." },
   { value: "ask_all", label: "Perguntar tudo", description: "Edições, comandos e as demais ferramentas pedem a sua aprovação, salvo leituras e regras já liberadas." },
 ] as const;
 export const CHECKOUT_FOLDER_LABEL = "Pasta";
-export const DIRTY_WARNING = "Há mudanças não commitadas nesta pasta. O Claude vai trabalhar sobre elas.";
+export const DIRTY_WARNING = "Há mudanças não commitadas nesta pasta. O agente vai trabalhar sobre elas.";
 export const NO_CHECKOUT_MESSAGE = "Você ainda não vinculou o clone local deste projeto. Vincule a pasta nas Configurações para abrir a execução.";
 export const SETTINGS_LINK_LABEL = "Abrir Configurações do projeto";
 export const PROMPT_LABEL = "Prompt";

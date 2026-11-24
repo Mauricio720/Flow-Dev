@@ -20,7 +20,7 @@ describe("execution model", () => {
     const base = publishedDetail();
     expect(timelineEntries(base).map((entry) => entry.key)).not.toContain("execution");
     const entries = timelineEntries(detailWith([sessionOf({ status: "waiting", userName: "Bruno" })]));
-    expect(entries.at(-1)).toMatchObject({ key: "execution", label: "Sessão do Claude", actor: "Bruno", state: "current", detail: "Aguardando você" });
+    expect(entries.at(-1)).toMatchObject({ key: "execution", label: "Sessão do agente", actor: "Bruno", state: "current", detail: "Aguardando você" });
   });
 
   it("shows the reader label on the timeline entry when the viewer only reads", () => {

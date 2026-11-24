@@ -1,6 +1,7 @@
 import type { TerminalAttachments } from "../hooks/useTerminalAttachments";
 import type { TerminalLaunch } from "../hooks/useTerminalLaunch";
 import { LOADING_MESSAGE, PREFLIGHT_FAILED_MESSAGE, SERVICE_OFFLINE_MESSAGE } from "../terminalCopy";
+import { LaunchChoiceSection } from "./LaunchChoiceSection";
 import { PermissionModeField } from "./PermissionModeField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { AttachmentsPreview } from "./AttachmentsPreview";
@@ -18,6 +19,7 @@ export function TerminalLaunchBody({ launch, projectId, attachments }: Props) {
       {launch.phase === "load_failed" && <p role="alert" className="text-sm text-destructive">{PREFLIGHT_FAILED_MESSAGE}</p>}
       {preflight && !launch.serviceRunning && <p role="alert" className="text-sm text-destructive">{SERVICE_OFFLINE_MESSAGE}</p>}
       {preflight && <TerminalCheckoutSummary checkout={checkout} projectId={projectId} />}
+      {preflight && checkout && <LaunchChoiceSection launch={launch} />}
       {preflight && checkout && launch.serviceRunning && <PermissionModeField value={launch.permissionMode} disabled={launch.phase === "sending"} onChange={launch.setPermissionMode} />}
       {preflight && checkout && <TerminalPromptField value={launch.prompt} maxLength={preflight.maxPromptLength} problem={launch.promptProblem} disabled={launch.phase === "sending"} onChange={launch.setPrompt} />}
       {preflight && checkout && <AttachmentPicker attachments={attachments} issueImages={preflight.issueImages} disabled={launch.phase === "sending"} />}

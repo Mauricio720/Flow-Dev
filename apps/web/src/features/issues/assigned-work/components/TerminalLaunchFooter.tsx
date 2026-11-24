@@ -9,7 +9,7 @@ type Props = { launch: TerminalLaunch; attachments: TerminalAttachments; onClose
 export function TerminalLaunchFooter({ launch, attachments, onClose, onConfirm, onConfirmAdditional }: Props) {
   if (launch.needsConfirmation) return <TerminalSessionConfirm onConfirm={onConfirmAdditional} onCancel={launch.declineAdditional} />;
   const sending = launch.phase === "sending";
-  const blocked = sending || launch.promptProblem !== null || attachments.uploading;
+  const blocked = sending || launch.promptProblem !== null || launch.agentProblem !== null || attachments.uploading;
   return (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
       {!sending && <Button type="button" variant="outline" onClick={onClose}>{CANCEL_LABEL}</Button>}

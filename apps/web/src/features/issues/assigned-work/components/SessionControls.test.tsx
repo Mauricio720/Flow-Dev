@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TerminalSessionStatus } from "../executionContract";
 import { SessionControls } from "./SessionControls";
 
-const CONFIRM_TEXT = "Encerrar a sessão? O Claude para, e a conversa fica só para leitura.";
+const CONFIRM_TEXT = "Encerrar a sessão? O agente para, e a conversa fica só para leitura.";
 
 function show(status: TerminalSessionStatus = "running") {
   const onInterrupt = vi.fn().mockResolvedValue(null);
@@ -29,6 +29,11 @@ describe("SessionControls", () => {
     show(status);
     expect(screen.queryByRole("button", { name: "Interromper" })).toBeNull();
     expect(screen.getByRole("button", { name: "Encerrar" })).toBeTruthy();
+  });
+
+  it("keeps Interromper available for a pending question after Stop moves the session to waiting", () => {
+    render(<SessionControls status="waiting" hasPendingRequest busy={false} onInterrupt={vi.fn()} onEnd={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Interromper" })).toBeTruthy();
   });
 
   it("V-28f asks for confirmation with the exact text and ends only after the person confirms", async () => {

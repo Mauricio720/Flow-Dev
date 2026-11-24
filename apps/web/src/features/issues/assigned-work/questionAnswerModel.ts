@@ -5,6 +5,7 @@ export type QuestionState = { labels: string[]; other: boolean; text: string };
 export type AnswerState = Record<string, QuestionState>;
 
 export const EMPTY_QUESTION: QuestionState = { labels: [], other: false, text: "" };
+export const questionKey = (question: QuestionItem) => question.id ?? question.question;
 
 export function pickOption(question: QuestionItem, state: QuestionState, label: string): QuestionState {
   if (!question.multiSelect) return { ...state, labels: [label], other: false };
@@ -25,13 +26,13 @@ export function isAnswered(state: QuestionState): boolean {
 }
 
 export function isComplete(questions: QuestionItem[], answers: AnswerState): boolean {
-  return questions.every((question) => isAnswered(answers[question.question] ?? EMPTY_QUESTION)) && questions.every((question) => !otherTooLong(answers[question.question] ?? EMPTY_QUESTION));
+  return questions.every((question) => isAnswered(answers[questionKey(question)] ?? EMPTY_QUESTION)) && questions.every((question) => !otherTooLong(answers[questionKey(question)] ?? EMPTY_QUESTION));
 }
 
 export function toAnswers(questions: QuestionItem[], answers: AnswerState): QuestionAnswers {
   const entries = questions.map((question) => {
-    const state = answers[question.question] ?? EMPTY_QUESTION;
-    return [question.question, state.other ? { labels: state.labels, other: state.text } : { labels: state.labels }] as const;
+    const state = answers[questionKey(question)] ?? EMPTY_QUESTION;
+    return [questionKey(question), state.other ? { labels: state.labels, other: state.text } : { labels: state.labels }] as const;
   });
   return Object.fromEntries(entries);
 }

@@ -34,5 +34,5 @@ export function questionOf(patch: Partial<QuestionEntry> = {}): QuestionEntry {
 }
 
 export function permissionOf(patch: Partial<PermissionEntry> = {}): PermissionEntry {
-  return { type: "permission", id: "p1", status: "pending", tool: "Bash", display: { title: "Rodar comando:", body: "pnpm test" }, suggestedRule: "Bash(pnpm test:*)", at: AT, ...patch };
+  return { type: "permission", id: "p1", status: "pending", kind: "command", offers: ["allow", "allow_always", "deny"], alwaysScope: "project", tool: "Bash", display: { title: "Rodar comando:", body: "pnpm test" }, suggestedRule: "Bash(pnpm test:*)", at: AT, ...patch };
 }

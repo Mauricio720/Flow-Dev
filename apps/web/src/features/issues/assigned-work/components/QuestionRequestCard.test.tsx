@@ -12,6 +12,17 @@ function show(entry = questionOf(), onAnswer = vi.fn().mockResolvedValue(null), 
 }
 
 describe("QuestionRequestCard", () => {
+  it("submits stable IDs for questions whose labels are identical", async () => {
+    const first = { ...VISIBILITY_QUESTION, id: "codex-q1", question: "Confirmar?", options: [{ label: "Sim", description: "" }] };
+    const second = { ...first, id: "codex-q2" };
+    const onAnswer = show(questionOf({ questions: [first, second] }));
+    const groups = screen.getAllByRole("group", { name: "Confirmar?" });
+    await userEvent.click(within(groups[0]!).getByRole("radio", { name: "Sim" }));
+    await userEvent.click(within(groups[1]!).getByRole("radio", { name: "Sim" }));
+    await userEvent.click(screen.getByRole("button", SUBMIT));
+    expect(onAnswer).toHaveBeenCalledWith("q1", { "codex-q1": { labels: ["Sim"] }, "codex-q2": { labels: ["Sim"] } });
+  });
+
   it("V-28a shows the question as a labelled group of options with descriptions and Outra, and sends the free text", async () => {
     const onAnswer = show();
     const group = screen.getByRole("group", { name: "Quem pode ver os comentários?" });
@@ -36,6 +47,37 @@ describe("QuestionRequestCard", () => {
     await userEvent.click(screen.getByRole("radio", { name: /Qualquer pessoa/ }));
     await userEvent.click(screen.getByRole("button", SUBMIT));
     expect(onAnswer).toHaveBeenCalledWith("q1", { [VISIBILITY_QUESTION.question]: { labels: ["Qualquer pessoa"] } });
+  });
+
+  it("V-51d sends a secret answer without rendering it, uses a password field, clears local state, and redacts history", async () => {
+    const question = { ...VISIBILITY_QUESTION, id: "secret-q", secret: true, allowOther: true };
+    const onAnswer = show(questionOf({ questions: [question] }));
+    await userEvent.click(screen.getByRole("radio", { name: "Outra" }));
+    const field = screen.getByLabelText("Sua resposta") as HTMLInputElement;
+    await userEvent.type(field, "senha temporária");
+    expect(field.type).toBe("password");
+    expect(document.body.textContent).not.toContain("senha temporária");
+    await userEvent.click(screen.getByRole("button", SUBMIT));
+    expect(onAnswer).toHaveBeenCalledWith("q1", { "secret-q": { labels: [], other: "senha temporária" } });
+    expect(screen.queryByLabelText("Sua resposta")).toBeNull();
+    await userEvent.click(screen.getByRole("radio", { name: "Outra" }));
+    expect((screen.getByLabelText("Sua resposta") as HTMLInputElement).value).toBe("");
+    render(<QuestionRequestCard entry={questionOf({ status: "answered", questions: [question], answers: { "secret-q": "senha temporária" } })} canAnswer busy={false} onAnswer={onAnswer} />);
+    expect(screen.getByText("(resposta oculta)")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("senha temporária");
+  });
+
+  it("V-51i hides prohibited Outra and supports an open-ended question when the Codex permits it", async () => {
+    const restricted = { ...VISIBILITY_QUESTION, options: [], allowOther: false };
+    const view = render(<QuestionRequestCard entry={questionOf({ questions: [restricted] })} canAnswer busy={false} onAnswer={vi.fn()} />);
+    expect(screen.queryByRole("radio", { name: "Outra" })).toBeNull();
+    expect((screen.getByRole("button", SUBMIT) as HTMLButtonElement).disabled).toBe(true);
+    view.unmount();
+    const openEnded = { ...VISIBILITY_QUESTION, options: [], allowOther: true };
+    render(<QuestionRequestCard entry={questionOf({ questions: [openEnded] })} canAnswer busy={false} onAnswer={vi.fn()} />);
+    await userEvent.click(screen.getByRole("radio", { name: "Outra" }));
+    expect(screen.getByLabelText("Sua resposta")).toBeTruthy();
+    expect((screen.getByRole("button", SUBMIT) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("V-28b keeps the submit disabled until every question is answered, then sends both answers", async () => {

@@ -13,6 +13,8 @@ export function PermissionSummary({ entry }: { entry: PermissionEntry }) {
     <div className="space-y-2">
       <p className="text-sm font-medium text-ink [overflow-wrap:anywhere]">{entry.display.title}</p>
       <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-md border border-line bg-surface p-3 font-mono text-xs text-ink-2 [overflow-wrap:anywhere]">{entry.display.body}</pre>
+      {entry.suggestedRule ? <p className="text-sm text-ink-2">Regra proposta: <code className="rounded-sm bg-surface px-1 font-mono text-xs">{entry.suggestedRule}</code></p> : null}
+      {entry.alwaysScope === "machine" ? <p className="text-sm text-ink-2">Esta regra vale para todas as sessões do Codex nesta máquina.</p> : null}
       <p className="text-xs text-ink-3">{outcomeOf(entry)}</p>
     </div>
   );

@@ -1,8 +1,8 @@
 import { trpc } from "@/lib/trpc/client";
-import type { TerminalOpenInput, TerminalScope } from "./terminalContract";
+import type { PreviewPurpose, TerminalOpenInput, TerminalScope } from "./terminalContract";
 
-export function fetchTerminalPreflight(scope: TerminalScope) {
-  return trpc.tasks.terminal.preflight.query(scope);
+export function fetchTerminalPreflight(scope: TerminalScope, purpose?: PreviewPurpose) {
+  return trpc.tasks.terminal.preflight.query(purpose ? { ...scope, purpose } : scope);
 }
 
 export function openTerminal(scope: TerminalScope, input: TerminalOpenInput) {
