@@ -1,5 +1,6 @@
 import type { TerminalSessionRecord } from "../database/dao/terminalSessionDao";
 import type { MessageRole, RequestKind, RequestPayload, RequestStatus } from "./sessionInteraction";
+import type { CodexStatus } from "./codexCatalog";
 
 export type SessionMessageRecord = {
   id: string;
@@ -57,6 +58,8 @@ export interface SessionRequestDao {
 export interface SessionHostDao {
   beat(input: HostBeat): Promise<void>;
   lastBeat(hostId: string): Promise<HostBeat | null>;
+  codexStatus(hostId: string): Promise<CodexStatus | null>;
+  publishCodexStatus(input: { hostId: string; status: CodexStatus }): Promise<void>;
 }
 
 export interface SessionControlDao {

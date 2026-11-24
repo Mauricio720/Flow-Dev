@@ -1,4 +1,4 @@
-import type { ClaudeSessionRuntime, RuntimeResumeInput, RuntimeStartInput } from "../../application/terminal/claudeSessionRuntime";
+import type { AgentSessionRuntime, RuntimeResumeInput, RuntimeStartInput } from "../../application/terminal/agentSessionRuntime";
 import { ScriptedSessionRunner } from "./scriptedSessionRunner";
 import { stepsOf, type ScriptSource } from "./scriptedSessionSteps";
 
@@ -6,7 +6,7 @@ export type ScriptedRuntimeOptions = { script?: ScriptSource; resumeScript?: Scr
 
 const defaultClaudeSessionId = (sessionId: string) => `claude-${sessionId}`;
 
-export class ScriptedSessionRuntime implements ClaudeSessionRuntime {
+export class ScriptedSessionRuntime implements AgentSessionRuntime {
   readonly starts: RuntimeStartInput[] = [];
   readonly resumes: RuntimeResumeInput[] = [];
   readonly runners = new Map<string, ScriptedSessionRunner>();

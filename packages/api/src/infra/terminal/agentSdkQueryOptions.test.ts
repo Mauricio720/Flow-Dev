@@ -29,6 +29,20 @@ describe("buildQueryOptions", () => {
     expect(env).toEqual({ PATH: "/usr/bin", HOME: "/home/ana", CLAUDE_CONFIG_DIR: "/home/ana/.claude" });
   });
 
+  it("V-38a passes the model and effort of the session as options, and none of them when they were not chosen", () => {
+    expect(buildQueryOptions(inputFor({ model: "opus", effort: "max" }))).toMatchObject({ model: "opus", effort: "max" });
+    expect(buildQueryOptions(inputFor({ model: "sonnet", effort: "high", resumeId: "abc" }))).toMatchObject({ model: "sonnet", effort: "high", resume: "abc" });
+    const unchosen = buildQueryOptions(inputFor());
+    expect(Object.keys(unchosen)).not.toContain("model");
+    expect(Object.keys(unchosen)).not.toContain("effort");
+  });
+
+  it("keeps the Claude Code system prompt and tells the session to offer alternatives through AskUserQuestion", () => {
+    const { systemPrompt } = buildQueryOptions(inputFor());
+    expect(systemPrompt).toMatchObject({ type: "preset", preset: "claude_code", snapshot: true });
+    expect(JSON.stringify(systemPrompt)).toContain("AskUserQuestion");
+  });
+
   it("adds resume only for a resumed conversation", () => {
     expect(buildQueryOptions(inputFor({ resumeId: "abc" })).resume).toBe("abc");
   });

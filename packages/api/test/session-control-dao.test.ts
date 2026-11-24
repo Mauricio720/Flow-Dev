@@ -18,7 +18,7 @@ describe("session host DAO", () => {
     await hosts.beat({ hostId: HOST_ID, workerId: "w1", heartbeatAt: NOW });
     const later = new Date(NOW.getTime() + 5_000);
     await hosts.beat({ hostId: HOST_ID, workerId: "w2", heartbeatAt: later });
-    expect(await hosts.lastBeat(HOST_ID)).toEqual({ hostId: HOST_ID, workerId: "w2", heartbeatAt: later });
+    expect(await hosts.lastBeat(HOST_ID)).toEqual({ hostId: HOST_ID, workerId: "w2", heartbeatAt: later, codexStatus: null });
   });
 });
 
@@ -39,6 +39,14 @@ describe("session control DAO", () => {
     const { setup, session } = await flowDevWorld({ status: "unconfirmed" });
     const control = new DrizzleSessionControlDao(setup.database);
     expect(await control.claimOpening({ hostId: HOST_ID, workerId: "w1" })).toMatchObject({ id: session.id, workerId: "w1" });
+  });
+
+  it("does not publish an opening session before preparation is complete", async () => {
+    const { setup, session } = await flowDevWorld({ status: "opening", preparedAt: null });
+    const control = new DrizzleSessionControlDao(setup.database);
+    expect(await control.claimOpening({ hostId: HOST_ID, workerId: "w1" })).toBeNull();
+    await setup.database.update(taskTerminalSessions).set({ preparedAt: NOW }).where(eq(taskTerminalSessions.id, session.id));
+    expect(await control.claimOpening({ hostId: HOST_ID, workerId: "w1" })).toMatchObject({ id: session.id, preparedAt: NOW });
   });
 
   it("marks as interrupted only the active sessions of the host that belong to another worker", async () => {

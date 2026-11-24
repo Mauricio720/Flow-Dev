@@ -5,6 +5,11 @@ export function initSessionId(message: SDKMessage): string | null {
   return message.type === "system" && message.subtype === "init" ? message.session_id : null;
 }
 
+export function initAgentInfo(message: SDKMessage): { version: string | null } | null {
+  if (message.type !== "system" || message.subtype !== "init") return null;
+  return { version: message.claude_code_version ?? null };
+}
+
 export function assistantTextOf(message: SDKMessage): string | null {
   if (message.type !== "assistant") return null;
   return mainAssistantText({ parentToolUseId: message.parent_tool_use_id, content: message.message.content as Array<{ type: string; text?: string }> });

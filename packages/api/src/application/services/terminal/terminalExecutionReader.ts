@@ -36,6 +36,7 @@ function sessionView(session: ExecutionSessionRow, rows: Rows, now: Date) {
   const attachments = rows.attachments.filter((item) => item.sessionId === session.id).map(({ name, contentType, byteSize }) => ({ name, contentType, byteSize, availableUntil, removed }));
   return {
     id: session.id, status: session.status, runtime: session.runtime, route: session.route, userName: session.userName,
+    purpose: session.purpose, planItemId: session.planItemId, agent: session.agent, model: session.model, effort: session.effort,
     openedAt: session.openedAt.toISOString(), endedAt: session.endedAt?.toISOString() ?? null,
     lastEventAt: count?.lastAt?.toISOString() ?? null, silentSince: silent?.toISOString() ?? null,
     droppedEvents: session.droppedEvents, hiddenEvents: Math.max(0, (count?.total ?? 0) - events.length),

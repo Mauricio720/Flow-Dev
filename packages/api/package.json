@@ -19,6 +19,7 @@
     "board:backfill": "tsx src/cli/boardBackfill.ts",
     "labels:backfill": "tsx src/cli/labelsBackfill.ts",
     "test": "vitest run",
+    "codex:protocol": "tsx scripts/syncCodexProtocol.ts",
     "tasks:worker": "tsx src/cli/tasksWorker.ts",
     "db:prepare": "tsx src/cli/databasePrepare.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
@@ -32,6 +33,7 @@
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
     "postgres": "^3.4.9",
+    "yaml": "2.9.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

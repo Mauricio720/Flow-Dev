@@ -1,5 +1,5 @@
 import type { HookCallback, Options } from "@anthropic-ai/claude-agent-sdk";
-import type { HookPayload } from "../../application/terminal/claudeSessionRuntime";
+import type { HookPayload } from "../../application/terminal/agentSessionRuntime";
 
 const FILE_AND_COMMAND_TOOLS_MATCHER = "Write|Edit|MultiEdit|NotebookEdit|Bash|Skill";
 

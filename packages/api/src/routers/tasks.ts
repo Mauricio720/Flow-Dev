@@ -9,29 +9,32 @@ import type { TaskPlanningController } from "../controllers/taskPlanningControll
 import { createTaskPlanningRouter } from "./taskPlanning";
 import { createTerminalRouter } from "./terminal";
 import { createArtifactsRouter } from "./artifacts";
+import { createTaskSetRouter } from "./taskSet";
+import { createPlanRouter } from "./plan";
+import type { ExecutionPlanController } from "../controllers/executionPlanController";
+import { createProductionPlanController } from "../infra/planComposition";
+import type { TaskSetController } from "../controllers/taskSetController";
+import { createProductionTaskSetController } from "../infra/taskSetComposition";
 import type { TaskArtifactController } from "../controllers/taskArtifactController";
 import { createProductionArtifactController } from "../infra/artifactComposition";
 import type { TerminalSessionController } from "../controllers/terminalSessionController";
 import { createProductionTerminalController } from "../infra/terminalComposition";
 import { createProductionSessionControllers, type SessionControllers } from "../infra/sessionInteractionComposition";
 import { createSessionRouter } from "./session";
+import { lazyController } from "./lazyController";
 import { taskPreviewInputSchema, taskPublishInputSchema, taskReconcilePublicationInputSchema } from "../schemas/tasks";
 
-export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers };
+export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController };
 
 export function createTasksRouter(controller?: TasksController, publicationController?: TaskPublicationController, extras: TasksRouterExtras = {}) {
-  let production: TasksController | undefined;
-  let publication: TaskPublicationController | undefined;
-  const getController = () => controller ?? (production ??= createProductionTasksController());
-  const getPublicationController = () => publicationController ?? (publication ??= createProductionTaskPublicationController());
-  let planning: TaskPlanningController | undefined;
-  const getPlanningController = () => extras.planning ?? (planning ??= createProductionTaskPlanningController());
-  let terminal: TerminalSessionController | undefined;
-  const getTerminalController = () => extras.terminal ?? (terminal ??= createProductionTerminalController());
-  let session: SessionControllers | undefined;
-  const getSessionController = () => extras.session ?? (session ??= createProductionSessionControllers());
-  let artifacts: TaskArtifactController | undefined;
-  const getArtifactController = () => extras.artifacts ?? (artifacts ??= createProductionArtifactController());
+  const getController = lazyController(controller, createProductionTasksController);
+  const getPublicationController = lazyController(publicationController, createProductionTaskPublicationController);
+  const getPlanningController = lazyController(extras.planning, createProductionTaskPlanningController);
+  const getTerminalController = lazyController(extras.terminal, createProductionTerminalController);
+  const getSessionController = lazyController(extras.session, createProductionSessionControllers);
+  const getArtifactController = lazyController(extras.artifacts, createProductionArtifactController);
+  const getTaskSetController = lazyController(extras.taskSet, createProductionTaskSetController);
+  const getPlanController = lazyController(extras.plan, createProductionPlanController);
   const call = <T>(operation: () => Promise<T>) => operation().catch(mapTaskError);
   return router({
     list: protectedProcedure.input(taskListInputSchema).query(({ ctx, input }) => call(() => getController().list(ctx.principal, input))),
@@ -49,6 +52,8 @@ export function createTasksRouter(controller?: TasksController, publicationContr
     planning: createTaskPlanningRouter(getPlanningController),
     terminal: createTerminalRouter(getTerminalController),
     artifacts: createArtifactsRouter(getArtifactController),
+    taskSet: createTaskSetRouter(getTaskSetController),
+    plan: createPlanRouter(getPlanController),
     session: createSessionRouter(getSessionController),
     reconcilePublication: protectedProcedure.input(taskReconcilePublicationInputSchema).mutation(({ ctx, input }) => call(() => getPublicationController().reconcilePublication(ctx.principal, input))),
   });

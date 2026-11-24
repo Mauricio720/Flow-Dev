@@ -18,7 +18,8 @@ const SETTINGS = ".claude/settings.local.json";
 const RULE = "Bash(pnpm --version)";
 const HEARTBEAT_AGE_MS = 5_000;
 
-async function runUntilAnswered(world: RealWorld, workerId: string, sessionId: string, decide: boolean) {
+async function runUntilAnswered(input: { world: RealWorld; workerId: string; sessionId: string; decide: boolean }) {
+  const { world, workerId, sessionId, decide } = input;
   const worker = world.workerFor(workerId);
   let suggestedRule: string | null = null;
   const reached = await drive(worker, async () => {
@@ -41,17 +42,17 @@ async function start(world: RealWorld) {
 describe.skipIf(!REAL_CLAUDE)("V-31b with the real Claude Code", () => {
   it("records Permitir sempre in the clone and the next session runs the command without asking", async () => {
     const world = await realWorld();
-    const first = await runUntilAnswered(world, "worker-real-1", (await start(world)).sessionId, true);
+    const first = await runUntilAnswered({ world, workerId: "worker-real-1", sessionId: (await start(world)).sessionId, decide: true });
     expect(first).toEqual({ reached: true, suggestedRule: RULE });
     expect(JSON.parse(await readFile(join(world.clone, SETTINGS), "utf8")).permissions.allow).toContain(RULE);
     const second = await start(world);
-    expect((await runUntilAnswered(world, "worker-real-2", second.sessionId, false)).reached).toBe(true);
+    expect((await runUntilAnswered({ world, workerId: "worker-real-2", sessionId: second.sessionId, decide: false })).reached).toBe(true);
     expect(await requestsOf(world, second.sessionId)).toEqual([]);
   }, REAL_TIMEOUT_MS + 60_000);
 
   it("B-26 finding: Claude Code does not write the rule when settings.local.json is tracked in git", async () => {
     const world = await realWorld({ [SETTINGS]: "{}\n" });
-    const outcome = await runUntilAnswered(world, "worker-real-1", (await start(world)).sessionId, true);
+    const outcome = await runUntilAnswered({ world, workerId: "worker-real-1", sessionId: (await start(world)).sessionId, decide: true });
     expect(outcome).toEqual({ reached: true, suggestedRule: RULE });
     expect(await readFile(join(world.clone, SETTINGS), "utf8")).toBe("{}\n");
     expect(execFileSync("git", ["status", "--porcelain"], { cwd: world.clone, encoding: "utf8" })).toBe("");

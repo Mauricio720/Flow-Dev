@@ -45,8 +45,10 @@ const multiEdit: DisplayRule = (input, cwd) => {
 const write: DisplayRule = (input, cwd) => ({ title: `Criar ${displayPath(text(input, "file_path"), cwd)}`, body: text(input, "content") });
 const webFetch: DisplayRule = (input) => ({ title: WEB_TITLE, body: text(input, "url") });
 const webSearch: DisplayRule = (input) => ({ title: WEB_TITLE, body: text(input, "query") });
+const fileChange: DisplayRule = (input) => ({ title: "Alterar arquivos:", body: text(input, "diff") || JSON.stringify(input, null, 2) });
+const extraPermission: DisplayRule = (input) => ({ title: "Pedir permissão:", body: text(input, "description") || JSON.stringify(input, null, 2) });
 
-export const DISPLAY_RULES: Record<string, DisplayRule> = { Bash: bash, Edit: edit, MultiEdit: multiEdit, Write: write, WebFetch: webFetch, WebSearch: webSearch };
+export const DISPLAY_RULES: Record<string, DisplayRule> = { Bash: bash, Edit: edit, MultiEdit: multiEdit, Write: write, WebFetch: webFetch, WebSearch: webSearch, fileChange, extraPermission };
 
 export function genericDisplay(toolName: string, input: Record<string, unknown>): DisplayParts {
   return { title: toolName, body: JSON.stringify(input, null, 2) };

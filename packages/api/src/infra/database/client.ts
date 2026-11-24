@@ -11,3 +11,8 @@ export function requireDatabase() {
   if (!db) throw new Error("DATABASE_URL is required for database operations");
   return db;
 }
+
+export function requireSql() {
+  if (!sql) throw new Error("DATABASE_URL is required for database operations");
+  return sql;
+}

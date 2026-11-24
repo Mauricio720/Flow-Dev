@@ -24,9 +24,14 @@ export async function temporaryFolder(prefix: string) {
 
 export class FailableContext extends FileSessionContextBuilder {
   failure: Error | null = null;
+  prepareBarrier: { entered(): void; wait: Promise<void> } | null = null;
 
   async prepare(sessionId: string): Promise<SessionContextPaths> {
     if (this.failure) throw this.failure;
+    if (this.prepareBarrier) {
+      this.prepareBarrier.entered();
+      await this.prepareBarrier.wait;
+    }
     return super.prepare(sessionId);
   }
 }

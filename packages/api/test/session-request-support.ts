@@ -8,4 +8,4 @@ export const COMPLETE: AnswerSet = { [VISIBILITY]: { labels: ["Só membros (Reco
 export const FREE_TEXT_LIMIT = 2_000;
 
 export const answerQuestion = (world: SessionWorld, requestId: string, answers: AnswerSet = COMPLETE) => world.harness.caller.session.answerQuestion({ projectId: world.scope.projectId, taskId: world.scope.taskId, requestId, answers });
-export const decide = (world: SessionWorld, requestId: string, decision: "allow" | "allow_always" | "deny", reason?: string) => world.harness.caller.session.decidePermission({ projectId: world.scope.projectId, taskId: world.scope.taskId, requestId, decision, reason });
+export const decide = (input: { world: SessionWorld; requestId: string; decision: "allow" | "allow_session" | "allow_always" | "deny"; reason?: string }) => input.world.harness.caller.session.decidePermission({ projectId: input.world.scope.projectId, taskId: input.world.scope.taskId, requestId: input.requestId, decision: input.decision, reason: input.reason });

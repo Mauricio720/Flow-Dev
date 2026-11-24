@@ -35,7 +35,7 @@ describe("session recovery after a restart", () => {
     const foreign = await world.open();
     await world.setup.client`update task_terminal_sessions set host_id = 'outra-maquina:ana', worker_id = 'w-x', status = 'running' where id = ${foreign}`;
     await cycle(world);
-    const again = world.build({ workerId: "worker-1", runtime: new ScriptedSessionRuntime() });
+    const again = world.build({ workerId: "worker-1", runtimes: { claude: new ScriptedSessionRuntime() } });
     await again.supervisor.tick();
     expect((await sessionRowOf(world.setup, own)).status).toBe("running");
     expect((await sessionRowOf(world.setup, foreign)).status).toBe("running");

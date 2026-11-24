@@ -1,31 +1,11 @@
-import type { ProjectRecord } from "../application/database/dao/projectDao";
-import type { ApprovedPlanning, TerminalSessionDao } from "../application/database/dao/terminalSessionDao";
-import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
-import type { VerifiedCheckout } from "../application/services/projects/localCheckoutService";
 import { repositoryOf } from "../application/services/projects/localCheckoutService";
 import { TaskError } from "../application/services/tasks/taskErrors";
-import type { IssueImageSelector } from "../application/services/terminal/issueImageSelector";
-import type { AttachmentPlan } from "../application/services/terminal/sessionAttachmentDelivery";
-import type { TerminalAttachmentService } from "../application/services/terminal/terminalAttachmentService";
-import type { TerminalOpenGuard } from "../application/services/terminal/terminalOpenGuard";
-import { SessionPrepareStep, openedResult, promptSource, type PrepareStepDeps } from "../application/services/terminal/terminalOpenSteps";
+import { SessionPrepareStep, openedResult, promptSource } from "../application/services/terminal/terminalOpenSteps";
 import { MAX_PROMPT_LENGTH, buildDefaultPrompt } from "../application/services/terminal/terminalPromptBuilder";
-import type { PermissionMode } from "../application/terminal/sessionInteraction";
 import type { SessionPrincipal } from "../context";
+import type { OpenInput, OpenRequest, PreflightInput, Scope, TerminalControllerDeps } from "./terminalControllerTypes";
 
-type Scope = { projectId: string; taskId: string };
-type OpenInput = Scope & { prompt: string; requestKey: string; attachmentIds: string[]; issueImageIds: string[]; allowAdditional: boolean; permissionMode: PermissionMode };
-type OpenRequest = { actor: SessionPrincipal; input: OpenInput; planning: ApprovedPlanning; checkout: VerifiedCheckout; plan: AttachmentPlan };
-
-export type TerminalControllerDeps = PrepareStepDeps & {
-  authorization: Pick<WorkAuthorization, "requireOperate">;
-  sessions: TerminalSessionDao;
-  projects: { findById(projectId: string): Promise<ProjectRecord | null> };
-  guard: TerminalOpenGuard;
-  issueImages: Pick<IssueImageSelector, "select">;
-  cleanup: Pick<TerminalAttachmentService, "cleanup">;
-  hostId: string;
-};
+export type { TerminalControllerDeps } from "./terminalControllerTypes";
 
 export class TerminalSessionController {
   private readonly prepareStep: SessionPrepareStep;
@@ -33,7 +13,8 @@ export class TerminalSessionController {
     this.prepareStep = new SessionPrepareStep(deps);
   }
 
-  async preflight(actor: SessionPrincipal, scope: Scope) {
+  async preflight(actor: SessionPrincipal, input: PreflightInput) {
+    const scope = input;
     await this.requireOperator(actor, scope);
     await this.cleanupFiles();
     const planning = await this.requireApproved(scope.taskId);
@@ -42,7 +23,9 @@ export class TerminalSessionController {
     const checkout = found && { path: found.path, branch: found.branch, detachedSha: found.detachedSha, dirty: found.dirty };
     const issueImages = await this.deps.issueImages.select(scope.taskId, planning.issue.body);
     const sessionService = { running: await this.deps.guard.serviceRunning() };
-    return { checkout, defaultPrompt: buildDefaultPrompt(promptSource(planning)), maxPromptLength: MAX_PROMPT_LENGTH, issueImages, sessionService };
+    const defaultPrompt = buildDefaultPrompt(promptSource(planning));
+    const view = await this.deps.purposes.preview(scope.taskId, input.purpose);
+    return { checkout, defaultPrompt, maxPromptLength: MAX_PROMPT_LENGTH, issueImages, sessionService, prompt: view.prompt ?? defaultPrompt, choice: view.choice, agents: view.agents };
   }
 
   async open(actor: SessionPrincipal, input: OpenInput) {
@@ -53,21 +36,23 @@ export class TerminalSessionController {
     const existing = await this.deps.sessions.findByRequestKey(actor.userId, input.requestKey);
     if (existing && !existing.launchFailedAt) return openedResult(existing);
     if (!input.allowAdditional && await this.deps.sessions.hasActiveSession(input.taskId, actor.userId)) throw new TaskError("session_already_active");
+    await this.deps.guard.assertServiceRunning();
+    const resolved = await this.deps.purposes.resolve(input.taskId, input.purpose);
     this.deps.guard.assertPrompt(input.prompt);
     const repository = await this.repositoryOf(input.projectId);
     const checkout = await this.deps.guard.requireCheckout({ userId: actor.userId, projectId: input.projectId, repository });
-    await this.deps.guard.assertTools();
-    await this.deps.guard.assertServiceRunning();
+    await this.deps.guard.assertTools({ agent: resolved.columns.agent ?? "claude", model: resolved.columns.model ?? "opus", effort: resolved.columns.effort ?? "max" });
     await this.deps.guard.assertSkills();
     const plan = await this.deps.delivery.plan({ userId: actor.userId, taskId: input.taskId, issueBody: planning.issue.body, attachmentIds: input.attachmentIds, issueImageIds: input.issueImageIds });
-    return this.start({ actor, input, planning, checkout, plan });
+    return this.start({ actor, input, planning, checkout, plan, resolved });
   }
 
-  private async start({ actor, input, planning, checkout, plan }: OpenRequest) {
+  private async start({ actor, input, planning, checkout, plan, resolved }: OpenRequest) {
     const base = { taskId: input.taskId, projectId: input.projectId, userId: actor.userId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey };
     const flowDev = { runtime: "flow_dev" as const, permissionMode: input.permissionMode, hostId: this.deps.hostId };
-    const created = await this.deps.sessions.create({ ...base, ...flowDev, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty }, this.deps.delivery.links(plan));
+    const created = await this.deps.sessions.create({ ...base, ...flowDev, ...resolved.columns, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty }, this.deps.delivery.links(plan));
     if (!created.created) return openedResult(created.session);
+    await this.deps.purposes.confirm({ resolved, actorId: actor.userId, sessionId: created.session.id });
     await this.prepareStep.run(created.session, input.prompt, plan);
     this.deps.log.opened({ sessionId: created.session.id, taskId: input.taskId, route: planning.route });
     return openedResult(created.session, plan.unavailableIssueImages);

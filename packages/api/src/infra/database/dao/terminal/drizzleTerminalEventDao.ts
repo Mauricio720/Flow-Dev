@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import type { AuthenticatedSession, LockedSession, TerminalEventDao, TerminalEventWriter } from "../../../../application/database/dao/terminalEventDao";
 import type { TerminalSessionStatus } from "../../../../application/terminal/terminalSessionStatus";
 import type { Database } from "../../client";
-import { taskTerminalSessions } from "../../schema";
+import { taskSessionPlanItems, taskSessionPlans, taskTerminalSessions } from "../../schema";
 import { DrizzleTerminalEventWriter } from "./terminalEventWrites";
 
 export class DrizzleTerminalEventDao implements TerminalEventDao {
@@ -20,9 +20,10 @@ export class DrizzleTerminalEventDao implements TerminalEventDao {
   withLockedSession<T>(sessionId: string, work: (session: LockedSession, writer: TerminalEventWriter) => Promise<T>): Promise<T | null> {
     return this.database.transaction(async (tx) => {
       const database = tx as unknown as Database;
-      const [row] = await database.select().from(taskTerminalSessions).where(eq(taskTerminalSessions.id, sessionId)).for("update");
-      if (!row) return null;
-      const session: LockedSession = { id: row.id, status: row.status as TerminalSessionStatus, checkoutPath: row.checkoutPath, activeSkill: row.activeSkill, startedAt: row.startedAt };
+      const [found] = await database.select({ row: taskTerminalSessions, planTasksFolder: taskSessionPlans.tasksFolder }).from(taskTerminalSessions).leftJoin(taskSessionPlanItems, eq(taskSessionPlanItems.id, taskTerminalSessions.planItemId)).leftJoin(taskSessionPlans, eq(taskSessionPlans.id, taskSessionPlanItems.planId)).where(eq(taskTerminalSessions.id, sessionId)).for("update", { of: taskTerminalSessions });
+      if (!found) return null;
+      const { row, planTasksFolder } = found;
+      const session: LockedSession = { id: row.id, status: row.status as TerminalSessionStatus, checkoutPath: row.checkoutPath, activeSkill: row.activeSkill, startedAt: row.startedAt, planTasksFolder };
       return work(session, new DrizzleTerminalEventWriter(database));
     });
   }

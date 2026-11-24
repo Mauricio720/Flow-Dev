@@ -1,4 +1,4 @@
-import type { RuntimeHandle, RuntimeHandlers, RuntimePermissionResult } from "../../application/terminal/claudeSessionRuntime";
+import type { RuntimeHandle, RuntimeHandlers, RuntimePermissionResult } from "../../application/terminal/agentSessionRuntime";
 import { pollUntil } from "./scriptedSettle";
 import { contentStep } from "./scriptedStepContent";
 import type { ScriptStep } from "./scriptedSessionSteps";
@@ -17,7 +17,7 @@ export class ScriptedSessionRunner implements RuntimeHandle {
   private skipping = false;
 
   constructor(private readonly config: RunnerConfig) {
-    queueMicrotask(() => void this.run());
+    queueMicrotask(() => void this.run().catch((error: Error) => this.exit({ kind: "failed", detail: error.message })));
   }
 
   push(text: string) {
@@ -76,7 +76,7 @@ export class ScriptedSessionRunner implements RuntimeHandle {
   }
 
   private async speakOrAsk(step: ScriptStep) {
-    const outcome = await this.hold(contentStep(step, this.config.handlers, `toolu_${this.outcomes.length + 1}`));
+    const outcome = await this.hold(contentStep(step, this.config, `toolu_${this.outcomes.length + 1}`));
     if (outcome) this.outcomes.push(outcome);
   }
 

@@ -1,0 +1,11 @@
+DROP INDEX IF EXISTS "task_terminal_sessions_plan_item_idx";
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_plan_item_fk";
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_agent_check";
+ALTER TABLE "task_terminal_sessions" DROP CONSTRAINT IF EXISTS "task_terminal_sessions_purpose_check";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "effort";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "model";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "agent";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "plan_item_id";
+ALTER TABLE "task_terminal_sessions" DROP COLUMN IF EXISTS "purpose";
+DROP TABLE IF EXISTS "task_session_plan_items";
+DROP TABLE IF EXISTS "task_session_plans";

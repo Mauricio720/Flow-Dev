@@ -1,12 +1,12 @@
 import type { PermissionPayload, QuestionPayload } from "../../terminal/sessionInteraction";
-import type { RuntimePermissionResult } from "../../terminal/claudeSessionRuntime";
+import type { RuntimePermissionResult } from "../../terminal/agentSessionRuntime";
 import type { SessionRequestRecord } from "../../terminal/sessionInteractionPorts";
 
 export const DENIED_BY_PERSON_MESSAGE = "Recusado pela pessoa";
 export const INTERRUPTED_BY_PERSON_MESSAGE = "Interrompido pela pessoa";
 const PERSISTENT_DESTINATION = "localSettings";
 
-type StoredPermissionAnswer = { decision: "allow" | "allow_always" | "deny"; reason?: string };
+type StoredPermissionAnswer = { decision: "allow" | "allow_session" | "allow_always" | "deny"; reason?: string };
 type StoredQuestionAnswer = { answers: Record<string, string | string[]> };
 
 export function denyResult(message: string): RuntimePermissionResult {
@@ -20,6 +20,8 @@ function persistentSuggestions(payload: PermissionPayload) {
 function permissionResult(request: SessionRequestRecord, answer: StoredPermissionAnswer, originalInput: Record<string, unknown>): RuntimePermissionResult {
   if (answer.decision === "deny") return denyResult(answer.reason || DENIED_BY_PERSON_MESSAGE);
   if (answer.decision === "allow") return { behavior: "allow", updatedInput: originalInput };
+  if (answer.decision === "allow_session") return { behavior: "allow", decision: "allow_session" };
+  if ((request.payload as PermissionPayload).alwaysScope === "machine") return { behavior: "allow", decision: "allow_always", scope: "machine", updatedPermissions: (request.payload as PermissionPayload).suggestions };
   return { behavior: "allow", updatedInput: originalInput, updatedPermissions: persistentSuggestions(request.payload as PermissionPayload) };
 }
 

@@ -10,6 +10,7 @@ const SPEC_TABLE: Array<[TerminalSessionStatus, SessionSignal, TerminalSessionSt
   ["waiting", "work", "running"],
   ["interrupted", "work", "running"],
   ["running", "request_opened", "asking"],
+  ["waiting", "request_opened", "asking"],
   ["asking", "requests_settled", "running"],
   ["running", "turn_ended", "waiting"],
   ["asking", "turn_ended", "waiting"],

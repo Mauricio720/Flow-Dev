@@ -7,6 +7,7 @@ export const terminalSessionHosts = pgTable("terminal_session_hosts", {
   hostId: text("host_id").primaryKey(),
   workerId: text("worker_id").notNull(),
   heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }).defaultNow().notNull(),
+  codexStatus: jsonb("codex_status"),
 });
 
 export const taskTerminalMessages = pgTable("task_terminal_messages", {
@@ -39,7 +40,7 @@ export const taskTerminalRequests = pgTable("task_terminal_requests", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   answeredAt: timestamp("answered_at", { withTimezone: true }),
 }, (table) => [
-  check("task_terminal_requests_kind_check", sql`${table.kind} in ('question','permission')`),
+  check("task_terminal_requests_kind_check", sql`${table.kind} in ('question','permission','file_change','extra_permission')`),
   check("task_terminal_requests_status_check", sql`${table.status} in ('pending','answered','cancelled')`),
   index("task_terminal_requests_session_status_idx").on(table.sessionId, table.status),
 ]);

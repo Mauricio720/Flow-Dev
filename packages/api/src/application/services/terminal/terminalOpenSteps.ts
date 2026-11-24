@@ -23,6 +23,7 @@ export class SessionPrepareStep {
       const paths = await this.deps.context.prepare(session.id);
       const delivered = await this.deps.delivery.deliver(plan, { userId: session.userId, taskId: session.taskId, attachmentsDir: paths.attachmentsDir });
       await this.deps.context.writePrompt(session.id, appendAttachmentsSection(prompt, delivered));
+      await this.deps.sessions.markPrepared(session.id, new Date());
     } catch (error) {
       await this.fail(session, error);
     }

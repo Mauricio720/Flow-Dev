@@ -40,7 +40,7 @@ describe("session supervisor start", () => {
   it("V-24b starts a session once even when two supervisors of the same host tick at the same time", async () => {
     const second = new ScriptedSessionRuntime();
     const world = await workerWorld();
-    const other = world.build({ runtime: second, workerId: "worker-2" });
+    const other = world.build({ runtimes: { claude: second }, workerId: "worker-2" });
     await world.open();
     await Promise.all([world.worker.supervisor.tick(), other.supervisor.tick()]);
     expect(world.runtime.starts.length + second.starts.length).toBe(1);
@@ -67,7 +67,7 @@ describe("session supervisor start", () => {
   it("V-24i writes the heartbeat of the host with the clock time", async () => {
     const world = await workerWorld();
     await world.worker.supervisor.beat();
-    expect(await new DrizzleSessionHostDao(world.setup.database).lastBeat(machineIdentity())).toEqual({ hostId: machineIdentity(), workerId: "worker-1", heartbeatAt: world.clock.now() });
+    expect(await new DrizzleSessionHostDao(world.setup.database).lastBeat(machineIdentity())).toEqual({ hostId: machineIdentity(), workerId: "worker-1", heartbeatAt: world.clock.now(), codexStatus: null });
   });
 
   it("V-24i records the Claude session id and moves the session to running on the first message", async () => {

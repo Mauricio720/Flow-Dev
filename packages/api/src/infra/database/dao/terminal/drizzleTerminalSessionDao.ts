@@ -53,4 +53,12 @@ export class DrizzleTerminalSessionDao implements TerminalSessionDao {
       await releaseAttachments(database, sessionId);
     });
   }
+
+  async markPrepared(sessionId: string, at: Date) {
+    await this.database.update(taskTerminalSessions).set({ preparedAt: at }).where(eq(taskTerminalSessions.id, sessionId));
+  }
+
+  async markAgentVersion(sessionId: string, version: string) {
+    await this.database.update(taskTerminalSessions).set({ agentVersion: version }).where(eq(taskTerminalSessions.id, sessionId));
+  }
 }

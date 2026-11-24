@@ -4,6 +4,7 @@ import type { SessionPermissions } from "../src/application/services/terminal/se
 import { ScriptedSessionRuntime, type ScriptedRuntimeOptions } from "../src/infra/terminal/scriptedSessionRuntime";
 import { machineIdentity } from "../src/infra/terminal/machineIdentity";
 import { readySetup } from "./terminal-open-support";
+import type { HarnessOptions } from "./terminal-harness";
 import { openInput } from "./terminal-support";
 import { asc, eq } from "drizzle-orm";
 import { taskTerminalMessages } from "../src/infra/database/schema";
@@ -40,13 +41,13 @@ export class RecordingPermissions implements SessionPermissions {
 
 export type WorkerWorld = Awaited<ReturnType<typeof workerWorld>>;
 
-export async function workerWorld(runtimeOptions: ScriptedRuntimeOptions = {}, overrides: Partial<WorkerOverrides> = {}) {
-  const world = await readySetup();
+export async function workerWorld(runtimeOptions: ScriptedRuntimeOptions = {}, overrides: Partial<WorkerOverrides> = {}, harnessOptions: HarnessOptions = {}) {
+  const world = await readySetup(harnessOptions);
   const clock = new ControlledClock();
   const log = new RecordingLog();
   const runtime = new ScriptedSessionRuntime(runtimeOptions);
   const permissions = new RecordingPermissions();
-  const build = (extra: Partial<WorkerOverrides> = {}) => createSessionWorker(world.setup.database, { runtime, env: world.harness.env, now: clock.now, hostId: machineIdentity(), workerId: "worker-1", log, permissions, ...overrides, ...extra });
+  const build = (extra: Partial<WorkerOverrides> = {}) => createSessionWorker(world.setup.database, { runtimes: { claude: runtime }, env: world.harness.env, now: clock.now, hostId: machineIdentity(), workerId: "worker-1", log, permissions, ...overrides, ...extra });
   const worker = build();
   const open = (overrides: Record<string, unknown> = {}) => world.harness.caller.terminal.open(openInput(world.setup, overrides)).then((result) => result.sessionId);
   const settle = async () => {
@@ -72,7 +73,7 @@ export const scopeOf = (world: WorkerWorld, sessionId: string) => ({ projectId: 
 export const messagesOf = (world: WorkerWorld, sessionId: string) => world.setup.database.select().from(taskTerminalMessages).where(eq(taskTerminalMessages.sessionId, sessionId)).orderBy(asc(taskTerminalMessages.occurredAt));
 
 export async function restartedWorker(world: WorkerWorld, runtime = new ScriptedSessionRuntime()) {
-  return { runtime, worker: world.build({ runtime, workerId: "worker-2" }) };
+  return { runtime, worker: world.build({ runtimes: { claude: runtime }, workerId: "worker-2" }) };
 }
 
 export const sendMessage = (world: WorkerWorld, sessionId: string, content: string) => world.harness.caller.session.send({ ...scopeOf(world, sessionId), content, requestKey: crypto.randomUUID() });

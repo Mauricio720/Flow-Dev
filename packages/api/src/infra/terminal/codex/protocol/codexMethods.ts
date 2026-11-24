@@ -1,0 +1,26 @@
+import type { CodexCompletedItem } from "../../../../application/services/terminal/codex/codexItemInput";
+import type { CodexHookItem } from "../../../../application/services/terminal/codex/codexHookTranslator";
+import type { InitializeParams } from "./generated/InitializeParams";
+import type { FileChangeRequestApprovalParams } from "./generated/v2/FileChangeRequestApprovalParams";
+import type { ItemStartedNotification } from "./generated/v2/ItemStartedNotification";
+import type { PermissionsRequestApprovalResponse as GeneratedPermissionsResponse } from "./generated/v2/PermissionsRequestApprovalResponse";
+import type { ThreadResumeParams } from "./generated/v2/ThreadResumeParams";
+import type { ThreadResumeResponse } from "./generated/v2/ThreadResumeResponse";
+import type { ThreadStartParams } from "./generated/v2/ThreadStartParams";
+import type { ThreadStartResponse } from "./generated/v2/ThreadStartResponse";
+import type { ThreadUnsubscribeParams } from "./generated/v2/ThreadUnsubscribeParams";
+import type { TurnStartParams } from "./generated/v2/TurnStartParams";
+import type { TurnStartResponse } from "./generated/v2/TurnStartResponse";
+
+export type InitializeRequest = InitializeParams;
+export type ThreadStartRequest = ThreadStartParams;
+export type ThreadResumeRequest = ThreadResumeParams;
+export type TurnStartRequest = TurnStartParams;
+export type ThreadUnsubscribeRequest = ThreadUnsubscribeParams;
+export type ThreadStartResult = ThreadStartResponse;
+export type ThreadResumeResult = ThreadResumeResponse;
+export type TurnStartResult = TurnStartResponse;
+export type PermissionsRequestApprovalResponse = GeneratedPermissionsResponse;
+export type FileChangeApprovalRequest = FileChangeRequestApprovalParams;
+export type ItemStartedParams = ItemStartedNotification;
+export type ThreadNotification = { threadId?: string; thread?: { id: string }; turnId?: string; item?: CodexCompletedItem & CodexHookItem; turn?: { id?: string } };

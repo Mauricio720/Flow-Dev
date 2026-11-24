@@ -53,24 +53,42 @@ describe("question answer validation", () => {
     const result = validateQuestionAnswers([CHECKS], { [CHECKS.question]: { labels: ["lint"], other: "e2e" } });
     expect(result).toEqual({ ok: true, answers: { [CHECKS.question]: ["lint", "e2e"] } });
   });
+
+  it("uses distinct Codex ids when question text repeats", () => {
+    const repeated = [{ ...VISIBILITY, id: "q1" }, { ...VISIBILITY, id: "q2" }];
+    expect(validateQuestionAnswers(repeated, { q1: { labels: ["Qualquer pessoa"] }, q2: { labels: ["Só membros (Recomendado)"] } })).toEqual({ ok: true, answers: { q1: "Qualquer pessoa", q2: "Só membros (Recomendado)" } });
+  });
+
+  it("rejects answers keyed by the question text when the question has an id", () => {
+    const question = { ...VISIBILITY, id: "codex-q1" };
+    expect(validateQuestionAnswers([question], { [question.question]: { labels: ["Qualquer pessoa"] } })).toEqual({ ok: false, reason: "answer_invalid" });
+  });
+
+  it("rejects Other when the Codex question does not offer it", () => {
+    expect(validateQuestionAnswers([{ ...VISIBILITY, id: "q1", allowOther: false }], { q1: { labels: [], other: "Outro" } })).toEqual({ ok: false, reason: "answer_invalid" });
+  });
 });
 
 describe("permission decision validation", () => {
   const RULE = "Bash(pnpm test:*)";
 
   it("V-22d rejects allow_always without a suggested rule and accepts it with one", () => {
-    expect(validatePermissionDecision({ decision: "allow_always", suggestedRule: null })).toEqual({ ok: false, reason: "answer_invalid" });
-    expect(validatePermissionDecision({ decision: "allow_always", suggestedRule: RULE })).toEqual({ ok: true });
+    const offers = ["allow", "allow_always", "deny"] as const;
+    expect(validatePermissionDecision({ decision: "allow_always", suggestedRule: null, offers: [...offers], alwaysScope: "project" })).toEqual({ ok: false, reason: "answer_invalid" });
+    expect(validatePermissionDecision({ decision: "allow_always", suggestedRule: RULE, offers: [...offers], alwaysScope: "project" })).toEqual({ ok: true });
   });
 
   it("V-22d rejects a reason of 2001 characters, accepts 2000 and accepts a deny without a reason", () => {
-    expect(validatePermissionDecision({ decision: "deny", reason: "r".repeat(FREE_TEXT_LIMIT + 1), suggestedRule: null })).toEqual({ ok: false, reason: "answer_invalid" });
-    expect(validatePermissionDecision({ decision: "deny", reason: "r".repeat(FREE_TEXT_LIMIT), suggestedRule: null })).toEqual({ ok: true });
-    expect(validatePermissionDecision({ decision: "deny", suggestedRule: null })).toEqual({ ok: true });
+    const offers = ["allow", "allow_always", "deny"] as const;
+    expect(validatePermissionDecision({ decision: "deny", reason: "r".repeat(FREE_TEXT_LIMIT + 1), suggestedRule: null, offers: [...offers] })).toEqual({ ok: false, reason: "answer_invalid" });
+    expect(validatePermissionDecision({ decision: "deny", reason: "r".repeat(FREE_TEXT_LIMIT), suggestedRule: null, offers: [...offers] })).toEqual({ ok: true });
+    expect(validatePermissionDecision({ decision: "deny", suggestedRule: null, offers: [...offers] })).toEqual({ ok: true });
   });
 
   it("accepts allow with or without a suggested rule and rejects an unknown decision", () => {
-    expect(validatePermissionDecision({ decision: "allow", suggestedRule: null })).toEqual({ ok: true });
-    expect(validatePermissionDecision({ decision: "maybe" as never, suggestedRule: RULE })).toEqual({ ok: false, reason: "answer_invalid" });
+    expect(validatePermissionDecision({ decision: "allow", suggestedRule: null, offers: ["allow", "deny"] })).toEqual({ ok: true });
+    expect(validatePermissionDecision({ decision: "allow_session", suggestedRule: null, offers: ["allow", "deny"] })).toEqual({ ok: false, reason: "decision_not_offered" });
+    expect(validatePermissionDecision({ decision: "allow_always", suggestedRule: RULE, offers: ["allow", "deny"] })).toEqual({ ok: false, reason: "decision_not_offered" });
+    expect(validatePermissionDecision({ decision: "maybe" as never, suggestedRule: RULE, offers: ["allow", "deny"] })).toEqual({ ok: false, reason: "answer_invalid" });
   });
 });

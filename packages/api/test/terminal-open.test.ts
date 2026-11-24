@@ -25,8 +25,16 @@ describe("tasks.terminal.open", () => {
     expect(await readSessionPrompt(harness.state, result.sessionId)).toBe(prompt);
     await expect(stat(join(folder, "privado"))).rejects.toThrow();
     const [session] = await setup.database.select().from(taskTerminalSessions);
-    expect(session).toMatchObject({ id: result.sessionId, taskId: setup.taskId, userId: setup.ownerId, route: "tech_spec", checkoutPath: clone, dirty: false, launchFailedAt: null, status: "opening", runtime: "flow_dev", permissionMode: "bypass", hostId: machineIdentity(), workerId: null, tokenHash: null });
+    expect(session).toMatchObject({ id: result.sessionId, taskId: setup.taskId, userId: setup.ownerId, route: "tech_spec", checkoutPath: clone, dirty: false, launchFailedAt: null, status: "opening", runtime: "flow_dev", permissionMode: "bypass", hostId: machineIdentity(), workerId: null, tokenHash: null, agent: "claude", model: "opus", effort: "max" });
     expect(session!.lastSignalAt).toEqual(session!.openedAt);
+  });
+
+  it("stores an explicitly selected route agent, model and effort", async () => {
+    const { setup, harness } = await readySetup();
+    const selected = { agent: "claude" as const, model: "haiku", effort: "medium" };
+    const result = await harness.caller.terminal.open(openInput(setup, { purpose: { kind: "route", choice: selected } }));
+    const [session] = await setup.database.select().from(taskTerminalSessions);
+    expect(session).toMatchObject({ id: result.sessionId, agent: selected.agent, model: selected.model, effort: selected.effort });
   });
 
   it("V-03i returns the same session for the same request key, sequentially and concurrently", async () => {

@@ -9,6 +9,7 @@ const FILE_EDIT_TOOLS: ReadonlySet<string> = new Set(["Write", "Edit", "MultiEdi
 const BASH_TOOL = "Bash";
 const SKILL_TOOL = "Skill";
 const NEW_LINE = "\n";
+const CHANGE_SUMMARIES: Readonly<Record<string, string>> = { add: "Criado", update: "Editado", delete: "Removido", move: "Movido" };
 
 function stringField(source: Record<string, unknown>, key: string): string | null {
   const value = source[key];
@@ -26,7 +27,9 @@ function fileEdit(toolInput: Record<string, unknown>, checkoutPath: string): Sum
   const filePath = stringField(toolInput, "file_path") ?? stringField(toolInput, "notebook_path");
   if (!filePath) return [];
   const relative = relativeToCheckout(filePath, checkoutPath);
-  return [{ kind: "file_edit", summary: clip(relative), path: relative, skill: null }];
+  const changeKind = stringField(toolInput, "change_kind");
+  const summary = changeKind && CHANGE_SUMMARIES[changeKind] ? `${CHANGE_SUMMARIES[changeKind]}: ${relative}` : relative;
+  return [{ kind: "file_edit", summary: clip(summary), path: relative, skill: null }];
 }
 
 function command(toolInput: Record<string, unknown>): SummarizedEvent[] {

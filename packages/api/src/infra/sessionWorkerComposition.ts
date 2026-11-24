@@ -11,7 +11,7 @@ import { SessionResumeStep } from "../application/services/terminal/sessionResum
 import { SessionStarter } from "../application/services/terminal/sessionStarter";
 import { SessionSupervisor } from "../application/services/terminal/sessionSupervisor";
 import { runSessionLoop } from "../application/services/terminal/sessionWorkerLoop";
-import { requireDatabase } from "./database/client";
+import { requireDatabase, requireSql } from "./database/client";
 import { killChildProcesses } from "./terminal/killChildProcesses";
 import { buildWorkerParts, type WorkerOverrides, type WorkerParts } from "./sessionWorkerParts";
 
@@ -21,15 +21,15 @@ type Database = ReturnType<typeof requireDatabase>;
 const SHUTDOWN_GRACE_MS = 5_000;
 
 function buildSteps(parts: WorkerParts) {
-  const { identity, log, now, registry, messages, status, cancellation, control, handlers, context, runtime } = parts;
-  const starter = new SessionStarter({ sessions: parts.sessions, context, runtime, handlers, registry, log });
+  const { identity, log, now, registry, messages, status, cancellation, control, handlers, context, runtimes, recorder } = parts;
+  const starter = new SessionStarter({ sessions: parts.sessions, context, runtimes, handlers, registry, log });
   return [
     new OrphanRecoveryStep({ control, messages, cancellation, identity, now, log }),
     new OpeningStep({ control, starter, identity, log }),
-    new SessionResumeStep({ status, messages, runtime, handlers, registry, context, exit: parts.exit, cancellation, identity, now, log }),
+    new SessionControlsStep({ registry, hostId: identity.hostId, status, controls: control, messages, cancellation, flush: () => handlers.flush(), captureEnd: (sessionId) => recorder.captureEnd(sessionId), now, log }),
+    new SessionResumeStep({ status, messages, runtimes, handlers, registry, context, exit: parts.exit, cancellation, identity, now, log }),
     new MessageDeliveryStep({ registry, messages, now, log }),
     new AnswerDispatchStep({ requests: parts.requests, status, registry: parts.pending, log }),
-    new SessionControlsStep({ registry, status, controls: control, messages, cancellation, flush: () => handlers.flush(), now, log }),
   ];
 }
 
@@ -37,19 +37,26 @@ export function createSessionWorker(database: Database, overrides: WorkerOverrid
   const parts = buildWorkerParts(database, overrides);
   const heartbeat = new HeartbeatStep({ hosts: parts.hosts, ...parts.identity, now: parts.now });
   const supervisor = new SessionSupervisor({ heartbeat, steps: buildSteps(parts), log: parts.log });
-  const { identity, registry, runtime, log } = parts;
+  const { identity, registry, runtimes, log } = parts;
   const idle = async () => {
     await parts.handlers.flush();
     await parts.tracker.idle();
   };
-  return { ...identity, supervisor, registry, runtime, flush: () => parts.handlers.flush(), idle, run: (signal: AbortSignal) => runWorker({ supervisor, registry, signal, log, settle: idle }) };
+  const startSecretAnswers = () => parts.secretAnswerListener?.start() ?? Promise.resolve();
+  const stopSecretAnswers = () => parts.secretAnswerListener?.stop() ?? Promise.resolve();
+  return { ...identity, supervisor, registry, runtimes, flush: () => parts.handlers.flush(), idle, startSecretAnswers, stopSecretAnswers, run: (signal: AbortSignal) => runWorker({ supervisor, registry, signal, log, settle: idle, startSecretAnswers, stopSecretAnswers, catalog: parts.catalog }) };
 }
 
-async function runWorker(input: { supervisor: SessionSupervisor; registry: SessionHandleRegistry; signal: AbortSignal; log: SessionLog; settle: () => Promise<void> }) {
+async function runWorker(input: { supervisor: SessionSupervisor; registry: SessionHandleRegistry; signal: AbortSignal; log: SessionLog; settle: () => Promise<void>; startSecretAnswers: () => Promise<void>; stopSecretAnswers: () => Promise<void>; catalog: WorkerParts["catalog"] }) {
   const wait = (ms: number, signal: AbortSignal) => sleep(ms, undefined, { signal }).catch(() => undefined);
+  await input.supervisor.beat();
+  const stopCatalog = await input.catalog.start();
   try {
+    await input.startSecretAnswers();
     await runSessionLoop({ tick: () => input.supervisor.tick(), signal: input.signal, wait });
   } finally {
+    stopCatalog();
+    await input.stopSecretAnswers();
     const closed = await Promise.race([input.registry.abandonAll().then(() => true), sleep(SHUTDOWN_GRACE_MS).then(() => false)]);
     if (!closed) {
       input.log.error("shutdown_timeout", {});
@@ -60,5 +67,5 @@ async function runWorker(input: { supervisor: SessionSupervisor; registry: Sessi
 }
 
 export function createProductionSessionWorker() {
-  return createSessionWorker(requireDatabase());
+  return createSessionWorker(requireDatabase(), { secretAnswerSql: requireSql() });
 }

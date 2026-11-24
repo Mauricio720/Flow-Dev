@@ -14,6 +14,10 @@ function otherText(entry: Entry): string | null | undefined {
   return withinLimits ? entry.other : undefined;
 }
 
+function questionKey(question: Question): string {
+  return question.id ?? question.question;
+}
+
 function hasUnknownOrRepeatedLabel(question: Question, labels: string[]): boolean {
   const known = new Set(question.options.map((option) => option.label));
   return new Set(labels).size !== labels.length || labels.some((label) => !known.has(label));
@@ -21,6 +25,7 @@ function hasUnknownOrRepeatedLabel(question: Question, labels: string[]): boolea
 
 function resolveQuestion(question: Question, entry: Entry | undefined): QuestionOutcome {
   if (!entry) return { failure: "answer_incomplete" };
+  if (question.allowOther === false && entry.other !== undefined) return { failure: "answer_invalid" };
   const other = otherText(entry);
   if (other === undefined || hasUnknownOrRepeatedLabel(question, entry.labels)) return { failure: "answer_invalid" };
   const picked = other === null ? entry.labels : [...entry.labels, other];
@@ -30,12 +35,12 @@ function resolveQuestion(question: Question, entry: Entry | undefined): Question
 }
 
 export function validateQuestionAnswers(questions: Question[], answers: QuestionAnswerInput): QuestionAnswersResult {
-  const asked = new Set(questions.map((question) => question.question));
+  const asked = new Set(questions.map(questionKey));
   if (Object.keys(answers).some((key) => !asked.has(key))) return { ok: false, reason: "answer_invalid" };
-  const outcomes = questions.map((question) => resolveQuestion(question, answers[question.question]));
+  const outcomes = questions.map((question) => resolveQuestion(question, answers[questionKey(question)]));
   const failures = outcomes.flatMap((outcome) => ("failure" in outcome ? [outcome.failure] : []));
   if (failures.includes("answer_invalid")) return { ok: false, reason: "answer_invalid" };
   if (failures.length > 0) return { ok: false, reason: "answer_incomplete" };
-  const entries = questions.map((question, index) => [question.question, (outcomes[index] as { value: string | string[] }).value]);
+  const entries = questions.map((question, index) => [questionKey(question), (outcomes[index] as { value: string | string[] }).value]);
   return { ok: true, answers: Object.fromEntries(entries) };
 }

@@ -1,12 +1,12 @@
 import type { TerminalSessionRecord } from "../../database/dao/terminalSessionDao";
-import type { RuntimeExit, RuntimeHandlers } from "../../terminal/claudeSessionRuntime";
+import type { RuntimeExit, RuntimeHandlers } from "../../terminal/agentSessionRuntime";
 import { errorFields, type SessionLog } from "./sessionLog";
 import type { SessionPermissions } from "./sessionPermissions";
 import type { SessionRecorder } from "./sessionRecorder";
 import { SerialQueue } from "./sessionSerialQueue";
 
 export type SessionExitHandler = (session: TerminalSessionRecord, outcome: RuntimeExit) => Promise<void>;
-export type HandlerFactoryDeps = { recorder: SessionRecorder; permissions: SessionPermissions; onExit: SessionExitHandler; log: SessionLog };
+export type HandlerFactoryDeps = { recorder: SessionRecorder; permissions: SessionPermissions; onExit: SessionExitHandler; onAgentVersion?: (sessionId: string, version: string) => Promise<void>; log: SessionLog };
 
 export class SessionHandlerFactory {
   private readonly queues = new Map<string, SerialQueue>();
@@ -16,6 +16,7 @@ export class SessionHandlerFactory {
   handlersFor(session: TerminalSessionRecord, onExit: SessionExitHandler = this.deps.onExit): RuntimeHandlers {
     const queue = this.queueOf(session.id);
     return {
+      onAgentInfo: ({ version }) => { if (version) queue.enqueue(() => this.deps.onAgentVersion?.(session.id, version) ?? Promise.resolve()); },
       onAssistantText: (text) => queue.enqueue(() => this.deps.recorder.text(session.id, text)),
       onHook: (payload) => queue.enqueue(() => this.deps.recorder.hook(session.id, payload)),
       onPermission: async (request) => {

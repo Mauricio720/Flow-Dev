@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { taskTerminalEvents, users } from "../src/infra/database/schema";
+import { taskTerminalEvents, taskTerminalRequests, users } from "../src/infra/database/schema";
 import { rejection } from "./planning-support";
 import { moveClaimTo, openedFlowDevSession } from "./session-interaction-support";
 import { at, seedEntries, timeline } from "./session-timeline-support";
@@ -45,5 +45,15 @@ describe("tasks.session.timeline access", () => {
     const page = await world.harness.callerFor(world.setup.readerId).session.timeline(world.scope);
     expect(page.canControl).toBe(false);
     expect(page.entries).toHaveLength(3);
+  });
+
+  it("reads persisted file change diffs through the existing member access boundary", async () => {
+    const world = await openedFlowDevSession();
+    await world.setup.authorize(world.setup.readerId);
+    await world.setup.database.insert(taskTerminalRequests).values({ sessionId: world.sessionId, kind: "file_change", toolUseId: "codex-file", payload: { toolName: "fileChange", permissionKind: "file_change", title: "Alteração de arquivo:", body: "- antigo\n+ novo", truncated: false, suggestedRule: null, suggestions: [], offers: ["allow", "allow_session", "deny"], alwaysScope: null } });
+    const page = await world.harness.callerFor(world.setup.readerId).session.timeline(world.scope);
+    expect(page.entries).toMatchObject([{ type: "permission", kind: "file_change", display: { body: "- antigo\n+ novo" } }]);
+    const [outsider] = await world.setup.database.insert(users).values({ name: "Out", email: "diff-out@test.invalid" }).returning();
+    expect(await rejection(world.harness.callerFor(outsider!.id).session.timeline(world.scope))).toMatchObject({ code: "NOT_FOUND" });
   });
 });

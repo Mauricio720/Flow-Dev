@@ -11,7 +11,7 @@ const toEveryActive = (target: TerminalSessionStatus): Transitions => Object.fro
 
 const SIGNAL_TRANSITIONS: Record<SessionSignal, Transitions> = {
   work: { opening: "running", unconfirmed: "running", waiting: "running", interrupted: "running" },
-  request_opened: { running: "asking" },
+  request_opened: { running: "asking", waiting: "asking" },
   requests_settled: { asking: "running" },
   turn_ended: { running: "waiting", asking: "waiting" },
   interrupted: { running: "waiting", asking: "waiting" },

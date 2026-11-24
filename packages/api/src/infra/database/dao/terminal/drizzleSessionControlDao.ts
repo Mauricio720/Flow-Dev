@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, ne, notInArray, sql } from "drizzle-orm";
 import { FINAL_SESSION_STATUSES } from "../../../../application/terminal/terminalSessionStatus";
 import type { ClaimInput, ControlKind, SessionControlDao } from "../../../../application/terminal/sessionInteractionPorts";
 import type { Database } from "../../client";
@@ -15,9 +15,9 @@ export class DrizzleSessionControlDao implements SessionControlDao {
   constructor(private readonly database: Database) {}
 
   async claimOpening(input: ClaimInput) {
-    const candidate = and(eq(sessions.runtime, FLOW_DEV_RUNTIME), eq(sessions.hostId, input.hostId), inArray(sessions.status, CLAIMABLE_STATUSES), isNull(sessions.workerId));
+    const candidate = and(eq(sessions.runtime, FLOW_DEV_RUNTIME), eq(sessions.hostId, input.hostId), inArray(sessions.status, CLAIMABLE_STATUSES), isNull(sessions.workerId), isNotNull(sessions.preparedAt), isNull(sessions.endRequestedAt));
     const next = this.database.select({ id: sessions.id }).from(sessions).where(candidate).orderBy(asc(sessions.openedAt)).limit(1).for("update", { skipLocked: true });
-    const [row] = await this.database.update(sessions).set({ workerId: input.workerId }).where(sql`${sessions.id} = (${next})`).returning();
+    const [row] = await this.database.update(sessions).set({ workerId: input.workerId, interruptRequestedAt: null }).where(sql`${sessions.id} = (${next})`).returning();
     return row ? toSessionRecord(row) : null;
   }
 
@@ -36,7 +36,7 @@ export class DrizzleSessionControlDao implements SessionControlDao {
 
   async markOrphans(input: ClaimInput) {
     const filter = and(eq(sessions.runtime, FLOW_DEV_RUNTIME), eq(sessions.hostId, input.hostId), ne(sessions.workerId, input.workerId), notInArray(sessions.status, [...NOT_FINAL, INTERRUPTED_STATUS]));
-    const rows = await this.database.update(sessions).set({ status: INTERRUPTED_STATUS }).where(filter).returning({ id: sessions.id });
+    const rows = await this.database.update(sessions).set({ status: INTERRUPTED_STATUS, interruptRequestedAt: null }).where(filter).returning({ id: sessions.id });
     return rows.map((row) => row.id);
   }
 

@@ -1,7 +1,7 @@
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, notInArray, or } from "drizzle-orm";
 import { applySessionSignal, type SessionSignal } from "../../../../application/services/terminal/sessionSignals";
 import { FINAL_SESSION_STATUSES, type TerminalSessionStatus } from "../../../../application/terminal/terminalSessionStatus";
-import type { EndInput, ResumeClaim, SessionControlRow, SessionStatusDao, StatusTransition } from "../../../../application/terminal/sessionStatusPorts";
+import type { ControlRequestQuery, EndInput, ResumeClaim, SessionControlRow, SessionStatusDao, StatusTransition } from "../../../../application/terminal/sessionStatusPorts";
 import type { Database } from "../../client";
 import { taskTerminalSessions } from "../../schema";
 import { toSessionRecord } from "./terminalSessionWrites";
@@ -11,6 +11,7 @@ const FLOW_DEV_RUNTIME = "flow_dev";
 const INTERRUPTED = "interrupted";
 const RUNNING = "running";
 const ENDED = "ended";
+const UNSTARTED = ["opening", "unconfirmed"];
 
 export class DrizzleSessionStatusDao implements SessionStatusDao {
   constructor(private readonly database: Database) {}
@@ -27,9 +28,12 @@ export class DrizzleSessionStatusDao implements SessionStatusDao {
     });
   }
 
-  async controlRequests(sessionIds: string[]): Promise<SessionControlRow[]> {
-    if (sessionIds.length === 0) return [];
-    const rows = await this.database.select({ id: sessions.id, status: sessions.status, interruptRequestedAt: sessions.interruptRequestedAt, endRequestedAt: sessions.endRequestedAt }).from(sessions).where(inArray(sessions.id, sessionIds));
+  async controlRequests(query: ControlRequestQuery): Promise<SessionControlRow[]> {
+    const filters = [];
+    if (query.sessionIds.length > 0) filters.push(inArray(sessions.id, query.sessionIds));
+    filters.push(and(eq(sessions.runtime, FLOW_DEV_RUNTIME), eq(sessions.hostId, query.hostId), eq(sessions.status, INTERRUPTED), isNotNull(sessions.endRequestedAt)));
+    filters.push(and(eq(sessions.runtime, FLOW_DEV_RUNTIME), eq(sessions.hostId, query.hostId), inArray(sessions.status, UNSTARTED), isNull(sessions.workerId), isNotNull(sessions.endRequestedAt)));
+    const rows = await this.database.select({ id: sessions.id, status: sessions.status, interruptRequestedAt: sessions.interruptRequestedAt, endRequestedAt: sessions.endRequestedAt }).from(sessions).where(or(...filters));
     return rows.map((row) => ({ ...row, status: row.status as TerminalSessionStatus }));
   }
 
@@ -45,8 +49,8 @@ export class DrizzleSessionStatusDao implements SessionStatusDao {
   }
 
   async claimResume(input: ResumeClaim) {
-    const filter = and(eq(sessions.id, input.sessionId), eq(sessions.status, INTERRUPTED));
-    const [row] = await this.database.update(sessions).set({ status: RUNNING, workerId: input.workerId }).where(filter).returning();
+    const filter = and(eq(sessions.id, input.sessionId), eq(sessions.status, INTERRUPTED), isNull(sessions.endRequestedAt));
+    const [row] = await this.database.update(sessions).set({ status: RUNNING, workerId: input.workerId, interruptRequestedAt: null }).where(filter).returning();
     return row ? toSessionRecord(row) : null;
   }
 }

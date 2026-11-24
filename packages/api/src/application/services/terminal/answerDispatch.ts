@@ -15,6 +15,7 @@ export class AnswerDispatchStep implements TickStep {
   async run() {
     const answered = await this.deps.requests.listAnsweredFor(this.deps.registry.ids());
     for (const request of answered) {
+      if (hasSecretDelivery(request.answer)) continue;
       const entry = this.deps.registry.take(request.id);
       if (!entry) continue;
       entry.resolve(mapAnswerToPermissionResult(request, request.answer, entry.input));
@@ -22,4 +23,8 @@ export class AnswerDispatchStep implements TickStep {
       if ((await this.deps.requests.pendingIds(request.sessionId)).length === 0) await this.deps.status.transition(request.sessionId, "requests_settled");
     }
   }
+}
+
+function hasSecretDelivery(answer: unknown): boolean {
+  return answer !== null && typeof answer === "object" && typeof (answer as { secretDeliveryId?: unknown }).secretDeliveryId === "string";
 }

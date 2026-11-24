@@ -35,7 +35,7 @@ describe("stopping the sessions service", () => {
     const id = await world.open();
     await cycle(world);
     await world.worker.run(stopped());
-    const next = world.build({ runtime: new ScriptedSessionRuntime(), workerId: "worker-2" });
+    const next = world.build({ runtimes: { claude: new ScriptedSessionRuntime() }, workerId: "worker-2" });
     await next.supervisor.tick();
     expect(await sessionRowOf(world.setup, id)).toMatchObject({ status: "interrupted", endedAt: null });
     expect((await requestsOf(world.setup, id)).map((request) => request.status)).toEqual(["cancelled"]);

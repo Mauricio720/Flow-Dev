@@ -1,5 +1,6 @@
-import type { CanUseTool, Options, PermissionMode as SdkPermissionMode } from "@anthropic-ai/claude-agent-sdk";
+import type { CanUseTool, EffortLevel, Options, PermissionMode as SdkPermissionMode } from "@anthropic-ai/claude-agent-sdk";
 import type { PermissionMode } from "../../application/terminal/sessionInteraction";
+import { SESSION_SYSTEM_PROMPT } from "./agentSdkSystemPrompt";
 import { terminalEnvironment } from "./terminalEnvironment";
 
 export const SDK_PERMISSION_MODES: Record<PermissionMode, SdkPermissionMode> = { bypass: "bypassPermissions", accept_edits: "acceptEdits", ask_all: "default" };
@@ -14,6 +15,8 @@ export type QueryOptionsInput = {
   canUseTool: CanUseTool;
   hooks: Options["hooks"];
   resumeId?: string;
+  model?: string;
+  effort?: string;
   stderr?: (data: string) => void;
 };
 
@@ -24,6 +27,7 @@ export function buildQueryOptions(input: QueryOptionsInput): Options {
     pathToClaudeCodeExecutable: input.claudePath,
     env: terminalEnvironment(input.env),
     plugins: [{ type: "local", path: input.contextDir }],
+    systemPrompt: SESSION_SYSTEM_PROMPT,
     settingSources: SETTING_SOURCES,
     permissionMode,
     allowDangerouslySkipPermissions: permissionMode === "bypassPermissions",
@@ -31,6 +35,8 @@ export function buildQueryOptions(input: QueryOptionsInput): Options {
     canUseTool: input.canUseTool,
     hooks: input.hooks,
     ...(input.resumeId ? { resume: input.resumeId } : {}),
+    ...(input.model ? { model: input.model } : {}),
+    ...(input.effort ? { effort: input.effort as EffortLevel } : {}),
     ...(input.stderr ? { stderr: input.stderr } : {}),
   };
 }

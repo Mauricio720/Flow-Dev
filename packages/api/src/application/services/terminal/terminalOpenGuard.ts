@@ -1,6 +1,9 @@
 import type { LocalCheckoutDao } from "../../database/dao/localCheckoutDao";
 import type { SessionContextBuilder } from "../../terminal/sessionContext";
 import { CLAUDE_BINARY, type ToolLocator } from "../../terminal/toolLocator";
+import type { AgentChoice } from "../../terminal/sessionAgentCatalog";
+import type { CodexCatalogProbe } from "../../terminal/codexCatalogProbe";
+import { modelUnavailableMessage } from "../../terminal/sessionAgentCatalog";
 import { CheckoutValidationError } from "../projects/localCheckoutErrors";
 import type { LocalCheckoutService, VerifiedCheckout } from "../projects/localCheckoutService";
 import { TaskError } from "../tasks/taskErrors";
@@ -19,6 +22,7 @@ export type TerminalGuardDeps = {
   context: SessionContextBuilder;
   service: SessionServiceStatus;
   log: TerminalLog;
+  codexProbe?: CodexCatalogProbe;
 };
 
 export class TerminalOpenGuard {
@@ -52,8 +56,16 @@ export class TerminalOpenGuard {
     }
   }
 
-  async assertTools() {
-    if (!(await this.deps.tools.has(CLAUDE_BINARY))) throw new TaskError("claude_unavailable");
+  async assertTools(choice: AgentChoice = { agent: "claude", model: "opus", effort: "max" }) {
+    if (choice.agent === "claude") {
+      if (!(await this.deps.tools.has(CLAUDE_BINARY))) throw new TaskError("claude_unavailable");
+      return;
+    }
+    const status = await this.deps.codexProbe?.read();
+    if (!status?.available) throw new TaskError("agent_unavailable", { message: status?.reason ?? "O catálogo do Codex não está disponível." });
+    const model = status.models.find((item) => item.id === choice.model);
+    if (!model) throw new TaskError("model_unavailable", { message: modelUnavailableMessage(choice.model) });
+    if (!model.efforts.includes(choice.effort)) throw new TaskError("choice_invalid");
   }
 
   serviceRunning() {

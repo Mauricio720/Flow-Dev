@@ -1,5 +1,5 @@
 import type { TerminalSessionDao, TerminalSessionRecord } from "../../database/dao/terminalSessionDao";
-import type { RuntimeExit } from "../../terminal/claudeSessionRuntime";
+import type { RuntimeExit } from "../../terminal/agentSessionRuntime";
 import type { SessionMessageDao } from "../../terminal/sessionInteractionPorts";
 import type { SessionStatusDao } from "../../terminal/sessionStatusPorts";
 import type { RequestCancellation } from "./requestCancellation";

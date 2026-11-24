@@ -11,11 +11,13 @@ const TURN_STATUSES = new Set(["running", "asking"]);
 
 export type ControlsDeps = {
   registry: SessionHandleRegistry;
+  hostId: string;
   status: Pick<SessionStatusDao, "controlRequests" | "transition" | "markEnded">;
   controls: Pick<SessionControlDao, "clearControl">;
   messages: Pick<SessionMessageDao, "insertSystemMessage">;
   cancellation: RequestCancellation;
   flush: () => Promise<void>;
+  captureEnd: (sessionId: string) => Promise<void>;
   now: () => Date;
   log: SessionLog;
 };
@@ -26,7 +28,8 @@ export class SessionControlsStep implements TickStep {
   constructor(private readonly deps: ControlsDeps) {}
 
   async run() {
-    for (const row of await this.deps.status.controlRequests(this.deps.registry.ids())) {
+    const query = { sessionIds: this.deps.registry.ids(), hostId: this.deps.hostId };
+    for (const row of await this.deps.status.controlRequests(query)) {
       if (row.endRequestedAt) await this.end(row);
       else if (row.interruptRequestedAt) await this.interrupt(row);
     }
@@ -34,7 +37,8 @@ export class SessionControlsStep implements TickStep {
 
   private async interrupt(row: SessionControlRow) {
     const handle = this.deps.registry.get(row.id);
-    if (handle && TURN_STATUSES.has(row.status)) {
+    const pending = await this.deps.cancellation.pendingIds(row.id);
+    if (handle && (TURN_STATUSES.has(row.status) || pending.length > 0)) {
       await handle.interrupt();
       await this.deps.cancellation.cancelAll(row.id);
       await this.deps.messages.insertSystemMessage({ sessionId: row.id, content: INTERRUPTED_BY_PERSON_NOTE, occurredAt: this.deps.now() });
@@ -46,7 +50,9 @@ export class SessionControlsStep implements TickStep {
 
   private async end(row: SessionControlRow) {
     await this.deps.cancellation.cancelAll(row.id);
-    await this.deps.registry.get(row.id)?.close();
+    const handle = this.deps.registry.get(row.id);
+    if (handle) await handle.close();
+    else await this.deps.captureEnd(row.id);
     await this.deps.flush();
     await this.deps.status.markEnded({ sessionId: row.id, reason: END_REASON, at: this.deps.now() });
     await this.deps.controls.clearControl(row.id, "end");

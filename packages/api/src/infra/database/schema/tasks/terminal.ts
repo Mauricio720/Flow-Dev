@@ -4,6 +4,7 @@ import { projects, users } from "../../schema";
 import { taskImages } from "./images";
 import { taskPlanningDecisions } from "./planning";
 import { tasks } from "./records";
+import { taskSessionPlanItems } from "./sessionPlans";
 
 export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -36,14 +37,24 @@ export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   workerId: text("worker_id"),
   interruptRequestedAt: timestamp("interrupt_requested_at", { withTimezone: true }),
   endRequestedAt: timestamp("end_requested_at", { withTimezone: true }),
+  preparedAt: timestamp("prepared_at", { withTimezone: true }),
+  purpose: text("purpose").notNull().default("route"),
+  planItemId: uuid("plan_item_id").references(() => taskSessionPlanItems.id, { onDelete: "set null" }),
+  agent: text("agent").notNull().default("claude"),
+  model: text("model"),
+  effort: text("effort"),
+  agentVersion: text("agent_version"),
 }, (table) => [
   check("task_terminal_sessions_route_check", sql`${table.route} in ('direct_execution','tech_spec','prd')`),
   check("task_terminal_sessions_status_check", sql`${table.status} in ('opening','running','waiting','unconfirmed','ended','launch_failed','asking','interrupted')`),
   check("task_terminal_sessions_runtime_check", sql`${table.runtime} in ('terminal','flow_dev')`),
   check("task_terminal_sessions_permission_mode_check", sql`${table.permissionMode} in ('bypass','accept_edits','ask_all')`),
+  check("task_terminal_sessions_purpose_check", sql`${table.purpose} in ('route','generate_tasks','plan_item')`),
+  check("task_terminal_sessions_agent_check", sql`${table.agent} in ('claude','codex')`),
   uniqueIndex("task_terminal_sessions_request_key_unique").on(table.userId, table.requestKey),
   index("task_terminal_sessions_task_opened_idx").on(table.taskId, table.openedAt.desc()),
   index("task_terminal_sessions_host_status_idx").on(table.hostId, table.status).where(sql`${table.runtime} = 'flow_dev'`),
+  index("task_terminal_sessions_plan_item_idx").on(table.planItemId, table.openedAt).where(sql`${table.planItemId} is not null`),
 ]);
 
 export const taskTerminalAttachments = pgTable("task_terminal_attachments", {

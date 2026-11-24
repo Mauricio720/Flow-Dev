@@ -1,4 +1,4 @@
-import type { HookPayload } from "../../application/terminal/claudeSessionRuntime";
+import type { HookPayload } from "../../application/terminal/agentSessionRuntime";
 
 export type SessionStartSource = "startup" | "resume";
 

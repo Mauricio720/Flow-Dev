@@ -2,6 +2,7 @@ import type { LockedSession, NewTerminalEvent, SessionChanges } from "../../data
 import type { ArtifactCaptureTrigger } from "../../terminal/artifactCaptureTrigger";
 import { isActiveSession, type TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 import type { SummarizedHookEvent } from "./hookEventSummarizer";
+import { PLAN_EXECUTION_SKILL, isPlanTaskFile } from "./planCaptureRule";
 import { applyTerminalEvent } from "./terminalSessionStateMachine";
 
 const DEFAULT_START_SOURCE = "startup";
@@ -24,10 +25,16 @@ function withImplicitStart(summarized: SummarizedHookEvent, session: LockedSessi
 
 type Progress = { status: TerminalSessionStatus; activeSkill: string | null };
 
-function advance(progress: Progress, event: NewTerminalEvent): { stored: NewTerminalEvent; progress: Progress } {
+function planSkillOf(event: NewTerminalEvent, planTasksFolder: string | null) {
+  const inPlanFolder = typeof planTasksFolder === "string" && event.path !== null && isPlanTaskFile(event.path, planTasksFolder);
+  return inPlanFolder ? PLAN_EXECUTION_SKILL : null;
+}
+
+function advance(input: { progress: Progress; event: NewTerminalEvent; planTasksFolder: string | null }): { stored: NewTerminalEvent; progress: Progress } {
+  const { progress, event, planTasksFolder } = input;
   const status = applyTerminalEvent(progress.status, event.kind) ?? progress.status;
   const activeSkill = event.kind === "skill" ? event.skill : progress.activeSkill;
-  const stored = event.kind === "file_edit" ? { ...event, skill: progress.activeSkill } : event;
+  const stored = event.kind === "file_edit" ? { ...event, skill: progress.activeSkill ?? planSkillOf(event, planTasksFolder) } : event;
   return { stored, progress: { status, activeSkill } };
 }
 
@@ -48,7 +55,7 @@ export function planIngestion(input: { session: LockedSession; summarized: Summa
   if (events.length === 0 && !summarized.captureTrigger) return DISCARDED;
   let progress: Progress = { status: session.status, activeSkill: session.activeSkill };
   const stored = events.map((event) => {
-    const next = advance(progress, event);
+    const next = advance({ progress, event, planTasksFolder: session.planTasksFolder });
     progress = next.progress;
     return next.stored;
   });

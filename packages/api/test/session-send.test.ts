@@ -11,7 +11,8 @@ afterEach(async () => {
 });
 
 const MAX_MESSAGE_LENGTH = 20_000;
-const send = (world: Awaited<ReturnType<typeof openedFlowDevSession>>, content: string, requestKey: string = crypto.randomUUID(), userId?: string) => {
+const send = (input: { world: Awaited<ReturnType<typeof openedFlowDevSession>>; content: string; requestKey?: string; userId?: string }) => {
+  const { world, content, requestKey = crypto.randomUUID(), userId } = input;
   const caller = userId ? world.harness.callerFor(userId) : world.harness.caller;
   return caller.session.send({ ...world.scope, content, requestKey });
 };
@@ -21,7 +22,7 @@ describe("tasks.session.send", () => {
   it("queues the message exactly as typed, including a skill command", async () => {
     const world = await openedFlowDevSession();
     const content = "/flow-dev:spec-to-tasks docs/specs/x\n  com   espaços  ";
-    const { message } = await send(world, content);
+    const { message } = await send({ world, content });
     expect(message).toMatchObject({ role: "user", content, queued: true, undelivered: false, truncated: false });
     const [row] = await storedMessages(world);
     expect(row).toMatchObject({ sessionId: world.sessionId, role: "user", content, deliveredAt: null, undelivered: false });
@@ -30,13 +31,13 @@ describe("tasks.session.send", () => {
   it("V-23a refuses another operator who did not open the session and stores nothing", async () => {
     const world = await openedFlowDevSession();
     await moveClaimTo(world.setup, world.setup.readerId);
-    expect(await rejection(send(world, "oi", crypto.randomUUID(), world.setup.readerId))).toMatchObject({ code: "FORBIDDEN", reason: "session_control_denied" });
+    expect(await rejection(send({ world, content: "oi", userId: world.setup.readerId }))).toMatchObject({ code: "FORBIDDEN", reason: "session_control_denied" });
     expect(await storedMessages(world)).toHaveLength(0);
   });
 
   it("V-23b refuses a project member who is not the operator", async () => {
     const world = await openedFlowDevSession();
-    expect(await rejection(send(world, "oi", crypto.randomUUID(), world.setup.readerId))).toMatchObject({ code: "FORBIDDEN", reason: "session_control_denied" });
+    expect(await rejection(send({ world, content: "oi", userId: world.setup.readerId }))).toMatchObject({ code: "FORBIDDEN", reason: "session_control_denied" });
     expect(await storedMessages(world)).toHaveLength(0);
   });
 
@@ -59,11 +60,11 @@ describe("tasks.session.send", () => {
   it("V-23d stores one row for a repeated request key, sequentially and concurrently, and returns the same message", async () => {
     const world = await openedFlowDevSession();
     const requestKey = crypto.randomUUID();
-    const first = await send(world, "oi", requestKey);
-    const repeat = await send(world, "oi de novo", requestKey);
+    const first = await send({ world, content: "oi", requestKey });
+    const repeat = await send({ world, content: "oi de novo", requestKey });
     expect(repeat.message).toEqual(first.message);
     const concurrent = crypto.randomUUID();
-    const results = await Promise.all([send(world, "a", concurrent), send(world, "a", concurrent), send(world, "a", concurrent)]);
+    const results = await Promise.all([1, 2, 3].map(() => send({ world, content: "a", requestKey: concurrent })));
     expect(new Set(results.map((result) => result.message.id)).size).toBe(1);
     expect(await storedMessages(world)).toHaveLength(2);
   });
@@ -71,16 +72,16 @@ describe("tasks.session.send", () => {
   it("V-23g refuses an empty and a 20001-character message and accepts one with 20000", async () => {
     const world = await openedFlowDevSession();
     for (const content of ["", "   \n", "x".repeat(MAX_MESSAGE_LENGTH + 1)]) {
-      expect(await rejection(send(world, content))).toMatchObject({ code: "BAD_REQUEST", reason: "message_invalid" });
+      expect(await rejection(send({ world, content }))).toMatchObject({ code: "BAD_REQUEST", reason: "message_invalid" });
     }
     expect(await storedMessages(world)).toHaveLength(0);
-    const { message } = await send(world, "x".repeat(MAX_MESSAGE_LENGTH));
+    const { message } = await send({ world, content: "x".repeat(MAX_MESSAGE_LENGTH) });
     expect(message.content).toHaveLength(MAX_MESSAGE_LENGTH);
   });
 
   it("accepts a message for an interrupted session, so the service can resume it", async () => {
     const world = await openedFlowDevSession();
     await setStatus(world.setup, world.sessionId, "interrupted");
-    expect((await send(world, "Pode seguir")).message.queued).toBe(true);
+    expect((await send({ world, content: "Pode seguir" })).message.queued).toBe(true);
   });
 });

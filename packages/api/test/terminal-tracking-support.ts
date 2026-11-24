@@ -9,7 +9,7 @@ export async function world() {
 }
 
 export function sessionValues(setup: PlanningSetup, decisionId: string, overrides: Record<string, unknown> = {}) {
-  return { taskId: setup.taskId, projectId: setup.project.id, userId: setup.ownerId, planningDecisionId: decisionId, route: "tech_spec", requestKey: crypto.randomUUID(), checkoutPath: "/work/shop", dirty: false, ...overrides } as never;
+  return { taskId: setup.taskId, projectId: setup.project.id, userId: setup.ownerId, planningDecisionId: decisionId, route: "tech_spec", requestKey: crypto.randomUUID(), checkoutPath: "/work/shop", dirty: false, preparedAt: new Date(), ...overrides } as never;
 }
 
 async function sessionWorld() {

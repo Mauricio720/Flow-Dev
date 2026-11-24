@@ -1,4 +1,4 @@
-import type { RuntimeHandle } from "../../terminal/claudeSessionRuntime";
+import type { RuntimeHandle } from "../../terminal/agentSessionRuntime";
 
 export class SessionHandleRegistry {
   private readonly handles = new Map<string, RuntimeHandle>();

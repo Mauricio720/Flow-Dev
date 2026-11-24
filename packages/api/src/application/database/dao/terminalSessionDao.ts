@@ -1,5 +1,7 @@
 import type { PlanningComplexity, PlanningRoute } from "../../services/tasks/planningContracts";
+import type { SessionAgent } from "../../terminal/sessionAgentCatalog";
 import type { PermissionMode, SessionRuntimeKind } from "../../terminal/sessionInteraction";
+import type { SessionPurposeKind } from "../../terminal/sessionPurposeKind";
 import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 import type { SessionAttachmentLinks } from "./terminalAttachmentLinks";
 
@@ -22,6 +24,8 @@ export type TerminalSessionRecord = {
   status: TerminalSessionStatus;
   tokenHash: string | null;
   claudeSessionId: string | null;
+  agentSessionId: string | null;
+  agentVersion: string | null;
   endReason: string | null;
   activeSkill: string | null;
   droppedEvents: number;
@@ -34,6 +38,12 @@ export type TerminalSessionRecord = {
   workerId: string | null;
   interruptRequestedAt: Date | null;
   endRequestedAt: Date | null;
+  preparedAt: Date | null;
+  purpose: SessionPurposeKind;
+  planItemId: string | null;
+  agent: SessionAgent;
+  model: string | null;
+  effort: string | null;
 };
 
 export type ApprovedPlanning = {
@@ -58,6 +68,12 @@ export type CreateTerminalSessionInput = {
   runtime: SessionRuntimeKind;
   permissionMode: PermissionMode;
   hostId: string | null;
+  purpose?: SessionPurposeKind;
+  planItemId?: string | null;
+  agent?: SessionAgent;
+  model?: string | null;
+  effort?: string | null;
+  agentVersion?: string | null;
 };
 
 export type CreatedTerminalSession = { session: TerminalSessionRecord; created: boolean };
@@ -69,6 +85,8 @@ export interface TerminalSessionDao {
   findByRequestKey(userId: string, requestKey: string): Promise<TerminalSessionRecord | null>;
   create(input: CreateTerminalSessionInput, links?: SessionAttachmentLinks): Promise<CreatedTerminalSession>;
   markLaunchFailed(sessionId: string, reason: string): Promise<void>;
+  markAgentVersion?(sessionId: string, version: string): Promise<void>;
+  markPrepared(sessionId: string, at: Date): Promise<void>;
   lastOpened(taskId: string): Promise<LastTerminalOpening | null>;
   hasActiveSession(taskId: string, userId: string): Promise<boolean>;
 }

@@ -1,4 +1,4 @@
-import type { RuntimePermissionResult } from "../../terminal/claudeSessionRuntime";
+import type { RuntimePermissionResult } from "../../terminal/agentSessionRuntime";
 
 export type PendingEntry = { sessionId: string; input: Record<string, unknown>; resolve: (result: RuntimePermissionResult) => void };
 

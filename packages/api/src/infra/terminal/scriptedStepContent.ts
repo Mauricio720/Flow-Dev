@@ -1,5 +1,6 @@
-import type { RuntimeHandlers, RuntimePermissionResult } from "../../application/terminal/claudeSessionRuntime";
+import type { RuntimeHandlers, RuntimePermissionResult } from "../../application/terminal/agentSessionRuntime";
 import { mainAssistantText } from "../../application/services/terminal/assistantTextFilter";
+import { writeFileStep, type FileStepContext } from "./scriptedFileStep";
 import type { ScriptStep } from "./scriptedSessionSteps";
 
 type SayStep = Extract<ScriptStep, { kind: "text" | "thinking" | "tool_result" | "subagent_text" }>;
@@ -23,7 +24,10 @@ export function requestStep(step: RequestStep, handlers: RuntimeHandlers, toolUs
   return handlers.onPermission({ toolName: step.toolName, input: step.input, toolUseId, suggestions: step.suggestions ?? [] });
 }
 
-export async function contentStep(step: ScriptStep, handlers: RuntimeHandlers, toolUseId: string): Promise<RuntimePermissionResult | null> {
-  if (isSayStep(step)) sayStep(step, handlers);
-  return isRequestStep(step) ? requestStep(step, handlers, toolUseId) : null;
+export type StepContext = FileStepContext & { handlers: RuntimeHandlers };
+
+export async function contentStep(step: ScriptStep, context: StepContext, toolUseId: string): Promise<RuntimePermissionResult | null> {
+  if (isSayStep(step)) sayStep(step, context.handlers);
+  if (step.kind === "write_file") await writeFileStep(step, context);
+  return isRequestStep(step) ? requestStep(step, context.handlers, toolUseId) : null;
 }

@@ -9,9 +9,16 @@ import { ConsoleSessionLog, type SessionLog } from "../application/services/term
 import type { SessionPermissions } from "../application/services/terminal/sessionPermissions";
 import { SessionRecorder } from "../application/services/terminal/sessionRecorder";
 import { SessionRequestBroker } from "../application/services/terminal/sessionRequestBroker";
-import type { ClaudeSessionRuntime } from "../application/terminal/claudeSessionRuntime";
+import { SessionRequestGate } from "../application/services/terminal/sessionRequestGate";
+import { SecretAnswerReceiver } from "../application/services/terminal/secretAnswerReceiver";
+import type { AgentSessionRuntime, SessionRuntimes } from "../application/terminal/agentSessionRuntime";
+import type { CodexCatalogProbe } from "../application/terminal/codexCatalogProbe";
 import type { SessionMessageDao } from "../application/terminal/sessionInteractionPorts";
+import { CodexCatalogPublisher } from "../application/services/terminal/codexCatalogPublisher";
+import { CodexCatalogStep } from "../application/services/terminal/codexCatalogStep";
 import type { requireDatabase } from "./database/client";
+import type postgres from "postgres";
+import { PostgresSecretAnswerListener } from "./database/postgresSecretAnswerListener";
 import { DrizzleSessionControlDao } from "./database/dao/terminal/drizzleSessionControlDao";
 import { DrizzleSessionHostDao } from "./database/dao/terminal/drizzleSessionHostDao";
 import { DrizzleSessionMessageDao } from "./database/dao/terminal/drizzleSessionMessageDao";
@@ -25,11 +32,15 @@ import { PathToolLocator } from "./terminal/pathToolLocator";
 import { ScriptedSessionRuntime } from "./terminal/scriptedSessionRuntime";
 import { scriptFromEnvironment } from "./terminal/scriptedSessionSteps";
 import { createTerminalEventController } from "./terminalEventComposition";
+import { CodexAppServerRuntime } from "./terminal/codex/codexAppServerRuntime";
+import { AppServerCodexCatalogTransport } from "./terminal/codex/codexCatalogTransport";
+import { CodexProcess } from "./terminal/codex/codexProcess";
+import { LocalCodexCatalogProbe } from "./terminal/codex/codexCatalogProbe";
 
 type Database = ReturnType<typeof requireDatabase>;
-export type WorkerOverrides = { runtime?: ClaudeSessionRuntime; messages?: SessionMessageDao; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog };
+export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe };
 
-function selectRuntime(env: NodeJS.ProcessEnv, log: SessionLog): ClaudeSessionRuntime {
+function selectRuntime(env: NodeJS.ProcessEnv, log: SessionLog): AgentSessionRuntime {
   const script = scriptFromEnvironment(env);
   return script ? new ScriptedSessionRuntime({ script }) : new AgentSdkSessionRuntime({ locator: new PathToolLocator(env), env, log });
 }
@@ -40,20 +51,28 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const now = overrides.now ?? (() => new Date());
   const identity = { hostId: overrides.hostId ?? machineIdentity(), workerId: overrides.workerId ?? randomUUID() };
   const sessions = new DrizzleTerminalSessionDao(database);
+  const tools = new PathToolLocator(env);
+  const codexProbe = overrides.codexProbe ?? new LocalCodexCatalogProbe({ tools, transport: (binary) => new AppServerCodexCatalogTransport({ binary, env }), now });
+  const codexRuntime = new CodexAppServerRuntime({ process: new CodexProcess(tools, env), probe: codexProbe, log });
+  const runtimes = overrides.runtimes ?? { claude: selectRuntime(env, log), codex: codexRuntime };
   const requests = new DrizzleSessionRequestDao(database);
   const messages = overrides.messages ?? new DrizzleSessionMessageDao(database);
   const status = new DrizzleSessionStatusDao(database);
   const registry = new SessionHandleRegistry();
   const pending = new PendingRequestRegistry();
-  const cancellation = new RequestCancellation({ requests, registry: pending, now });
+  const gate = new SessionRequestGate();
+  const cancellation = new RequestCancellation({ requests, registry: pending, gate, now });
   const exit = new SessionExitHandling({ sessions, status, messages, cancellation, registry, now, log });
   const tracker = new InflightTracker();
-  const broker = new SessionRequestBroker({ requests, status, registry: pending, tracker, log });
+  const broker = new SessionRequestBroker({ requests, status, registry: pending, tracker, gate, log });
+  const secretAnswerReceiver = new SecretAnswerReceiver({ requests, status, registry: pending, gate });
+  const secretAnswerListener = overrides.secretAnswerSql ? new PostgresSecretAnswerListener(overrides.secretAnswerSql, (delivery) => secretAnswerReceiver.receive(delivery)) : null;
   const recorder = new SessionRecorder({ messages, events: createTerminalEventController(database, { env }), log });
-  const handlers = new SessionHandlerFactory({ recorder, permissions: overrides.permissions ?? broker, onExit: (session, outcome) => exit.handle(session, outcome), log });
+  const handlers = new SessionHandlerFactory({ recorder, permissions: overrides.permissions ?? broker, onExit: (session, outcome) => exit.handle(session, outcome), onAgentVersion: (sessionId, version) => sessions.markAgentVersion?.(sessionId, version) ?? Promise.resolve(), log });
   const hosts = new DrizzleSessionHostDao(database);
+  const catalog = new CodexCatalogStep(new CodexCatalogPublisher({ hosts, probe: codexProbe, hostId: identity.hostId, now, log }));
   const control = new DrizzleSessionControlDao(database);
-  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, hosts, control, tracker, context: new FileSessionContextBuilder(env), runtime: overrides.runtime ?? selectRuntime(env, log) };
+  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context: new FileSessionContextBuilder(env), runtimes };
 }
 
 export type WorkerParts = ReturnType<typeof buildWorkerParts>;

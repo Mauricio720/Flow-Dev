@@ -1,5 +1,5 @@
 import type { ArtifactCaptureTrigger } from "../../terminal/artifactCaptureTrigger";
-import type { HookPayload } from "../../terminal/claudeSessionRuntime";
+import type { HookPayload } from "../../terminal/agentSessionRuntime";
 import type { SessionMessageDao } from "../../terminal/sessionInteractionPorts";
 import { MAX_STORED_TEXT_LENGTH, truncateWithMarker } from "./sessionInteractionLimits";
 import { errorFields, type SessionLog } from "./sessionLog";
@@ -29,6 +29,14 @@ export class SessionRecorder {
       if (captureTrigger) await this.deps.events.capture(sessionId, captureTrigger);
     } catch (error) {
       this.deps.log.error("record_hook_failed", { sessionId, hook: String(payload.hook_event_name), ...errorFields(error) });
+    }
+  }
+
+  async captureEnd(sessionId: string) {
+    try {
+      await this.deps.events.capture(sessionId, "session_end");
+    } catch (error) {
+      this.deps.log.error("record_end_capture_failed", { sessionId, ...errorFields(error) });
     }
   }
 }

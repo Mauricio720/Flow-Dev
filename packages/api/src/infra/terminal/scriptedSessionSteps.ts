@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { HookPayload } from "../../application/terminal/claudeSessionRuntime";
+import type { HookPayload } from "../../application/terminal/agentSessionRuntime";
 import type { Question } from "../../application/terminal/sessionInteraction";
 import { FAKE_SCRIPT_VARIABLE } from "./terminalPorts";
 
@@ -13,6 +13,7 @@ export type ScriptStep =
   | { kind: "ask"; questions: Question[] }
   | { kind: "permission"; toolName: string; input: Record<string, unknown>; suggestions?: unknown[] }
   | { kind: "hook"; payload: HookPayload }
+  | { kind: "write_file"; path: string; content: string }
   | { kind: "wait_message" }
   | { kind: "end_turn" }
   | { kind: "fail"; detail: string }

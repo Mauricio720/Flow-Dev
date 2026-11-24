@@ -1,5 +1,7 @@
 import type { PlanningRoute } from "../../services/tasks/planningContracts";
+import type { SessionAgent } from "../../terminal/sessionAgentCatalog";
 import type { SessionRuntimeKind } from "../../terminal/sessionInteraction";
+import type { SessionPurposeKind } from "../../terminal/sessionPurposeKind";
 import type { TerminalEventKind } from "../../terminal/terminalEventKind";
 import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 
@@ -14,6 +16,11 @@ export type ExecutionSessionRow = {
   endedAt: Date | null;
   droppedEvents: number;
   filesRemovedAt: Date | null;
+  purpose: SessionPurposeKind;
+  planItemId: string | null;
+  agent: SessionAgent;
+  model: string | null;
+  effort: string | null;
 };
 
 export type ExecutionEventRow = { sessionId: string; kind: TerminalEventKind; summary: string; occurredAt: Date };
