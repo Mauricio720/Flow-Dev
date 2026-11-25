@@ -18,11 +18,13 @@ function publicationFailure(error: unknown): TaskFailure {
   return unspecified ? { code: failure.code, reason: PUBLICATION_UNAVAILABLE_REASON } : failure;
 }
 
-async function approve(context: PublicationContext, keys: RequestKeys, preview: PublicationPreview) {
+type Approval = { context: PublicationContext; keys: RequestKeys; preview: PublicationPreview; assignToSelf: boolean };
+
+async function approve({ context, keys, preview, assignToSelf }: Approval) {
   const task = context.task;
   if (!task || !context.repositoryId) return;
-  const requestKey = keys.keyFor(`${task.version}:${preview.previewHash}`);
-  await requestPublication({ projectId: context.projectId, taskId: task.id, revisionId: preview.revisionId, previewHash: preview.previewHash, repositoryId: context.repositoryId, expectedVersion: task.version, requestKey });
+  const requestKey = keys.keyFor(`${task.version}:${preview.previewHash}:${assignToSelf}`);
+  await requestPublication({ projectId: context.projectId, taskId: task.id, revisionId: preview.revisionId, previewHash: preview.previewHash, repositoryId: context.repositoryId, expectedVersion: task.version, requestKey, assignToSelf });
   keys.release();
   await context.onChanged();
 }
@@ -30,6 +32,7 @@ async function approve(context: PublicationContext, keys: RequestKeys, preview: 
 export function usePublication(context: PublicationContext) {
   const [state, setState] = useState<PreviewState>({ status: "idle" });
   const [approving, setApproving] = useState(false);
+  const [assignToSelf, setAssignToSelf] = useState(false);
   const [keys] = useState(createRequestKeys);
   function fail(error: unknown) {
     const failure = publicationFailure(error);
@@ -38,6 +41,7 @@ export function usePublication(context: PublicationContext) {
   }
   async function review(revisionId: string) {
     if (!context.task) return;
+    setAssignToSelf(false);
     setState({ status: "loading" });
     try {
       setState({ status: "ready", preview: await loadPublicationPreview({ projectId: context.projectId, taskId: context.task.id, revisionId }) });
@@ -48,11 +52,11 @@ export function usePublication(context: PublicationContext) {
   async function publish() {
     if (state.status !== "ready" || approving) return;
     setApproving(true);
-    await approve(context, keys, state.preview).catch(fail);
+    await approve({ context, keys, preview: state.preview, assignToSelf }).catch(fail);
     setApproving(false);
   }
   const previewFor = (revisionId: string) => (state.status === "ready" && state.preview.revisionId === revisionId ? state.preview : null);
-  return { state, approving, review, publish, previewFor };
+  return { state, approving, assignToSelf, setAssignToSelf, review, publish, previewFor };
 }
 
 export type Publication = ReturnType<typeof usePublication>;

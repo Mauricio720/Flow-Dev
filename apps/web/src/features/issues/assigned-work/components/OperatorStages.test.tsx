@@ -1,23 +1,11 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
 import { eventOf, sessionOf } from "@/test/execution";
 import { planItemOf, planOf } from "@/test/plan";
 import { setOf, taskOf, viewOf } from "@/test/taskSet";
-import { CART_PROJECT, approvedDetail } from "@/test/tasks";
-import { snapshotOf } from "@/test/work";
-import type { TaskDetail } from "../contract";
-import { OperatorStages } from "./OperatorStages";
-
-const get = vi.mocked(trpc.tasks.taskSet.get.query);
-const running = () => sessionOf({ status: "running", runtime: "terminal" });
-const withSessions = (sessions: ReturnType<typeof sessionOf>[]): TaskDetail => ({ ...approvedDetail(), execution: { sessions, artifacts: [] } });
-
-async function mount(detail: TaskDetail, viewerCanOperate = true) {
-  render(<OperatorStages project={CART_PROJECT} snapshot={snapshotOf({ viewerCanOperate }, detail)} refresh={async () => undefined} onFailure={() => undefined} />);
-  await act(async () => undefined);
-}
+import { mountStages as mount, running, selectedTab, tabNames, taskSetGet as get, withSessions } from "@/test/operatorStages";
 
 const PLAN_ITEM = "00000000-0000-4000-8000-0000000000e1";
 const tabStartingWith = (prefix: string) => screen.getAllByRole("tab").find((tab) => tab.textContent?.startsWith(prefix))!;
@@ -30,14 +18,11 @@ async function mountWithOlderPlanSession() {
   await mount(withSessions([newest, older]));
 }
 
-const tabNames = () => screen.getAllByRole("tab").map((tab) => tab.textContent);
-const selectedTab = () => screen.getAllByRole("tab").find((tab) => tab.getAttribute("aria-selected") === "true")?.textContent;
-
 describe("OperatorStages tabs with tasks", () => {
   it("V-40f puts Spec and Tarefas between the planning and the session, and opens on Tarefas when no session is active", async () => {
     get.mockResolvedValue(viewOf(setOf([taskOf("01")])));
     await mount(withSessions([sessionOf({ status: "ended", runtime: "terminal" })]));
-    expect(tabNames()).toEqual(["PlanejamentoConcluída", "SpecConcluída", "TarefasEm andamento", "Execução no terminalConcluída"]);
+    expect(tabNames()).toEqual(["PlanejamentoConcluída", "SpecConcluída", "TarefasEm andamento", "RevisãoPendente", "Execução no terminalConcluída"]);
     expect(selectedTab()).toBe("TarefasEm andamento");
   });
 

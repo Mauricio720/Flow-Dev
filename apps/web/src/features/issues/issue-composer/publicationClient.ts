@@ -2,7 +2,7 @@ import { trpc } from "@/lib/trpc/client";
 
 export type PublicationPreview = { title: string; bodyMarkdown: string; repositoryLabel: string; publisherLogin: string | null; labels: string[]; revisionId: string; version: number; previewHash: string };
 export type PreviewInput = { projectId: string; taskId: string; revisionId: string };
-export type PublishInput = PreviewInput & { requestKey: string; expectedVersion: number; repositoryId: string; previewHash: string };
+export type PublishInput = PreviewInput & { requestKey: string; expectedVersion: number; repositoryId: string; previewHash: string; assignToSelf: boolean };
 
 type PublicationProcedures = { preview: { query: (input: PreviewInput) => Promise<unknown> }; publish: { mutate: (input: PublishInput) => Promise<unknown> } };
 

@@ -53,6 +53,9 @@ const REASON_MESSAGE: Record<string, string> = {
   task_unavailable: "Esta tarefa não existe neste projeto ou não está disponível para você.",
   service_unavailable: "O serviço está temporariamente indisponível.",
   publication_unavailable: "A publicação não está disponível neste ambiente. O draft salvo continua intacto.",
+  ready_board_missing: "Este projeto não tem um quadro do GitHub vinculado, então a Issue não pode ir para Ready. Uma pessoa administradora vincula o quadro em Configurações. Você também pode criar a Issue sem essa opção.",
+  ready_status_missing: "O quadro do projeto não tem a coluna Ready. Crie a coluna no quadro do GitHub ou crie a Issue sem essa opção.",
+  assign_permission_denied: "Para se atribuir à Issue, sua conta do GitHub precisa de permissão de escrita no repositório. Crie a Issue sem essa opção ou peça essa permissão.",
   repository_authorization_needed: "Entrar no Flow Dev não libera repositórios. Autorize a leitura com a sua conta do GitHub para continuar.",
 };
 

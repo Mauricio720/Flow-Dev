@@ -9,7 +9,13 @@ export const WAITING_FOR_OPERATOR_LABEL = "Aguardando a pessoa operadora";
 export const READ_ONLY_NOTE = "Só quem abriu a sessão, enquanto for a operadora, pode responder.";
 export const TERMINAL_SESSION_LABEL = "Aberta no terminal";
 export const FLOW_DEV_UNCONFIRMED_MESSAGE = "O Flow Dev não conseguiu iniciar a sessão. Confira se o serviço de sessões está rodando.";
-export const LOAD_FAILED_NOTE = "Não foi possível atualizar a conversa agora. Tentando de novo.";
+export const LOAD_FAILED_NOTE = "Não foi possível atualizar a conversa. Não é possível confirmar se o agente continua executando. Tentando reconectar automaticamente.";
+export const SESSION_CHECKING_LABEL = "Verificando estado da sessão…";
+export const SESSION_REFRESH_FAILED_LABEL = "Sem atualização da sessão";
+export const SESSION_RETRY_LABEL = "Atualizar sessão";
+export const SESSION_RETRYING_LABEL = "Atualizando sessão…";
+export const SESSION_CHECKED_AT_LABEL = "Última consulta à sessão:";
+export const SESSION_LAST_STATUS_LABEL = "Último estado registrado:";
 export const ACTION_FAILED_MESSAGE = "Não foi possível concluir agora. Tente de novo.";
 export const NO_ENTRIES_NOTE = "A conversa aparece aqui assim que o agente responder.";
 

@@ -66,4 +66,19 @@ describe("ExecutionHistory", () => {
     expect(rows).toHaveLength(3);
     expect(rows.every((row) => row.textContent?.includes("Codex · gpt-6.1-sol · Alto"))).toBe(true);
   });
+
+  it("V-13f lists review and review_execute sessions in the history with their events, like the others", async () => {
+    const sessions = [
+      sessionOf({ id: "s1", status: "running" }),
+      sessionOf({ id: "s2", status: "ended", userName: "Bruno", purpose: "review_execute", model: "opus", effort: "max", events: [eventOf({ summary: "pnpm lint" })], endedAt: "2026-11-20T11:00:00.000Z" }),
+      sessionOf({ id: "s3", status: "ended", userName: "Carla", purpose: "review", model: "sonnet", effort: "high", events: [eventOf({ summary: "git diff" })], endedAt: "2026-11-19T11:00:00.000Z" }),
+    ];
+    render(<ExecutionStage detail={detailWith(sessions)} reader={false} />);
+    const history = screen.getByRole("list", { name: "Sessões anteriores" });
+    const [execute, review] = within(history).getAllByRole("button");
+    expect(execute!.textContent).toContain("Claude Code · Opus · Máximo");
+    expect(review!.textContent).toContain("Claude Code · Sonnet · Alto");
+    await userEvent.click(review!);
+    expect(within(history).getByText("Rodou: git diff")).toBeTruthy();
+  });
 });

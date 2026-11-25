@@ -9,6 +9,7 @@ export type TaskMessage = TaskMessagePage["items"][number];
 export type TaskRevision = NonNullable<TaskDetail["currentRevision"]>;
 export type TaskProposal = NonNullable<TaskDetail["pendingProposal"]>;
 export type TaskPublication = NonNullable<TaskDetail["publication"]>;
+export type ReadyAssignmentState = NonNullable<TaskPublication["readyAssignment"]>["state"];
 export type TaskReceipt = RouterOutputs["tasks"]["start"];
 export type IssueDraft = TaskRevision["draft"];
 export type SourceReference = IssueDraft["references"][number];

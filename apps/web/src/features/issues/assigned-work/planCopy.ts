@@ -11,6 +11,10 @@ export const RELOAD_LABEL = "Recarregar o plano";
 export const SESSION_SELECT_LABEL = "Sessão";
 export const NO_SESSION_LABEL = "Sem sessão";
 export const NEW_SESSION_LABEL = "Nova sessão";
+export const CHOOSE_TASKS_LABEL = "Escolher tarefas";
+export const CREATE_SESSION_LABEL = "Criar sessão";
+export const CANCEL_LABEL = "Cancelar";
+export const NEW_SESSION_TASKS_TITLE = "Tarefas da nova sessão";
 export const UNASSIGNED_HEADING = "Sem sessão";
 export const STALE_NOTICE = "As tarefas mudaram desde que o plano foi salvo. Revise o plano.";
 export const PLAN_LOAD_FAILED = "Não foi possível carregar o plano agora. Tentaremos de novo.";
@@ -21,6 +25,10 @@ export const UNSAVED_NOTE = "Alterações não salvas";
 export const sessionCountText = (count: number) => `${count} ${count === 1 ? "sessão" : "sessões"}`;
 
 export const sessionTitle = (position: number) => `Sessão ${position}`;
+export const sessionTasksTitle = (position: number) => `Tarefas da Sessão ${position}`;
+export const taskChoiceLabel = (number: string, title: string) => `${number} — ${title}`;
+export const inSessionText = (position: number) => `Está na Sessão ${position}`;
+export const startedPlaceText = (position: number) => `Sessão ${position} · ${STARTED_NOTE}`;
 export const taskSelectLabel = (number: string) => `Sessão da tarefa ${number}`;
 
 export const START_LABEL = "Iniciar";

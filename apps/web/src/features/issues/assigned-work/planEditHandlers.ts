@@ -1,5 +1,6 @@
 import type { EditablePlan, MoveTarget } from "./planContract";
 import { allInOne, moveTask, onePerTask, sameChoiceForAll, setChoice } from "./planEditorModel";
+import { createSessionWith, setSessionTasks } from "./planSelectionModel";
 import type { AgentChoice } from "./terminalContract";
 
 type Edit = (change: (current: EditablePlan) => EditablePlan) => void;
@@ -11,5 +12,7 @@ export function planEditHandlers(edit: Edit, taskIds: string[]) {
     onePerTask: () => edit((current) => onePerTask(current, taskIds)),
     sameChoice: (choice: AgentChoice) => edit((current) => sameChoiceForAll(current, choice)),
     choose: (key: string, choice: AgentChoice) => edit((current) => setChoice(current, { key, choice })),
+    setTasks: (key: string, selected: string[]) => edit((current) => setSessionTasks(current, { key, taskIds: selected })),
+    createSession: (selected: string[]) => edit((current) => createSessionWith(current, selected)),
   };
 }

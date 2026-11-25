@@ -57,7 +57,7 @@ export function callerRejection(code: string, reason?: string) {
 }
 
 export function publishedDetail(): TaskDetail {
-  const publication = { issueId: "9041", issueNumber: 41, issueUrl: ISSUE_41_URL, createdAt: NOW, title: DRAFT.title, bodyMarkdown: "## Contexto\n\nAo remover item o total permanece antigo", repository: "acme/cart" };
+  const publication = { issueId: "9041", issueNumber: 41, issueUrl: ISSUE_41_URL, createdAt: NOW, title: DRAFT.title, bodyMarkdown: "## Contexto\n\nAo remover item o total permanece antigo", repository: "acme/cart", readyAssignment: null };
   return detailOf({ task: summaryOf({ status: "published", version: 9 }), publication });
 }
 

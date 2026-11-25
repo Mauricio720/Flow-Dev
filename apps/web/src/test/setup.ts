@@ -43,6 +43,7 @@ vi.mock("@/lib/trpc/client", () => ({
       artifacts: { list: { query: vi.fn() }, get: { query: vi.fn() } },
       taskSet: { get: { query: vi.fn() } },
       plan: { get: { query: vi.fn() }, save: { mutate: vi.fn() } },
+      review: { get: { query: vi.fn() }, start: { mutate: vi.fn() }, request: { mutate: vi.fn() } },
       planning: {
         start: { mutate: vi.fn() },
         retry: { mutate: vi.fn() },

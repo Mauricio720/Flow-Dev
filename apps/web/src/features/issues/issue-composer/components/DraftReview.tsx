@@ -37,7 +37,7 @@ export function DraftReview({ repository, ...input }: Props) {
       {proposal && (
         <RefinementReview key={proposal.operationId} fields={proposalFields(revision.draft, proposal.draft, revision.manuallyEditedPaths)} busy={busy} failure={commandFailure} onApply={(paths) => review.actions.resolve("apply", paths)} onDiscard={() => review.actions.resolve("discard", [])} />
       )}
-      <PublicationPreview state={publication.state} preview={review.preview} onRetry={review.actions.review} />
+      <PublicationPreview state={publication.state} preview={review.preview} assignToSelf={publication.assignToSelf} onAssignToSelfChange={publication.setAssignToSelf} onRetry={review.actions.review} />
       <DraftFooter block={review.block} saveState={saveState} editing={editor?.editing ?? false} dirty={editor?.dirty ?? false} reviewing={publication.state.status === "loading"} onToggleEditing={() => editor?.setEditing(!editor.editing)} onSave={() => void review.actions.save()} onDiscard={() => editor?.discard()} onReview={review.actions.review} onPublish={() => void publication.publish()} />
     </IssueDraftBlock>
   );

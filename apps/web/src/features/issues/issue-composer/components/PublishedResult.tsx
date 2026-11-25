@@ -5,6 +5,7 @@ import type { TaskPublication } from "../contract";
 import { publishedIssueUrl, repositoryIssuesUrl } from "../publicationModel";
 import { formatMoment } from "@/lib/tasks/formatMoment";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { ReadyAssignmentNotice } from "./ReadyAssignmentNotice";
 
 const SNAPSHOT_NOTE = "Este é o snapshot aprovado na publicação. Ele não acompanha edições feitas depois no GitHub.";
 const UNTRUSTED_LINK = "O link registrado desta Issue não confere com o repositório do projeto, por isso não é oferecido aqui.";
@@ -29,6 +30,7 @@ export function PublishedResult({ publication, authorName, workHref }: Published
     <footer className="space-y-3 border-t border-line bg-surface px-5 py-3.5">
       <p className="flex items-center gap-2 text-sm text-merge-ink"><CheckIcon />Publicada em <span className="font-mono text-[13px]">{publication.repository}</span></p>
       <p className="text-sm text-ink-2">Criada por {authorName ?? UNKNOWN_AUTHOR} em <time dateTime={publication.createdAt} suppressHydrationWarning>{formatMoment(publication.createdAt)}</time>.</p>
+      <ReadyAssignmentNotice readyAssignment={publication.readyAssignment} />
       <p className="text-xs text-ink-3">{SNAPSHOT_NOTE}</p>
       <MarkdownPreview body={publication.bodyMarkdown} label="Corpo publicado renderizado" />
       <details className="rounded-md border border-line bg-raised">

@@ -4,17 +4,22 @@ import { useSessionActions } from "../hooks/useSessionActions";
 import { useSessionTimeline } from "../hooks/useSessionTimeline";
 import type { ExecutionSession } from "../executionContract";
 import type { SessionScope } from "../sessionContract";
-import { conversationLabelFor, LOAD_FAILED_NOTE, NO_ENTRIES_NOTE, READ_ONLY_NOTE, hiddenEntriesNote } from "../sessionCopy";
+import { conversationLabelFor, NO_ENTRIES_NOTE, READ_ONLY_NOTE, hiddenEntriesNote } from "../sessionCopy";
 import { isFinalStatus } from "../sessionTimelineModel";
 import { ConversationScroll } from "./ConversationScroll";
-import { ExecutionStatus } from "./ExecutionStatus";
+import { SessionConnectionStatus } from "./SessionConnectionStatus";
 import { SessionComposer } from "./SessionComposer";
 import { SessionControls } from "./SessionControls";
 import { SessionEntry } from "./SessionEntry";
 
 type Props = { scope: SessionScope; session: ExecutionSession; reader: boolean };
 
-export function SessionConversation({ scope, session, reader }: Props) {
+export function SessionConversation(props: Props) {
+  const { projectId, taskId, sessionId } = props.scope;
+  return <SessionConversationContent key={`${projectId}:${taskId}:${sessionId}`} {...props} />;
+}
+
+function SessionConversationContent({ scope, session, reader }: Props) {
   const timeline = useSessionTimeline(scope);
   const actions = useSessionActions(scope);
   const status = timeline.status ?? session.status;
@@ -23,13 +28,12 @@ export function SessionConversation({ scope, session, reader }: Props) {
   const hasPendingRequest = timeline.entries.some((entry) => (entry.type === "question" || entry.type === "permission") && entry.status === "pending");
   return (
     <div className="space-y-4">
-      <ExecutionStatus session={{ ...session, status }} reader={timeline.loaded ? !timeline.canControl : reader} />
+      <SessionConnectionStatus session={{ ...session, status }} reader={timeline.loaded ? !timeline.canControl : reader} timeline={timeline} />
       {timeline.hiddenEntries > 0 && <p className="text-xs text-ink-3">{hiddenEntriesNote(timeline.hiddenEntries)}</p>}
       <ConversationScroll entryCount={timeline.entries.length} label={conversationLabelFor(session.agent)}>
         {timeline.entries.map((entry) => <li key={entry.id}><SessionEntry entry={entry} agent={session.agent} canAnswer={canControl} actions={actions} /></li>)}
       </ConversationScroll>
-      {timeline.loaded && timeline.entries.length === 0 && <p className="text-sm text-ink-3">{NO_ENTRIES_NOTE}</p>}
-      {timeline.failed && <p role="status" className="text-xs text-ink-3">{LOAD_FAILED_NOTE}</p>}
+      {timeline.loaded && !timeline.failed && timeline.entries.length === 0 && <p className="text-sm text-ink-3">{NO_ENTRIES_NOTE}</p>}
       {timeline.loaded && !final && !timeline.canControl && <p role="note" className="text-sm text-ink-2">{READ_ONLY_NOTE}</p>}
       {canControl && <SessionComposer agent={session.agent} busy={actions.busy} onSend={actions.send} controls={<SessionControls status={status} hasPendingRequest={hasPendingRequest} busy={actions.busy} onInterrupt={actions.interrupt} onEnd={actions.end} />} />}
     </div>

@@ -29,4 +29,9 @@ describe("TaskProgress failure copy", () => {
   it("V-09g explains a model that left the catalog", () => {
     expect(show(failed("agent_settings_invalid"))).toContain("O modelo configurado para este agente não está mais disponível. Escolha outro nas Configurações do projeto.");
   });
+
+  it("V-06a shows the literal M-2 text when the worker returns the task to draft_ready with ready_status_missing", () => {
+    const detail = detailOf({ task: summaryOf({ status: "draft_ready" }), lastError: { reason: "ready_status_missing" } });
+    expect(show(detail)).toContain("O quadro do projeto não tem a coluna Ready. Crie a coluna no quadro do GitHub ou crie a Issue sem essa opção.");
+  });
 });

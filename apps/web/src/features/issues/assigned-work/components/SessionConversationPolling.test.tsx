@@ -38,7 +38,7 @@ describe("SessionConversation polling", () => {
     render(<SessionConversation scope={SESSION_SCOPE} session={sessionOf({ runtime: "flow_dev" })} reader={false} />);
     await act(async () => undefined);
     await act(async () => { await vi.advanceTimersByTimeAsync(1_500); });
-    expect(screen.getByText("Não foi possível atualizar a conversa agora. Tentando de novo.")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("Não é possível confirmar se o agente continua executando.");
     expect(screen.getByText("Vou começar pela análise.")).toBeTruthy();
   });
 });

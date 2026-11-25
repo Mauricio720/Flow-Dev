@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import type { PreviewState } from "../hooks/usePublication";
 import type { PublicationPreview as Preview } from "../publicationClient";
 import { failureMessage } from "../taskCopy";
+import { AssignToSelfOption } from "./AssignToSelfOption";
 import { MarkdownPreview } from "./MarkdownPreview";
 
 const EXACT_BODY_NOTE = "O corpo abaixo é o texto exato que será enviado ao GitHub. Conversa, fontes consultadas e diagnósticos não são publicados.";
 const LABELS_NOTE = "As labels entram na Issue quando sua conta pode etiquetar o repositório. Sem essa permissão, o GitHub cria a Issue sem elas.";
 const UNKNOWN_PUBLISHER = "sua conta do GitHub autorizada";
 
-type Props = { state: PreviewState; preview: Preview | null; onRetry: () => void };
+type Props = { state: PreviewState; preview: Preview | null; assignToSelf: boolean; onAssignToSelfChange: (value: boolean) => void; onRetry: () => void };
 
 function PreviewFacts({ preview }: { preview: Preview }) {
   return (
@@ -26,7 +27,7 @@ function PreviewFacts({ preview }: { preview: Preview }) {
   );
 }
 
-export function PublicationPreview({ state, preview, onRetry }: Props) {
+export function PublicationPreview({ state, preview, assignToSelf, onAssignToSelfChange, onRetry }: Props) {
   if (state.status === "loading") return <p role="status" className="border-t border-line px-5 py-4 text-sm text-ink-3">Preparando a prévia da publicação…</p>;
   if (state.status === "failed") {
     return (
@@ -44,6 +45,7 @@ export function PublicationPreview({ state, preview, onRetry }: Props) {
       <MarkdownPreview body={preview.bodyMarkdown} label="Corpo da Issue renderizado" />
       <p className="text-xs text-ink-3">{EXACT_BODY_NOTE} {LABELS_NOTE}</p>
       <pre tabIndex={0} aria-label="Corpo da Issue em Markdown" className="max-h-80 overflow-auto rounded-md border border-line bg-surface p-3 font-mono text-[13px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{preview.bodyMarkdown}</pre>
+      <AssignToSelfOption checked={assignToSelf} onChange={onAssignToSelfChange} />
     </section>
   );
 }

@@ -9,7 +9,7 @@ export function toEditable(view: PlanView): EditablePlan {
   return { version: view.version, items };
 }
 
-function nextKey(plan: EditablePlan) {
+export function nextKey(plan: EditablePlan) {
   const used = plan.items.filter((item) => item.key.startsWith(NEW_KEY_PREFIX)).map((item) => Number(item.key.slice(NEW_KEY_PREFIX.length)));
   return `${NEW_KEY_PREFIX}${Math.max(0, ...used) + 1}`;
 }
