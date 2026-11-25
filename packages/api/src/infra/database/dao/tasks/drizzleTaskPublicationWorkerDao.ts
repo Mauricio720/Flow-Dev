@@ -16,6 +16,10 @@ export class DrizzleTaskPublicationWorkerDao implements TaskPublicationWorkerDao
   sessionActive(claim: PublicationWorkerClaim) { return hasActiveSession(this.database, claim, this.clock()); }
   fenceDispatch(claim: PublicationWorkerClaim) { return fencePublicationDispatch(this.database, claim, this.clock()); }
   settle(claim: PublicationWorkerClaim, outcome: CreationOutcome, dispatched: boolean) { return settleTaskPublication(this.database, claim.taskId, claim.attemptId, outcome, dispatched ? undefined : claim); }
+  async recordReadyAssignment(claim: PublicationWorkerClaim, result: Parameters<TaskPublicationWorkerDao["recordReadyAssignment"]>[1]) {
+    const updated = await this.database.update(taskPublicationAttempts).set({ readyAssignment: result }).where(and(eq(taskPublicationAttempts.id, claim.attemptId), eq(taskPublicationAttempts.taskId, claim.taskId), isNull(taskPublicationAttempts.readyAssignment))).returning({ id: taskPublicationAttempts.id });
+    return updated.length === 1;
+  }
 }
 
 async function claimPublication(database: Database, workerId: string, now: Date): Promise<PublicationWorkerClaim | null> {
@@ -31,7 +35,7 @@ async function claimPublication(database: Database, workerId: string, now: Date)
 
 async function selectClaim(database: Database, now: Date) {
   const expiredLease = and(eq(taskOperations.state, "running"), lte(taskOperations.leaseUntil, now));
-  return (await database.select({ taskId: taskOperations.taskId, operationId: taskOperations.id, attempts: taskOperations.attempts, sessionId: taskOperations.initiatedSessionId, projectId: tasks.projectId, publisherUserId: taskPublicationAttempts.publisherUserId, publisherGithubId: taskPublicationAttempts.publisherGithubId, repositoryId: taskPublicationAttempts.repositoryId, repositoryNodeId: taskPublicationAttempts.repositoryNodeId, owner: taskPublicationAttempts.approvedOwner, name: taskPublicationAttempts.approvedName, revisionId: taskPublicationAttempts.revisionId, previewHash: taskPublicationAttempts.previewHash, title: taskPublicationAttempts.titleSnapshot, bodyMarkdown: taskPublicationAttempts.bodySnapshot, attemptId: taskPublicationAttempts.id }).from(taskOperations).innerJoin(taskPublicationAttempts, eq(taskPublicationAttempts.operationId, taskOperations.id)).innerJoin(tasks, eq(tasks.id, taskOperations.taskId)).where(and(eq(taskOperations.kind, "publish"), lte(taskOperations.nextRunAt, now), isNull(taskOperations.dispatchStartedAt), eq(taskPublicationAttempts.outcome, "queued"), eq(tasks.status, "publishing"), eq(tasks.activeOperationId, taskOperations.id), or(eq(taskOperations.state, "queued"), expiredLease))).orderBy(asc(taskOperations.nextRunAt), asc(taskOperations.createdAt)).limit(1).for("update", { of: taskOperations, skipLocked: true }))[0] ?? null;
+  return (await database.select({ taskId: taskOperations.taskId, operationId: taskOperations.id, attempts: taskOperations.attempts, sessionId: taskOperations.initiatedSessionId, projectId: tasks.projectId, publisherUserId: taskPublicationAttempts.publisherUserId, publisherGithubId: taskPublicationAttempts.publisherGithubId, repositoryId: taskPublicationAttempts.repositoryId, repositoryNodeId: taskPublicationAttempts.repositoryNodeId, owner: taskPublicationAttempts.approvedOwner, name: taskPublicationAttempts.approvedName, revisionId: taskPublicationAttempts.revisionId, previewHash: taskPublicationAttempts.previewHash, title: taskPublicationAttempts.titleSnapshot, bodyMarkdown: taskPublicationAttempts.bodySnapshot, attemptId: taskPublicationAttempts.id, assignToSelf: taskPublicationAttempts.assignToSelf }).from(taskOperations).innerJoin(taskPublicationAttempts, eq(taskPublicationAttempts.operationId, taskOperations.id)).innerJoin(tasks, eq(tasks.id, taskOperations.taskId)).where(and(eq(taskOperations.kind, "publish"), lte(taskOperations.nextRunAt, now), isNull(taskOperations.dispatchStartedAt), eq(taskPublicationAttempts.outcome, "queued"), eq(tasks.status, "publishing"), eq(tasks.activeOperationId, taskOperations.id), or(eq(taskOperations.state, "queued"), expiredLease))).orderBy(asc(taskOperations.nextRunAt), asc(taskOperations.createdAt)).limit(1).for("update", { of: taskOperations, skipLocked: true }))[0] ?? null;
 }
 
 async function heartbeatPublication(database: Database, claim: PublicationWorkerClaim, now: Date) {
@@ -54,7 +58,7 @@ async function fencePublicationDispatch(database: Database, claim: PublicationWo
 }
 
 async function expireFencedDispatches(database: Database, now: Date) {
-  const rows = await database.select({ taskId: taskOperations.taskId, operationId: taskOperations.id, attemptId: taskPublicationAttempts.id }).from(taskOperations).innerJoin(taskPublicationAttempts, eq(taskPublicationAttempts.operationId, taskOperations.id)).where(and(eq(taskOperations.kind, "publish"), eq(taskOperations.state, "running"), lte(taskOperations.leaseUntil, now), sql` ${taskOperations.dispatchStartedAt} is not null `, eq(taskPublicationAttempts.outcome, "dispatching")));
+  const rows = await database.select({ taskId: taskOperations.taskId, operationId: taskOperations.id, attemptId: taskPublicationAttempts.id, assignToSelf: taskPublicationAttempts.assignToSelf }).from(taskOperations).innerJoin(taskPublicationAttempts, eq(taskPublicationAttempts.operationId, taskOperations.id)).where(and(eq(taskOperations.kind, "publish"), eq(taskOperations.state, "running"), lte(taskOperations.leaseUntil, now), sql` ${taskOperations.dispatchStartedAt} is not null `, eq(taskPublicationAttempts.outcome, "dispatching")));
   for (const row of rows) await markLostDispatch(database, row, now);
 }
 

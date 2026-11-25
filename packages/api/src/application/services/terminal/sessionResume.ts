@@ -51,7 +51,7 @@ export class SessionResumeStep implements TickStep {
       const handlers = this.deps.handlers.handlersFor(claimed, (current, outcome) => this.onExit(current, outcome, queued));
       const contextDir = this.deps.context.pathsOf(session.id).contextDir;
       const choice = { model: session.model ?? undefined, effort: session.effort ?? undefined };
-      this.deps.registry.set(session.id, runtime.resume({ sessionId: session.id, claudeSessionId: session.claudeSessionId, cwd: session.checkoutPath, contextDir, permissionMode: session.permissionMode, firstMessage: queued[0]!.content, handlers, ...choice }));
+      this.deps.registry.set(session.id, runtime.resume({ sessionId: session.id, claudeSessionId: session.claudeSessionId, cwd: session.checkoutPath, purpose: session.purpose, contextDir, permissionMode: session.permissionMode, firstMessage: queued[0]!.content, handlers, ...choice }));
       await this.deps.messages.markDelivered([queued[0]!.id], this.deps.now());
       this.deps.log.info("resumed", { sessionId: session.id, agent: session.agent, model: session.model, effort: session.effort });
     } catch (error) {

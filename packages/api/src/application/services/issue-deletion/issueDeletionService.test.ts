@@ -70,9 +70,9 @@ class FakeDao implements IssueDeletionDao {
   async pending() { return [...this.operations.values()]; }
   async activeFenceState() { return null; }
   async taskFacts(projectId: string, taskId: string) { return this.taskFactsMap.get(taskId) ?? null; }
-  async cancelTaskWork() {}
+  async cancelTaskWork() { return []; }
   async publicationState(taskId: string) { return { unresolved: false, createdIdentity: null }; }
-  async remainingActiveWork() { return { operations: [], runs: [], specs: [] }; }
+  async remainingActiveWork() { return { operations: [], runs: [], specs: [], reviewSessions: [] }; }
   async resume(input: { operationId: string; state: DeletionState }) {
     this.resumeCalls.push(input);
     const op = this.operations.get(input.operationId)!;

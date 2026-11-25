@@ -7,7 +7,7 @@ const NOW = new Date("2026-11-23T14:32:00Z");
 const FOLDER = "docs/specs/login";
 
 function sessionOf(overrides: Partial<LockedSession> = {}): LockedSession {
-  return { id: "s1", status: "running", checkoutPath: "/work/shop", activeSkill: null, startedAt: NOW, planTasksFolder: FOLDER, ...overrides };
+  return { id: "s1", status: "running", checkoutPath: "/work/shop", activeSkill: null, startedAt: NOW, captureFolder: FOLDER, ...overrides };
 }
 
 function editOf(path: string): SummarizedHookEvent {
@@ -29,7 +29,7 @@ describe("planIngestion in a plan session", () => {
   });
 
   it("V-39c leaves the edit without a skill in a session that is not from a plan", () => {
-    expect(skillsOf(sessionOf({ planTasksFolder: null }), "docs/specs/login/task_01.md")).toEqual([null]);
+    expect(skillsOf(sessionOf({ captureFolder: null }), "docs/specs/login/task_01.md")).toEqual([null]);
   });
 
   it("V-39d keeps the active skill, and does not change the active skill of the session", () => {

@@ -1,7 +1,7 @@
 import type { TaskDao } from "../application/database/dao/taskDao";
 import type { TaskPublicationWorkerDao, PublicationWorkerClaim } from "../application/database/dao/taskPublicationWorkerDao";
 import type { GitHubIssueGateway, GitHubIssueLabelGateway } from "../application/github/issueGateway";
-import type { BacklogPlacementService } from "../application/services/projects/backlogPlacementService";
+import type { ReadyAssignmentService } from "../application/services/tasks/readyAssignmentService";
 import type { RepositoryAccessService } from "../application/services/projects/repositoryAccessService";
 import { previewHash, parseIssueDraft, validatePublicationDraft } from "../application/services/tasks/draftRules";
 import { defineTaskLabels } from "../application/services/tasks/labelDefinitions";
@@ -10,7 +10,7 @@ import { TaskError } from "../application/services/tasks/taskErrors";
 import type { IssueImagePublisher } from "../application/services/tasks/issueImagePublisher";
 
 export class TaskPublicationWorkerController {
-  constructor(private readonly claims: TaskPublicationWorkerDao, private readonly tasks: TaskDao, private readonly repositories: RepositoryAccessService, private readonly github: GitHubIssueGateway, private readonly workerId = crypto.randomUUID(), private readonly backlog?: BacklogPlacementService, private readonly labels?: GitHubIssueLabelGateway, private readonly images?: IssueImagePublisher) {}
+  constructor(private readonly claims: TaskPublicationWorkerDao, private readonly tasks: TaskDao, private readonly repositories: RepositoryAccessService, private readonly github: GitHubIssueGateway, private readonly workerId = crypto.randomUUID(), private readonly readyAssignment?: ReadyAssignmentService, private readonly labels?: GitHubIssueLabelGateway, private readonly images?: IssueImagePublisher) {}
 
   async tick() {
     const claim = await this.claims.claim(this.workerId);
@@ -29,11 +29,13 @@ export class TaskPublicationWorkerController {
       if (!await this.claims.sessionActive(claim)) throw new TaskError("access_revoked");
       await this.defineLabels(claim, context.token, draft);
       await this.images?.upload({ taskId: claim.taskId, body: draftBody, destination: { owner: claim.owner, name: claim.name, token: context.token } });
+      if (claim.assignToSelf && (!context.eligibility.publisherLogin || !this.readyAssignment)) throw new TaskError("provider_unavailable");
+      if (claim.assignToSelf) await this.readyAssignment!.assertPossible({ projectId: claim.projectId, token: context.token, assignToSelf: true, canWriteContents: context.eligibility.canWriteContents === true });
       if (!await this.claims.fenceDispatch(claim)) return true;
       fenced = true;
-      const outcome = await this.github.create({ repositoryId: claim.repositoryId, owner: claim.owner, name: claim.name, token: context.token, publisherGithubId: claim.publisherGithubId, title: claim.title, body: claim.bodyMarkdown, labels: draft.labels });
+      const outcome = await this.github.create({ repositoryId: claim.repositoryId, owner: claim.owner, name: claim.name, token: context.token, publisherGithubId: claim.publisherGithubId, title: claim.title, body: claim.bodyMarkdown, labels: draft.labels, ...(claim.assignToSelf ? { assignees: [context.eligibility.publisherLogin!] } : {}) });
       await this.settle(claim, outcome, fenced);
-      if (outcome.status === "created") await this.placeInBacklog(claim, context.token, { issueNodeId: outcome.receipt.nodeId, priorityPoints: draft.priorityPoints });
+      if (outcome.status === "created") await this.readyAssignment?.settle({ claim, token: context.token, receipt: outcome.receipt, priorityPoints: draft.priorityPoints });
     } catch (error) {
       const reason = safeReason(error);
       await this.settle(claim, { status: fenced ? "uncertain" : "rejected", reason }, fenced);
@@ -46,11 +48,6 @@ export class TaskPublicationWorkerController {
   private async defineLabels(claim: PublicationWorkerClaim, token: string, draft: IssueDraft) {
     if (!this.labels) return;
     await defineTaskLabels(this.labels, { destination: { owner: claim.owner, name: claim.name, token }, labels: draft.labels, overwrite: false });
-  }
-
-  private async placeInBacklog(claim: PublicationWorkerClaim, token: string, item: { issueNodeId: string; priorityPoints: number | null }) {
-    try { await this.backlog?.place({ projectId: claim.projectId, token, ...item }); }
-    catch (error) { console.error("[tasks-worker] backlog placement failed", claim.taskId, error instanceof Error ? error.name : error); }
   }
 
   private async settle(claim: PublicationWorkerClaim, outcome: Parameters<TaskPublicationWorkerDao["settle"]>[1], dispatched: boolean) {
@@ -70,7 +67,7 @@ export class TaskPublicationWorkerController {
     if (!eligibility.canRead) throw new TaskError("destination_unavailable");
     if (!eligibility.canCreateIssues) throw new TaskError("issue_permission_denied");
     if (context.repository.owner !== claim.owner || context.repository.name !== claim.name) throw new TaskError("preview_changed");
-    return context;
+    return { ...context, eligibility };
   }
 
   private async assertSnapshot(claim: PublicationWorkerClaim, context: Awaited<ReturnType<RepositoryAccessService["contextCredentials"]>>) {

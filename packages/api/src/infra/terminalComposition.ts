@@ -5,11 +5,13 @@ import { IssueImageSelector } from "../application/services/terminal/issueImageS
 import { ConsoleTerminalLog } from "../application/services/terminal/terminalLaunchLog";
 import { HeartbeatSessionServiceStatus } from "../application/services/terminal/sessionServiceStatus";
 import { TerminalOpenGuard } from "../application/services/terminal/terminalOpenGuard";
+import { PublishedCodexCatalog } from "../application/services/terminal/publishedCodexCatalog";
 import type { SessionContextBuilder } from "../application/terminal/sessionContext";
 import type { ToolLocator } from "../application/terminal/toolLocator";
 import { ConsolePlanLog } from "../application/services/tasks-set/planLog";
 import { TaskSetLoader } from "../application/services/tasks-set/taskSetLoader";
 import { SessionPurposeResolver } from "../application/services/terminal/sessionPurpose";
+import { SessionLauncher } from "../application/services/terminal/sessionLauncher";
 import type { SessionAgent } from "../application/terminal/sessionAgentCatalog";
 import { TerminalSessionController } from "../controllers/terminalSessionController";
 import { createWorkAuthorization } from "./assignedIssuesComposition";
@@ -35,6 +37,14 @@ type Database = ReturnType<typeof requireDatabase>;
 export type TerminalOverrides = { tools?: ToolLocator; context?: SessionContextBuilder; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workAuthorization?: ReturnType<typeof createWorkAuthorization>; agents?: ReadonlySet<SessionAgent>; codexProbe?: CodexCatalogProbe };
 
 export function createTerminalController(database: Database, overrides: TerminalOverrides = {}) {
+  return composeTerminal(database, overrides).controller;
+}
+
+export function createTerminalLauncher(database: Database, overrides: TerminalOverrides = {}) {
+  return composeTerminal(database, overrides).launcher;
+}
+
+function composeTerminal(database: Database, overrides: TerminalOverrides = {}) {
   const env = overrides.env ?? process.env;
   const projects = new DrizzleProjectDao(database);
   const checkouts = new DrizzleLocalCheckoutDao(database);
@@ -43,8 +53,10 @@ export function createTerminalController(database: Database, overrides: Terminal
   const context = overrides.context ?? new FileSessionContextBuilder(env);
   const log = new ConsoleTerminalLog();
   const hostId = overrides.hostId ?? machineIdentity();
-  const service = new HeartbeatSessionServiceStatus({ hosts: new DrizzleSessionHostDao(database), hostId, now: overrides.now ?? (() => new Date()) });
-  const guard = new TerminalOpenGuard({ env, checkouts, verifier, tools: overrides.tools ?? ports.tools, context, service, log, codexProbe: overrides.codexProbe });
+  const now = overrides.now ?? (() => new Date());
+  const service = new HeartbeatSessionServiceStatus({ hosts: new DrizzleSessionHostDao(database), hostId, now });
+  const codexProbe = overrides.codexProbe ?? new PublishedCodexCatalog(service, now);
+  const guard = new TerminalOpenGuard({ env, checkouts, verifier, tools: overrides.tools ?? ports.tools, context, service, log, codexProbe });
   const issueImages = new IssueImageSelector(new DrizzleTerminalIssueImageDao(database));
   const attachments = new DrizzleTerminalAttachmentDao(database);
   const files = new DiskAttachmentFileStore(env);
@@ -52,7 +64,9 @@ export function createTerminalController(database: Database, overrides: Terminal
   const sessions = new DrizzleTerminalSessionDao(database);
   const authorization = overrides.workAuthorization ?? createWorkAuthorization(database);
   const purposes = createPurposeResolver(database, overrides);
-  return new TerminalSessionController({ authorization, sessions, purposes, projects, guard, issueImages, delivery, cleanup: new TerminalAttachmentService({ authorization, plannings: sessions, attachments, files, log }), context, hostId, log });
+  const launcher = new SessionLauncher({ sessions, projects, guard, delivery, context, hostId, log, purposes });
+  const controller = new TerminalSessionController({ authorization, sessions, purposes, projects, guard, issueImages, delivery, cleanup: new TerminalAttachmentService({ authorization, plannings: sessions, attachments, files, log }), launcher });
+  return { controller, launcher };
 }
 
 function createPurposeResolver(database: Database, overrides: TerminalOverrides) {

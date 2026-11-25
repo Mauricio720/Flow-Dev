@@ -44,6 +44,7 @@ export type TerminalSessionRecord = {
   agent: SessionAgent;
   model: string | null;
   effort: string | null;
+  reviewCycleId: string | null;
 };
 
 export type ApprovedPlanning = {
@@ -73,6 +74,7 @@ export type CreateTerminalSessionInput = {
   agent?: SessionAgent;
   model?: string | null;
   effort?: string | null;
+  reviewCycleId?: string | null;
   agentVersion?: string | null;
 };
 

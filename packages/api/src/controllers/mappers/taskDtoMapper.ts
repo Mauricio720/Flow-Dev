@@ -12,10 +12,11 @@ export function summaryDto(summary: TaskSummary, authorNames: Map<string, string
   return { ...summary, authorName: authorNames.get(summary.authorUserId) ?? null };
 }
 
-export function publicationDto(publication: TaskPublication | null) {
+export function publicationDto(publication: TaskPublication | null, readyAssignment: { state: import("../../application/services/tasks/taskContracts").ReadyAssignmentState } | null) {
   if (!publication) return null;
   if (!validIssueUrl(publication)) throw new TaskError("invalid_stored_content");
-  return { ...publication, createdAt: publication.createdAt.toISOString() };
+  const { assignToSelf: _assignToSelf, readyAssignment: _readyAssignment, ...result } = publication;
+  return { ...result, createdAt: publication.createdAt.toISOString(), readyAssignment };
 }
 
 function validIssueUrl(publication: TaskPublication) {

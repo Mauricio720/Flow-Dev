@@ -20,7 +20,7 @@ async function waitUntil(check: () => Promise<boolean> | boolean) {
 }
 
 async function startLoad(times: RuntimeTimes) {
-  const world = await workerWorld({ script: [{ kind: "wait_message" }, { kind: "wait_message" }, { kind: "text", text: "resposta da carga" }, { kind: "ask", questions: LOAD_QUESTION }] }, { permissions: undefined });
+  const world = await workerWorld({ script: [{ kind: "wait_message" }, { kind: "text", text: "resposta da carga" }, { kind: "ask", questions: LOAD_QUESTION }] }, { permissions: undefined });
   observeRuntime(world, times);
   const ids = await Promise.all(Array.from({ length: COUNT + 1 }, () => world.open({ allowAdditional: true })));
   const abort = new AbortController();

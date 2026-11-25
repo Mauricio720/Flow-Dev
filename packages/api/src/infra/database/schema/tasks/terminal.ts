@@ -1,9 +1,10 @@
-import { boolean, check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { projects, users } from "../../schema";
 import { taskImages } from "./images";
 import { taskPlanningDecisions } from "./planning";
 import { tasks } from "./records";
+import { taskReviewCycles } from "./reviewCycles";
 import { taskSessionPlanItems } from "./sessionPlans";
 
 export const taskTerminalSessions = pgTable("task_terminal_sessions", {
@@ -44,12 +45,13 @@ export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   model: text("model"),
   effort: text("effort"),
   agentVersion: text("agent_version"),
+  reviewCycleId: uuid("review_cycle_id").references((): AnyPgColumn => taskReviewCycles.id, { onDelete: "set null" }),
 }, (table) => [
   check("task_terminal_sessions_route_check", sql`${table.route} in ('direct_execution','tech_spec','prd')`),
   check("task_terminal_sessions_status_check", sql`${table.status} in ('opening','running','waiting','unconfirmed','ended','launch_failed','asking','interrupted')`),
   check("task_terminal_sessions_runtime_check", sql`${table.runtime} in ('terminal','flow_dev')`),
   check("task_terminal_sessions_permission_mode_check", sql`${table.permissionMode} in ('bypass','accept_edits','ask_all')`),
-  check("task_terminal_sessions_purpose_check", sql`${table.purpose} in ('route','generate_tasks','plan_item')`),
+  check("task_terminal_sessions_purpose_check", sql`${table.purpose} in ('route','generate_tasks','plan_item','review','review_execute')`),
   check("task_terminal_sessions_agent_check", sql`${table.agent} in ('claude','codex')`),
   uniqueIndex("task_terminal_sessions_request_key_unique").on(table.userId, table.requestKey),
   index("task_terminal_sessions_task_opened_idx").on(table.taskId, table.openedAt.desc()),

@@ -10,7 +10,7 @@ const projectId = "00000000-0000-4000-8000-000000000001";
 const revisionId = "00000000-0000-4000-8000-000000000037";
 const bodyMarkdown = "## Contexto\n\nO total permanece antigo\n\n## Objetivo\n\nRecalcular total";
 const draft = { title: "Corrigir total", context: "O total permanece antigo", objective: "Recalcular total", constraints: [], relevantContext: [], productConsiderations: [], references: [] };
-const claim: PublicationWorkerClaim = { taskId, attemptId: "attempt-1", operationId: "op-1", projectId, sessionId: "session-1", publisherUserId: userId, publisherGithubId: "501", repositoryId: "202", repositoryNodeId: "REPO202", owner: "acme", name: "cart", revisionId, previewHash: previewHash({ revisionId, title: draft.title, body: bodyMarkdown, repositoryId: "202", owner: "acme", name: "cart", publisherGithubId: "501", labels: ["generica"] }), title: draft.title, bodyMarkdown, workerId: "worker-1" };
+const claim: PublicationWorkerClaim = { taskId, attemptId: "attempt-1", operationId: "op-1", projectId, sessionId: "session-1", publisherUserId: userId, publisherGithubId: "501", repositoryId: "202", repositoryNodeId: "REPO202", owner: "acme", name: "cart", revisionId, previewHash: previewHash({ revisionId, title: draft.title, body: bodyMarkdown, repositoryId: "202", owner: "acme", name: "cart", publisherGithubId: "501", labels: ["generica"] }), title: draft.title, bodyMarkdown, assignToSelf: false, workerId: "worker-1" };
 
 function setup(activeSession = true, repoName = "cart", priorityPoints: number | null = null) {
   const dao = { claim: vi.fn(async () => claim), sessionActive: vi.fn(async () => activeSession), fenceDispatch: vi.fn(async () => true), settle: vi.fn(async () => {}) };
@@ -18,9 +18,9 @@ function setup(activeSession = true, repoName = "cart", priorityPoints: number |
   const repository = { githubId: "202", nodeId: "REPO202", owner: "acme", name: repoName, archived: false, visibility: "private" as const };
   const repositories = { contextCredentials: vi.fn(async () => ({ repository, token: "private-token", publisherGithubId: "501", defaultBranch: "main" })) };
   const github = { eligibility: vi.fn(async () => ({ repositoryId: "202", owner: "acme", name: repoName, publisherGithubId: "501", archived: false, issuesEnabled: true, canRead: true, canCreateIssues: true })), create: vi.fn(async () => ({ status: "created" as const, receipt: { issueId: "41", nodeId: "ISSUE41", number: 41, url: "https://github.com/acme/cart/issues/41", repositoryId: "202", publisherGithubId: "501", createdAt: "2026-10-01T12:00:00.000Z" } })) };
-  const backlog = { place: vi.fn(async () => "placed" as const) };
+  const readyAssignment = { assertPossible: vi.fn(async () => {}), settle: vi.fn(async () => null) };
   const labels = { define: vi.fn(async (): Promise<"created"> => "created"), label: vi.fn() };
-  return { worker: new TaskPublicationWorkerController(dao as unknown as TaskPublicationWorkerDao, tasks as unknown as TaskDao, repositories as never, github as never, "00000000-0000-4000-8000-000000000081", backlog as never, labels), dao, github, backlog, labels };
+  return { worker: new TaskPublicationWorkerController(dao as unknown as TaskPublicationWorkerDao, tasks as unknown as TaskDao, repositories as never, github as never, "00000000-0000-4000-8000-000000000081", readyAssignment as never, labels), dao, github, readyAssignment, labels };
 }
 
 describe("TaskPublicationWorkerController", () => {
@@ -45,19 +45,18 @@ describe("TaskPublicationWorkerController", () => {
   });
 
   it("places the created issue in the project backlog and keeps the publication when placement fails", async () => {
-    const { worker, dao, backlog } = setup();
+    const { worker, dao, readyAssignment } = setup();
     vi.spyOn(console, "error").mockImplementation(() => {});
-    backlog.place.mockRejectedValueOnce(new Error("board unavailable"));
     await expect(worker.tick()).resolves.toBe(true);
-    expect(backlog.place).toHaveBeenCalledWith({ projectId, token: "private-token", issueNodeId: "ISSUE41", priorityPoints: null });
+    expect(readyAssignment.settle).toHaveBeenCalledWith(expect.objectContaining({ claim, token: "private-token", priorityPoints: null }));
     expect(dao.settle).toHaveBeenCalledTimes(1);
     expect(dao.settle).toHaveBeenCalledWith(claim, expect.objectContaining({ status: "created" }), true);
   });
 
   it("sends the priority points of the approved draft to the backlog placement", async () => {
-    const { worker, backlog } = setup(true, "cart", 4);
+    const { worker, readyAssignment } = setup(true, "cart", 4);
     await expect(worker.tick()).resolves.toBe(true);
-    expect(backlog.place).toHaveBeenCalledWith({ projectId, token: "private-token", issueNodeId: "ISSUE41", priorityPoints: 4 });
+    expect(readyAssignment.settle).toHaveBeenCalledWith(expect.objectContaining({ claim, token: "private-token", priorityPoints: 4 }));
   });
 
   it("refuses dispatch when the originating session is no longer active", async () => {

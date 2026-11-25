@@ -25,16 +25,16 @@ function withImplicitStart(summarized: SummarizedHookEvent, session: LockedSessi
 
 type Progress = { status: TerminalSessionStatus; activeSkill: string | null };
 
-function planSkillOf(event: NewTerminalEvent, planTasksFolder: string | null) {
-  const inPlanFolder = typeof planTasksFolder === "string" && event.path !== null && isPlanTaskFile(event.path, planTasksFolder);
+function planSkillOf(event: NewTerminalEvent, captureFolder: string | null) {
+  const inPlanFolder = typeof captureFolder === "string" && event.path !== null && isPlanTaskFile(event.path, captureFolder);
   return inPlanFolder ? PLAN_EXECUTION_SKILL : null;
 }
 
-function advance(input: { progress: Progress; event: NewTerminalEvent; planTasksFolder: string | null }): { stored: NewTerminalEvent; progress: Progress } {
-  const { progress, event, planTasksFolder } = input;
+function advance(input: { progress: Progress; event: NewTerminalEvent; captureFolder: string | null }): { stored: NewTerminalEvent; progress: Progress } {
+  const { progress, event, captureFolder } = input;
   const status = applyTerminalEvent(progress.status, event.kind) ?? progress.status;
   const activeSkill = event.kind === "skill" ? event.skill : progress.activeSkill;
-  const stored = event.kind === "file_edit" ? { ...event, skill: progress.activeSkill ?? planSkillOf(event, planTasksFolder) } : event;
+  const stored = event.kind === "file_edit" ? { ...event, skill: progress.activeSkill ?? planSkillOf(event, captureFolder) } : event;
   return { stored, progress: { status, activeSkill } };
 }
 
@@ -55,7 +55,7 @@ export function planIngestion(input: { session: LockedSession; summarized: Summa
   if (events.length === 0 && !summarized.captureTrigger) return DISCARDED;
   let progress: Progress = { status: session.status, activeSkill: session.activeSkill };
   const stored = events.map((event) => {
-    const next = advance({ progress, event, planTasksFolder: session.planTasksFolder });
+    const next = advance({ progress, event, captureFolder: session.captureFolder });
     progress = next.progress;
     return next.stored;
   });

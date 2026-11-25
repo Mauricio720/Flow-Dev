@@ -16,5 +16,5 @@ export const taskResolveRefinementInputSchema = commandSchema.extend({ proposalO
 export const taskSubmissionInputSchema = z.object({ projectId: z.string().uuid(), action: z.enum(["start", "send", "saveDraft", "retryGeneration", "resolveRefinement", "publish", "reconcilePublication", "planning.start", "planning.retry", "planning.replan", "planning.selectRoute", "planning.approve"]), requestKey: z.string().uuid() });
 export const taskSaveDraftInputSchema = commandSchema.extend({ baseRevisionId: taskIdSchema, draft: z.unknown(), evidenceBindings: z.array(z.unknown()).max(100) });
 export const taskPreviewInputSchema = taskScopeSchema.extend({ revisionId: taskIdSchema });
-export const taskPublishInputSchema = commandSchema.extend({ revisionId: taskIdSchema, repositoryId: z.string().min(1).max(100), previewHash: z.string().regex(/^[a-f\d]{64}$/i) });
+export const taskPublishInputSchema = commandSchema.extend({ revisionId: taskIdSchema, repositoryId: z.string().min(1).max(100), previewHash: z.string().regex(/^[a-f\d]{64}$/i), assignToSelf: z.boolean().default(false) });
 export const taskReconcilePublicationInputSchema = commandSchema.extend({ attemptId: taskIdSchema });

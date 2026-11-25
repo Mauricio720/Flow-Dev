@@ -1,7 +1,7 @@
 import type { SessionPrincipal } from "../../../context";
 import type { AssignedIssueGateway, BoardItemFacts } from "../../github/assignedIssueGateway";
 import type { RepositoryAccessService } from "../projects/repositoryAccessService";
-import { READY_STATUS_NAME, findOption } from "./assignedIssueRules";
+import { findReadyOption } from "./assignedIssueRules";
 import { AssignedIssueError } from "./assignedIssueErrors";
 import { translateAssignedIssueError, translated } from "./assignedIssueTranslation";
 import { decodeBoundCursor, encodeBoundCursor } from "./assignedIssueCursor";
@@ -23,7 +23,7 @@ export class AssignedIssueDiscovery {
     const binding = { projectId: input.projectId, actorId: actor.userId, boardId: context.board.nodeId };
     const start = decodeBoundCursor(input.cursor, binding);
     const field = await translated(() => this.gateway.statusField(context.token, context.board!.nodeId));
-    const ready = findOption(field.options, READY_STATUS_NAME);
+    const ready = findReadyOption(field.options);
     if (!ready) throw new AssignedIssueError("ready_missing");
     const verifyContext: VerifyContext = { token: context.token, githubUserId: context.githubUserId, boardNodeId: context.board.nodeId, repository: { githubId: context.repository.githubId, nodeId: context.repository.nodeId } };
     const scan = await this.scan({ projectId: input.projectId, context: verifyContext, readyOptionId: ready.id, after: typeof start === "string" ? start : null, limit: input.limit });

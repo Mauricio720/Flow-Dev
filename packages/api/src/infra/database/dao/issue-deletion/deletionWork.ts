@@ -1,16 +1,22 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import type { Database } from "../../client";
-import { issueDeletionOperations, taskExecutionRuns, taskIssueSources, taskOperations, taskPublicationAttempts, taskSpecAttempts, taskSpecStages, taskSpecWorkflows, tasks } from "../../schema";
+import { issueDeletionOperations, taskExecutionRuns, taskIssueSources, taskOperations, taskPublicationAttempts, taskReviewCycles, taskSpecAttempts, taskSpecStages, taskSpecWorkflows, taskTerminalSessions, tasks } from "../../schema";
 import type { FrozenIssueIdentity } from "../../../../application/services/issue-deletion/issueDeletionContracts";
+import type { StoppedReviewCycle } from "../../../../application/database/dao/issueDeletionDao";
 
 const CANCELABLE_STATES = ["queued", "running", "uncertain"];
 const ACTIVE_RUN_STATES = ["queued", "dispatching", "running", "waiting", "finalizing", "stopping", "reconciling"];
 const ACTIVE_SPEC_STATES = ["queued", "dispatching", "running", "waiting", "finalizing"];
+const ACTIVE_REVIEW_STATES = ["reviewing", "executing", "caveats", "failed"];
+const FINAL_SESSION_STATES = ["ended", "launch_failed"];
 
-export async function cancelTaskWork(database: Database, taskId: string, deletionOperationId: string) {
+export async function cancelTaskWork(database: Database, taskId: string, deletionOperationId: string): Promise<StoppedReviewCycle[]> {
   return database.transaction(async (raw) => {
     const db = raw as unknown as Database;
     const now = new Date();
+    const stoppedRows = await db.update(taskReviewCycles).set({ state: "stopped", stepStartedAt: null, pendingAction: null, pendingBy: null, pendingAt: null, failure: null, endedBy: null, endedAt: now, updatedAt: now, revision: sql`${taskReviewCycles.revision} + 1` }).where(and(eq(taskReviewCycles.taskId, taskId), inArray(taskReviewCycles.state, ACTIVE_REVIEW_STATES))).returning({ id: taskReviewCycles.id, taskId: taskReviewCycles.taskId, round: taskReviewCycles.round, stepRole: taskReviewCycles.stepRole, reviewSessionId: taskReviewCycles.reviewSessionId, executeSessionId: taskReviewCycles.executeSessionId, startedAt: taskReviewCycles.startedAt });
+    const stoppedCycles = stoppedRows.map((row) => ({ ...row, stepRole: row.stepRole as "review" | "execute" }));
+    await db.update(taskTerminalSessions).set({ endRequestedAt: now }).where(and(eq(taskTerminalSessions.taskId, taskId), isNotNull(taskTerminalSessions.reviewCycleId), notInArray(taskTerminalSessions.status, FINAL_SESSION_STATES)));
     await db.update(taskOperations).set({ state: "canceled", deletionOperationId, leaseOwner: null, leaseUntil: null, executionId: null, updatedAt: now })
       .where(and(eq(taskOperations.taskId, taskId), inArray(taskOperations.kind, ["generate", "plan"]), inArray(taskOperations.state, CANCELABLE_STATES)));
     await db.update(taskOperations).set({ state: "canceled", deletionOperationId, leaseOwner: null, leaseUntil: null, executionId: null, updatedAt: now })
@@ -27,7 +33,8 @@ export async function cancelTaskWork(database: Database, taskId: string, deletio
       .where(and(eq(taskExecutionRuns.taskId, taskId), inArray(taskExecutionRuns.state, ACTIVE_RUN_STATES)));
     await db.update(tasks).set({ activeOperationId: null, pendingProposalOperationId: null, planningOperationId: null, planningStatus: sql`case when ${tasks.planningStatus} = 'in_progress' then 'failed' else ${tasks.planningStatus} end`, status: sql`case when ${tasks.status} = 'publishing' then 'draft_ready' else ${tasks.status} end`, version: sql`${tasks.version} + 1`, updatedAt: now })
       .where(and(eq(tasks.id, taskId), sql`not exists (select 1 from task_operations where task_id = ${taskId} and state in ('queued','running','uncertain'))`));
-  });
+    return stoppedCycles;
+  }) as Promise<StoppedReviewCycle[]>;
 }
 
 export async function publicationState(database: Database, taskId: string): Promise<{ unresolved: boolean; createdIdentity: FrozenIssueIdentity | null }> {
@@ -68,6 +75,6 @@ export async function remainingActiveWork(database: Database, taskId: string) {
   const operations = await database.select({ id: taskOperations.id }).from(taskOperations).where(and(eq(taskOperations.taskId, taskId), inArray(taskOperations.state, CANCELABLE_STATES)));
   const runs = await database.select({ id: taskExecutionRuns.id }).from(taskExecutionRuns).where(and(eq(taskExecutionRuns.taskId, taskId), inArray(taskExecutionRuns.state, ACTIVE_RUN_STATES)));
   const specs = await database.select({ id: taskSpecAttempts.id }).from(taskSpecAttempts).where(and(sql`${taskSpecAttempts.workflowId} in (select id from task_spec_workflows where task_id = ${taskId})`, inArray(taskSpecAttempts.state, ["queued", "dispatching", "running", "waiting", "finalizing", "stopping", "reconciling"])));
-  return { operations: operations.map((row) => row.id), runs: runs.map((row) => row.id), specs: specs.map((row) => row.id) };
+  const reviewSessions = await database.select({ id: taskTerminalSessions.id }).from(taskTerminalSessions).where(and(eq(taskTerminalSessions.taskId, taskId), isNotNull(taskTerminalSessions.reviewCycleId), notInArray(taskTerminalSessions.status, FINAL_SESSION_STATES)));
+  return { operations: operations.map((row) => row.id), runs: runs.map((row) => row.id), specs: specs.map((row) => row.id), reviewSessions: reviewSessions.map((row) => row.id) };
 }
-

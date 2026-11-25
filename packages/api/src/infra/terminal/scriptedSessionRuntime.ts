@@ -1,4 +1,5 @@
 import type { AgentSessionRuntime, RuntimeResumeInput, RuntimeStartInput } from "../../application/terminal/agentSessionRuntime";
+import type { SessionPurposeKind } from "../../application/terminal/sessionPurposeKind";
 import { ScriptedSessionRunner } from "./scriptedSessionRunner";
 import { stepsOf, type ScriptSource } from "./scriptedSessionSteps";
 
@@ -16,14 +17,14 @@ export class ScriptedSessionRuntime implements AgentSessionRuntime {
   start(input: RuntimeStartInput) {
     this.starts.push(input);
     const claudeSessionId = (this.options.claudeSessionIdFor ?? defaultClaudeSessionId)(input.sessionId);
-    const config = { claudeSessionId, cwd: input.cwd, handlers: input.handlers, steps: stepsOf(this.options.script, { sessionId: input.sessionId, cwd: input.cwd }), source: "startup" as const, firstMessage: input.prompt };
+    const config = { claudeSessionId, cwd: input.cwd, handlers: input.handlers, steps: stepsOf(this.options.script, scriptContext(input)), source: "startup" as const, firstMessage: input.prompt };
     return this.register(input.sessionId, new ScriptedSessionRunner(config));
   }
 
   resume(input: RuntimeResumeInput) {
     this.resumes.push(input);
     if (this.options.resumeFailure) throw this.options.resumeFailure;
-    const config = { claudeSessionId: input.claudeSessionId, cwd: input.cwd, handlers: input.handlers, steps: stepsOf(this.options.resumeScript, { sessionId: input.sessionId, cwd: input.cwd }), source: "resume" as const, firstMessage: input.firstMessage };
+    const config = { claudeSessionId: input.claudeSessionId, cwd: input.cwd, handlers: input.handlers, steps: stepsOf(this.options.resumeScript, scriptContext(input)), source: "resume" as const, firstMessage: input.firstMessage };
     return this.register(input.sessionId, new ScriptedSessionRunner(config));
   }
 
@@ -37,4 +38,8 @@ export class ScriptedSessionRuntime implements AgentSessionRuntime {
     this.runners.set(sessionId, runner);
     return runner;
   }
+}
+
+function scriptContext(input: { sessionId: string; cwd: string; purpose?: SessionPurposeKind }) {
+  return { sessionId: input.sessionId, cwd: input.cwd, purpose: input.purpose ?? "route" };
 }

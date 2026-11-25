@@ -36,7 +36,7 @@ export class BoardBackfillService {
       if (presence === "present") return "already_present";
       if (presence === "closed") return "closed";
       if (!access.apply) return "to_add";
-      await this.dependencies.boards.placeInBacklog(access.token, target);
+      await this.dependencies.boards.place(access.token, { ...target, status: "backlog" });
       return "added";
     } catch (error) {
       if (error instanceof RepositoryAuthorizationNeededError) throw error;

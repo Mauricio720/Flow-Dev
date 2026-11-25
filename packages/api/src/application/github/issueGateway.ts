@@ -1,6 +1,6 @@
 export type IssueEligibility = { repositoryId: string; owner: string; name: string; publisherGithubId: string; publisherLogin?: string | null; archived: boolean; issuesEnabled: boolean; canRead: boolean; canCreateIssues: boolean; canWriteContents?: boolean };
-export type IssueReceipt = { issueId: string; nodeId: string; number: number; url: string; repositoryId: string; publisherGithubId: string; createdAt: string };
-export type ApprovedIssueRequest = { repositoryId: string; owner: string; name: string; token: string; publisherGithubId: string; title: string; body: string; labels: string[] };
+export type IssueReceipt = { issueId: string; nodeId: string; number: number; url: string; repositoryId: string; publisherGithubId: string; assigneeGithubIds: string[]; createdAt: string };
+export type ApprovedIssueRequest = { repositoryId: string; owner: string; name: string; token: string; publisherGithubId: string; title: string; body: string; labels: string[]; assignees?: string[] };
 export type IssueLabelRequest = { owner: string; name: string; token: string; issueNumber: number; labels: string[] };
 export type LabelDefinitionRequest = { owner: string; name: string; token: string; label: string; color: string; description: string; overwrite: boolean };
 export type LabelDefinitionOutcome = "created" | "updated" | "kept" | "denied";

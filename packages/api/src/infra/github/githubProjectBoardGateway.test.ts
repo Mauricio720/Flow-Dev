@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { BacklogStatusMissingError, ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
+import { BacklogStatusMissingError, BoardStatusMissingError, ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
 import { RepositoryAuthorizationNeededError } from "../../application/github/repositoryErrors";
 import { GitHubHttpProjectBoardGateway } from "./githubProjectBoardGateway";
 
@@ -32,24 +32,35 @@ describe("GitHubHttpProjectBoardGateway", () => {
     expect(sent(fetcher, 0).query).not.toMatch(/field\(name:"Priori/);
   });
   it("asks for a new authorization when the token lacks the project scope", async () => {
-    await expect(gatewayReturning({ errors: [{ type: "INSUFFICIENT_SCOPES" }] }).gateway.assertBacklog("token", "PVT_1")).rejects.toThrow(RepositoryAuthorizationNeededError);
+    await expect(gatewayReturning({ errors: [{ type: "INSUFFICIENT_SCOPES" }] }).gateway.statuses("token", "PVT_1")).rejects.toThrow(RepositoryAuthorizationNeededError);
   });
-  it("adds the issue to the board and sets its status to Backlog", async () => {
+  it("lists configured Backlog and Ready statuses", async () => {
+    const { gateway } = gatewayReturning({ data: { node: { ...boardNode, field: { ...status, options: [...status.options, { id: "OPT_READY", name: " Ready " }] } } } });
+    await expect(gateway.statuses("token", "PVT_1")).resolves.toEqual(["backlog", "ready"]);
+  });
+  it("adds the issue to the board and sets the requested status", async () => {
     const { gateway, fetcher } = gatewayReturning({ data: { node: boardNode } }, { data: { addProjectV2ItemById: { item: { id: "ITEM_1" } } } }, { data: { updateProjectV2ItemFieldValue: { projectV2Item: { id: "ITEM_1" } } } });
-    await gateway.placeInBacklog("token", { boardNodeId: "PVT_1", issueNodeId: "I_1" });
+    await gateway.place("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", status: "backlog" });
     expect(sent(fetcher, 1).variables).toEqual({ board: "PVT_1", content: "I_1" });
     expect(sent(fetcher, 2).variables).toEqual({ board: "PVT_1", item: "ITEM_1", field: "FIELD_1", option: "OPT_BACKLOG" });
   });
   it("writes the priority points to the numeric priority field of the board", async () => {
     const prioritized = { ...boardNode, fields: { nodes: [{}, { id: "FIELD_S", name: "Priority", dataType: "SINGLE_SELECT" }, { id: "FIELD_P", name: "Prioridade", dataType: "NUMBER" }] } };
     const { gateway, fetcher } = gatewayReturning({ data: { node: prioritized } }, { data: { addProjectV2ItemById: { item: { id: "ITEM_1" } } } }, { data: {} }, { data: {} });
-    await gateway.placeInBacklog("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", priorityPoints: 4 });
+    await gateway.place("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", priorityPoints: 4, status: "backlog" });
     expect(sent(fetcher, 3).variables).toEqual({ board: "PVT_1", item: "ITEM_1", field: "FIELD_P", points: 4 });
   });
   it("skips the priority points when the board has no numeric priority field", async () => {
     const { gateway, fetcher } = gatewayReturning({ data: { node: { ...boardNode, fields: { nodes: [{}, { id: "FIELD_E", name: "Estimate", dataType: "NUMBER" }] } } } }, { data: { addProjectV2ItemById: { item: { id: "ITEM_1" } } } }, { data: {} });
-    await gateway.placeInBacklog("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", priorityPoints: 4 });
+    await gateway.place("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", priorityPoints: 4, status: "backlog" });
     expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+  it("uses Ready's option id and rejects a missing Ready without mutation", async () => {
+    const readyBoard = { ...boardNode, field: { ...status, options: [...status.options, { id: "OPT_READY", name: "Ready" }] } };
+    const { gateway, fetcher } = gatewayReturning({ data: { node: readyBoard } }, { data: { addProjectV2ItemById: { item: { id: "ITEM_1" } } } }, { data: {} });
+    await gateway.place("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", priorityPoints: 5, status: "ready" });
+    expect(sent(fetcher, 2).variables).toEqual({ board: "PVT_1", item: "ITEM_1", field: "FIELD_1", option: "OPT_READY" });
+    await expect(gatewayReturning({ data: { node: boardNode } }).gateway.place("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", status: "ready" })).rejects.toMatchObject({ constructor: BoardStatusMissingError, status: "ready" });
   });
   it("reports whether an issue is already on the board or closed", async () => {
     const target = { boardNodeId: "PVT_1", issueNodeId: "I_1" };

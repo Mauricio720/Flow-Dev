@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import { createSessionWorker, type WorkerOverrides } from "../src/infra/sessionWorkerComposition";
 import type { SessionLog, SessionLogFields } from "../src/application/services/terminal/sessionLog";
 import type { SessionPermissions } from "../src/application/services/terminal/sessionPermissions";
@@ -8,7 +9,8 @@ import type { HarnessOptions } from "./terminal-harness";
 import { openInput } from "./terminal-support";
 import { asc, eq } from "drizzle-orm";
 import { taskTerminalMessages } from "../src/infra/database/schema";
-import type { ScriptStep } from "../src/infra/terminal/scriptedSessionSteps";
+import { scriptFileFor, type ScriptStep } from "../src/infra/terminal/scriptedSessionSteps";
+import type { SessionPurposeKind } from "../src/application/terminal/sessionPurposeKind";
 
 export class ControlledClock {
   constructor(private current: Date = new Date("2026-11-23T17:32:00Z")) {}
@@ -71,6 +73,10 @@ export const brokerWorld = (script: ScriptStep[], runtime: ScriptedRuntimeOption
 export const scopeOf = (world: WorkerWorld, sessionId: string) => ({ projectId: world.setup.project.id, taskId: world.setup.taskId, sessionId });
 
 export const messagesOf = (world: WorkerWorld, sessionId: string) => world.setup.database.select().from(taskTerminalMessages).where(eq(taskTerminalMessages.sessionId, sessionId)).orderBy(asc(taskTerminalMessages.occurredAt));
+
+export function writePurposeScript(directory: string, cwd: string, purpose: SessionPurposeKind, steps: ScriptStep[]) {
+  return writeFile(scriptFileFor(directory, cwd, purpose), JSON.stringify(steps));
+}
 
 export async function restartedWorker(world: WorkerWorld, runtime = new ScriptedSessionRuntime()) {
   return { runtime, worker: world.build({ runtimes: { claude: runtime }, workerId: "worker-2" }) };

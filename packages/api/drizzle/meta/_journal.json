@@ -365,6 +365,20 @@
       "when": 1795624964371,
       "tag": "0051_codex_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1795711364370,
+      "tag": "0053_review_cycles",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1795711364371,
+      "tag": "0054_ready_assignment",
+      "breakpoints": true
     }
   ]
 }

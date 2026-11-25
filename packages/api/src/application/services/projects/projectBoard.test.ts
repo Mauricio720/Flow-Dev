@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDao, ProjectRecord } from "../../database/dao/projectDao";
 import { RepositoryAuthorizationNeededError, RepositoryUnavailableError } from "../../github/repositoryErrors";
-import { BacklogPlacementService } from "./backlogPlacementService";
+import { BoardPlacementService } from "./boardPlacementService";
 import { BoardBackfillService } from "./boardBackfillService";
 import { ProjectValidationError } from "./projectErrors";
-import { findBacklogOption, parseBoardUrl } from "./projectBoardRules";
+import { findBacklogOption, findReadyOption, parseBoardUrl } from "./projectBoardRules";
 import { ProjectBoardService } from "./projectBoardService";
 
 const board = { nodeId: "PVT_1", url: "https://github.com/orgs/acme/projects/7", title: "Roadmap" };
@@ -16,7 +16,7 @@ function projectsWith(record: ProjectRecord | null) {
   return { findById: vi.fn(async () => record), updateBoard: vi.fn(async (_id: string, next: typeof board | null) => record && { ...record, board: next }) } as unknown as ProjectDao & { updateBoard: ReturnType<typeof vi.fn> };
 }
 function gateway() {
-  return { resolve: vi.fn(async () => board), assertBacklog: vi.fn(async () => {}), placeInBacklog: vi.fn(async () => {}), moveToReady: vi.fn(async () => {}), issuePresence: vi.fn(async () => "absent" as "absent" | "present" | "closed") };
+  return { resolve: vi.fn(async () => board), statuses: vi.fn(async () => ["backlog"] as ("backlog" | "ready")[]), place: vi.fn(async () => {}), issuePresence: vi.fn(async () => "absent" as "absent" | "present" | "closed") };
 }
 const permissions = (isAdmin: boolean) => ({ isAdmin: async () => isAdmin }) as never;
 const authorization = (token: string | null) => ({ accessToken: async () => token }) as never;
@@ -32,6 +32,10 @@ describe("project board rules", () => {
   it("finds the Backlog status regardless of case", () => {
     expect(findBacklogOption([{ id: "a", name: "Todo" }, { id: "b", name: " BACKLOG " }])?.id).toBe("b");
     expect(findBacklogOption([{ id: "a", name: "Todo" }])).toBeNull();
+  });
+  it("finds Ready after trimming and ignoring case", () => {
+    expect(findReadyOption([{ id: "a", name: " Ready " }, { id: "b", name: "ready" }])?.id).toBe("a");
+    expect(findReadyOption([{ id: "a", name: "Pronto" }])).toBeNull();
   });
 });
 
@@ -52,25 +56,25 @@ describe("ProjectBoardService", () => {
   });
 });
 
-describe("BacklogPlacementService", () => {
+describe("BoardPlacementService", () => {
   it("places the issue on the configured board and retries once", async () => {
     const boards = gateway();
-    boards.placeInBacklog.mockRejectedValueOnce(new RepositoryUnavailableError());
-    await expect(new BacklogPlacementService(projectsWith(project), boards).place({ projectId: "p1", token: "token", issueNodeId: "I_1" })).resolves.toBe("placed");
-    expect(boards.placeInBacklog).toHaveBeenLastCalledWith("token", { boardNodeId: "PVT_1", issueNodeId: "I_1" });
-    expect(boards.placeInBacklog).toHaveBeenCalledTimes(2);
+    boards.place.mockRejectedValueOnce(new RepositoryUnavailableError());
+    await expect(new BoardPlacementService(projectsWith(project), boards).place({ projectId: "p1", token: "token", issueNodeId: "I_1", status: "backlog" })).resolves.toBe("placed");
+    expect(boards.place).toHaveBeenLastCalledWith("token", { boardNodeId: "PVT_1", issueNodeId: "I_1", status: "backlog" });
+    expect(boards.place).toHaveBeenCalledTimes(2);
   });
   it("does nothing for a project without a board", async () => {
     const boards = gateway();
-    await expect(new BacklogPlacementService(projectsWith({ ...project, board: null }), boards).place({ projectId: "p1", token: "token", issueNodeId: "I_1" })).resolves.toBe("no_board");
-    expect(boards.placeInBacklog).not.toHaveBeenCalled();
+    await expect(new BoardPlacementService(projectsWith({ ...project, board: null }), boards).place({ projectId: "p1", token: "token", issueNodeId: "I_1", status: "backlog" })).resolves.toBe("no_board");
+    expect(boards.place).not.toHaveBeenCalled();
   });
   it("blocks only when the token lacks the board scope", async () => {
     const boards = gateway();
-    const service = new BacklogPlacementService(projectsWith(project), boards);
-    boards.assertBacklog.mockRejectedValueOnce(new RepositoryUnavailableError());
+    const service = new BoardPlacementService(projectsWith(project), boards);
+    boards.statuses.mockRejectedValueOnce(new RepositoryUnavailableError());
     await expect(service.assertAuthorized({ projectId: "p1", token: "token" })).resolves.toBeUndefined();
-    boards.assertBacklog.mockRejectedValueOnce(new RepositoryAuthorizationNeededError());
+    boards.statuses.mockRejectedValueOnce(new RepositoryAuthorizationNeededError());
     await expect(service.assertAuthorized({ projectId: "p1", token: "token" })).rejects.toThrow(RepositoryAuthorizationNeededError);
   });
 });
@@ -82,7 +86,7 @@ describe("BoardBackfillService", () => {
   it("only lists what would be added until apply is requested", async () => {
     const boards = gateway();
     expect((await service(boards).run({ projectId: "p1", userId: "u1", apply: false })).items[0]?.action).toBe("to_add");
-    expect(boards.placeInBacklog).not.toHaveBeenCalled();
+    expect(boards.place).not.toHaveBeenCalled();
     expect((await service(boards).run({ projectId: "p1", userId: "u1", apply: true })).items[0]?.action).toBe("added");
   });
   it("leaves issues already on the board and closed issues untouched", async () => {
@@ -90,6 +94,6 @@ describe("BoardBackfillService", () => {
     boards.issuePresence.mockResolvedValueOnce("present").mockResolvedValueOnce("closed");
     expect((await service(boards).run({ projectId: "p1", userId: "u1", apply: true })).items[0]?.action).toBe("already_present");
     expect((await service(boards).run({ projectId: "p1", userId: "u1", apply: true })).items[0]?.action).toBe("closed");
-    expect(boards.placeInBacklog).not.toHaveBeenCalled();
+    expect(boards.place).not.toHaveBeenCalled();
   });
 });

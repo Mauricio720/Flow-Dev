@@ -9,7 +9,7 @@ export type LockedSession = {
   checkoutPath: string;
   activeSkill: string | null;
   startedAt: Date | null;
-  planTasksFolder: string | null;
+  captureFolder: string | null;
 };
 
 export type NewTerminalEvent = { kind: TerminalEventKind; summary: string; path: string | null; skill: string | null };

@@ -1,9 +1,9 @@
 import { GITHUB_TIMEOUT_MS } from "./githubRequest";
 import { DEFAULT_TRANSPORT, githubGraphql } from "./githubGraphql";
-import { BacklogStatusMissingError, ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
-import type { BacklogItem, BoardItemTarget, BoardReference, GitHubProjectBoardGateway, IssuePresence, ProjectBoard } from "../../application/github/projectBoardGateway";
+import { BacklogStatusMissingError, BoardStatusMissingError, ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
+import type { BacklogItem, BoardItemTarget, BoardReference, BoardStatus, GitHubProjectBoardGateway, IssuePresence, ProjectBoard } from "../../application/github/projectBoardGateway";
 import { RepositoryUnavailableError } from "../../application/github/repositoryErrors";
-import { findBacklogOption, findPriorityFieldId } from "../../application/services/projects/projectBoardRules";
+import { findBacklogOption, findPriorityFieldId, findReadyOption } from "../../application/services/projects/projectBoardRules";
 import { ADD_ITEM_MUTATION, BOARD_NODE_QUERY, ISSUE_PRESENCE_QUERY, ORGANIZATION_BOARD_QUERY, SET_PRIORITY_MUTATION, SET_STATUS_MUTATION, USER_BOARD_QUERY } from "./projectBoardQueries";
 import type { AddItemData, BoardNode, BoardNodeData, IssuePresenceData, OwnerBoardData } from "./projectBoardQueries";
 
@@ -22,12 +22,15 @@ export class GitHubHttpProjectBoardGateway implements GitHubProjectBoardGateway 
     return { nodeId: board.id!, url: board.url!, title: board.title! };
   }
 
-  async assertBacklog(token: string, boardNodeId: string) { backlogTarget(await this.board(token, boardNodeId)); }
+  async statuses(token: string, boardNodeId: string): Promise<BoardStatus[]> {
+    const board = await this.board(token, boardNodeId);
+    return [findBacklogOption(board.field?.options ?? []) ? "backlog" : null, findReadyOption(board.field?.options ?? []) ? "ready" : null].filter((status): status is BoardStatus => status !== null);
+  }
 
-  async placeInBacklog(token: string, item: BacklogItem) {
+  async place(token: string, item: BacklogItem & { status: BoardStatus }) {
     const board = await this.board(token, item.boardNodeId);
-    const backlog = backlogTarget(board);
-    const itemId = await this.setStatus(token, item, backlog);
+    const status = statusTarget(board, item.status);
+    const itemId = await this.setStatus(token, item, status);
     await this.setPriority(token, board, { itemId, points: item.priorityPoints });
   }
 
@@ -74,3 +77,9 @@ function backlogTarget(board: BoardNode): StatusTarget {
   return { fieldId: board.field.id, optionId: option.id };
 }
 
+function statusTarget(board: BoardNode, status: BoardStatus): StatusTarget {
+  if (status === "backlog") return backlogTarget(board);
+  const option = findReadyOption(board.field?.options ?? []);
+  if (!board.field?.id || !option) throw new BoardStatusMissingError(status);
+  return { fieldId: board.field.id, optionId: option.id };
+}

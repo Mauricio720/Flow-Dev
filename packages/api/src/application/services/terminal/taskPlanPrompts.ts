@@ -6,13 +6,13 @@ const PATH_SEPARATOR = ", ";
 
 export type ExecutionPromptInput = { folder: string; taskPaths: string[] };
 
-function requireRelativePath(path: string) {
+export function requireRelativePath(path: string) {
   const unsafe = path === "" || path.startsWith("/") || path.includes("\\") || PARENT_SEGMENT_PATTERN.test(path);
   if (unsafe) throw new TaskError("invalid_path");
   return path;
 }
 
-function requireInside(folder: string, path: string) {
+export function requireInside(folder: string, path: string) {
   const prefix = folder === "" ? "" : `${folder}/`;
   if (!path.startsWith(prefix)) throw new TaskError("invalid_path");
   return path;

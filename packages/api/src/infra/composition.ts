@@ -27,11 +27,12 @@ import { DrizzleTaskPublicationDao } from "./database/dao/tasks/drizzleTaskPubli
 import { GitHubHttpIssueGateway } from "./github/githubIssueGateway";
 import { DrizzleTaskPublicationWorkerDao } from "./database/dao/tasks/drizzleTaskPublicationWorkerDao";
 import { GitHubHttpProjectBoardGateway } from "./github/githubProjectBoardGateway";
-import { BacklogPlacementService } from "../application/services/projects/backlogPlacementService";
+import { BoardPlacementService } from "../application/services/projects/boardPlacementService";
 import { createPlanningWorkerController } from "./planningComposition";
 import { createRepositoryAccessService } from "./repositoryAccessFactory";
 import { TaskPublicationWorkerController } from "../controllers/taskPublicationWorkerController";
 import { createIssueImagePublisher } from "./taskImageComposition";
+import { ReadyAssignmentService } from "../application/services/tasks/readyAssignmentService";
 
 export { createProductionLocalCheckoutController } from "./localCheckoutComposition";
 
@@ -67,18 +68,22 @@ export function createProductionTaskWorkerController(runtime?: AgentRuntime) {
   const database = requireDatabase();
   const agents = runtime ?? createAgentRuntime(database);
   const operations = new DrizzleWorkerOperationDao(database);
-  const publications = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(database), new DrizzleTaskDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), crypto.randomUUID(), createBacklogPlacementService(database), new GitHubHttpIssueGateway(), createIssueImagePublisher(database));
+  const publications = new TaskPublicationWorkerController(new DrizzleTaskPublicationWorkerDao(database), new DrizzleTaskDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), crypto.randomUUID(), createReadyAssignmentService(database), new GitHubHttpIssueGateway(), createIssueImagePublisher(database));
   const planning = createPlanningWorkerController(database, agents.deps);
   return new TaskWorkerController(operations, new LocalIssueAuthorGateway(agents.deps), crypto.randomUUID(), publications, planning);
 }
 
 export function createProductionTaskPublicationController() {
   const database = requireDatabase();
-  return new TaskPublicationController(new DrizzleTaskDao(database), new DrizzleTaskPublicationDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), createBacklogPlacementService(database), createIssueImagePublisher(database));
+  return new TaskPublicationController(new DrizzleTaskDao(database), new DrizzleTaskPublicationDao(database), createRepositoryAccessService(database), new GitHubHttpIssueGateway(), createReadyAssignmentService(database), createIssueImagePublisher(database));
 }
 
-export function createBacklogPlacementService(database: ReturnType<typeof requireDatabase>) {
-  return new BacklogPlacementService(new DrizzleProjectDao(database), new GitHubHttpProjectBoardGateway());
+function createReadyAssignmentService(database: ReturnType<typeof requireDatabase>) {
+  return new ReadyAssignmentService(createBoardPlacementService(database), new DrizzleTaskPublicationWorkerDao(database));
+}
+
+export function createBoardPlacementService(database: ReturnType<typeof requireDatabase>) {
+  return new BoardPlacementService(new DrizzleProjectDao(database), new GitHubHttpProjectBoardGateway());
 }
 
 

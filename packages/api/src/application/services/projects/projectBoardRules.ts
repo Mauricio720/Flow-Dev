@@ -24,6 +24,10 @@ export function findBacklogOption(options: StatusOption[]) {
   return findStatusOption(options, BACKLOG_STATUS_NAME);
 }
 
+export function findReadyOption(options: StatusOption[]) {
+  return findStatusOption(options, "ready");
+}
+
 function findStatusOption(options: StatusOption[], name: string) {
   return options.find((option) => option.name.trim().toLowerCase() === name) ?? null;
 }

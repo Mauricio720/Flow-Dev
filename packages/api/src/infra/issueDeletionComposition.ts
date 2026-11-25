@@ -20,6 +20,7 @@ import { IssueDeletionController } from "../controllers/issueDeletionController"
 import { DrizzleTerminalAttachmentDao } from "./database/dao/terminal/drizzleTerminalAttachmentDao";
 import { DiskAttachmentFileStore } from "./terminal/diskAttachmentFileStore";
 import { TerminalTaskFilesPurger } from "./terminal/terminalTaskFilesPurger";
+import { ConsoleSessionLog } from "../application/services/terminal/sessionLog";
 
 export type IssueDeletionOverrides = {
   dao?: IssueDeletionDao;
@@ -52,7 +53,7 @@ export function createIssueDeletionServices(database: ReturnType<typeof requireD
   const access = overrides.access ?? createDeletionAccess(database);
   const provider = overrides.provider ?? createDeletionProvider(database);
   const terminalFiles = overrides.terminalFiles ?? new TerminalTaskFilesPurger(new DrizzleTerminalAttachmentDao(database), new DiskAttachmentFileStore());
-  const stop = new CoordinatedDeletionStop({ dao });
+  const stop = new CoordinatedDeletionStop({ dao, log: new ConsoleSessionLog() });
   const service = new IssueDeletionService({ dao, access, provider, clock });
   const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: `deletion:${randomUUID()}`, clock, leaseMs: overrides.leaseMs ?? 60_000, terminalFiles });
   return { dao, access, provider, stop, service, worker };

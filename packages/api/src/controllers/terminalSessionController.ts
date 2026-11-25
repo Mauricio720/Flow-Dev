@@ -1,6 +1,6 @@
 import { repositoryOf } from "../application/services/projects/localCheckoutService";
 import { TaskError } from "../application/services/tasks/taskErrors";
-import { SessionPrepareStep, openedResult, promptSource } from "../application/services/terminal/terminalOpenSteps";
+import { openedResult, promptSource } from "../application/services/terminal/terminalOpenSteps";
 import { MAX_PROMPT_LENGTH, buildDefaultPrompt } from "../application/services/terminal/terminalPromptBuilder";
 import type { SessionPrincipal } from "../context";
 import type { OpenInput, OpenRequest, PreflightInput, Scope, TerminalControllerDeps } from "./terminalControllerTypes";
@@ -8,10 +8,7 @@ import type { OpenInput, OpenRequest, PreflightInput, Scope, TerminalControllerD
 export type { TerminalControllerDeps } from "./terminalControllerTypes";
 
 export class TerminalSessionController {
-  private readonly prepareStep: SessionPrepareStep;
-  constructor(private readonly deps: TerminalControllerDeps) {
-    this.prepareStep = new SessionPrepareStep(deps);
-  }
+  constructor(private readonly deps: TerminalControllerDeps) {}
 
   async preflight(actor: SessionPrincipal, input: PreflightInput) {
     const scope = input;
@@ -48,14 +45,7 @@ export class TerminalSessionController {
   }
 
   private async start({ actor, input, planning, checkout, plan, resolved }: OpenRequest) {
-    const base = { taskId: input.taskId, projectId: input.projectId, userId: actor.userId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey };
-    const flowDev = { runtime: "flow_dev" as const, permissionMode: input.permissionMode, hostId: this.deps.hostId };
-    const created = await this.deps.sessions.create({ ...base, ...flowDev, ...resolved.columns, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty }, this.deps.delivery.links(plan));
-    if (!created.created) return openedResult(created.session);
-    await this.deps.purposes.confirm({ resolved, actorId: actor.userId, sessionId: created.session.id });
-    await this.prepareStep.run(created.session, input.prompt, plan);
-    this.deps.log.opened({ sessionId: created.session.id, taskId: input.taskId, route: planning.route });
-    return openedResult(created.session, plan.unavailableIssueImages);
+    return this.deps.launcher.startManual({ actor, input, planning, checkout, plan, resolved });
   }
 
   private async cleanupFiles() {

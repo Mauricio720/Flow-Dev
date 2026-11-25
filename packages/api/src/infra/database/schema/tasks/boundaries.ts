@@ -1,4 +1,4 @@
-import { check, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tasks } from "./records";
 import { taskOperations } from "./operations";
@@ -52,9 +52,13 @@ export const taskPublicationAttempts = pgTable("task_publication_attempts", {
   issueNumber: integer("issue_number"),
   issueUrl: text("issue_url"),
   issueCreatedAt: timestamp("issue_created_at", { withTimezone: true }),
+  assignToSelf: boolean("assign_to_self").notNull().default(false),
+  readyAssignment: text("ready_assignment"),
 }, (table) => [
   uniqueIndex("task_publication_attempts_task_id_id_unique").on(table.taskId, table.id),
   check("task_publication_attempts_outcome_check", sql`${table.outcome} in ('queued','dispatching','created','rejected','uncertain')`),
+  check("task_publication_attempts_ready_assignment_check", sql`${table.readyAssignment} is null or ${table.readyAssignment} in ('ready','not_assigned','ready_failed')`),
+  check("task_publication_attempts_ready_assignment_choice_check", sql`${table.readyAssignment} is null or ${table.assignToSelf}`),
   uniqueIndex("task_publication_attempts_unresolved_task_idx").on(table.taskId).where(sql`${table.outcome} in ('queued','dispatching','uncertain')`),
   uniqueIndex("task_publication_attempts_created_task_idx").on(table.taskId).where(sql`${table.outcome} = 'created'`),
   uniqueIndex("task_publication_attempts_repository_issue_idx").on(table.repositoryId, table.issueId).where(sql`${table.issueId} is not null`),

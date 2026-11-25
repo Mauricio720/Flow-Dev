@@ -68,7 +68,8 @@ describe("0050 session plans migration", () => {
     expect(await violated(setup.database.insert(taskSessionPlanItems).values(item))).toBe(null);
     expect(await violated(insert({ position: 1 }))).toBe("task_session_plan_items_plan_position_unique");
     expect(await violated(setup.database.insert(taskSessionPlans).values({ taskId: setup.taskId, tasksFolder: "x", manifestVersion: 1, updatedBy: setup.ownerId }))).toBe("task_session_plans_task_id_unique");
-    expect(await violated(setup.database.insert(taskTerminalSessions).values(sessionValues(setup, decisionId, { purpose: "review" })))).toBe("task_terminal_sessions_purpose_check");
+    expect(await violated(setup.database.insert(taskTerminalSessions).values(sessionValues(setup, decisionId, { purpose: "other" })))).toBe("task_terminal_sessions_purpose_check");
+    expect(await violated(setup.database.insert(taskTerminalSessions).values(sessionValues(setup, decisionId, { purpose: "review" })))).toBe(null);
     expect(await violated(setup.database.insert(taskTerminalSessions).values(sessionValues(setup, decisionId, { agent: "gemini" })))).toBe("task_terminal_sessions_agent_check");
     expect(plan.version).toBe(1);
   });

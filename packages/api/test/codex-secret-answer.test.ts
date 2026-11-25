@@ -15,7 +15,7 @@ afterEach(async () => { await Promise.all(clients.map((client) => client.end()))
 describe("Codex secret answers", () => {
   it("delivers through a separate Postgres listener and stores only the marker", async () => {
     let senderSql!: postgres.Sql;
-    const world = await workerWorld({ script: [{ kind: "ask", questions: QUESTIONS }] }, { permissions: undefined }, { secretAnswersFactory: (setup) => { senderSql = postgres(setup.url, { max: 1 }); clients.push(senderSql); return new PostgresSecretAnswerSender(senderSql, 100); } });
+    const world = await workerWorld({ script: [{ kind: "ask", questions: QUESTIONS }] }, { permissions: undefined }, { secretAnswersFactory: (setup) => { senderSql = postgres(setup.url, { max: 1 }); clients.push(senderSql); return new PostgresSecretAnswerSender(senderSql); } });
     const receiverSql = postgres(world.setup.url, { max: 1 });
     clients.push(receiverSql);
     const worker = world.build({ secretAnswerSql: receiverSql });
@@ -48,7 +48,7 @@ describe("Codex secret answers", () => {
   });
   it("rejects delivery after cancellation wins the pending transition", async () => {
     let senderSql!: postgres.Sql;
-    const world = await workerWorld({ script: [{ kind: "ask", questions: QUESTIONS }] }, { permissions: undefined }, { secretAnswersFactory: (setup) => { senderSql = postgres(setup.url, { max: 1 }); clients.push(senderSql); return new PostgresSecretAnswerSender(senderSql, 100); } });
+    const world = await workerWorld({ script: [{ kind: "ask", questions: QUESTIONS }] }, { permissions: undefined }, { secretAnswersFactory: (setup) => { senderSql = postgres(setup.url, { max: 1 }); clients.push(senderSql); return new PostgresSecretAnswerSender(senderSql); } });
     const receiverSql = postgres(world.setup.url, { max: 1 });
     clients.push(receiverSql);
     const worker = world.build({ secretAnswerSql: receiverSql });

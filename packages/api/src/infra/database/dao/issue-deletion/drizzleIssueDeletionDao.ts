@@ -105,7 +105,7 @@ export class DrizzleIssueDeletionDao implements IssueDeletionDao {
     return taskFacts(this.database, projectId, taskId);
   }
 
-  cancelTaskWork(taskId: string, deletionOperationId: string): Promise<void> {
+  cancelTaskWork(taskId: string, deletionOperationId: string) {
     return cancelTaskWork(this.database, taskId, deletionOperationId);
   }
 

@@ -9,11 +9,13 @@ afterEach(closeTaskFixture);
 
 const MIGRATION = "0047_terminal_tracking_artifacts";
 const ROLLBACK = `${MIGRATION}_rollback`;
+const REVIEW_CYCLE_ROLLBACK = "0053_review_cycles_rollback";
 const MAX_BYTES = 1_048_576;
 
 describe("0047 terminal tracking migration", () => {
   it("MIG-a keeps existing sessions opening and moves the failed launches to launch_failed", async () => {
     const { setup, decisionId } = await world();
+    await applyMigration(setup.client, REVIEW_CYCLE_ROLLBACK);
     await applyMigration(setup.client, ROLLBACK);
     const normal = crypto.randomUUID();
     const failed = crypto.randomUUID();
@@ -21,6 +23,7 @@ describe("0047 terminal tracking migration", () => {
     await insert(normal, null);
     await insert(failed, new Date().toISOString());
     await applyMigration(setup.client, MIGRATION);
+    await applyMigration(setup.client, "0053_review_cycles");
     const rows = await setup.database.select().from(taskTerminalSessions);
     const byId = new Map(rows.map((row) => [row.id, row]));
     expect(byId.get(normal)).toMatchObject({ status: "opening", droppedEvents: 0, tokenHash: null });
@@ -72,12 +75,14 @@ describe("0047 terminal tracking migration", () => {
 
   it("MIG-e removes the new tables and columns on rollback and applies again", async () => {
     const { setup } = await world();
+    await applyMigration(setup.client, REVIEW_CYCLE_ROLLBACK);
     await applyMigration(setup.client, ROLLBACK);
     const tables = await setup.client`select table_name from information_schema.tables where table_name in ('task_terminal_events','task_artifacts','task_artifact_versions')`;
     expect(tables).toHaveLength(0);
     const columns = await setup.client`select column_name from information_schema.columns where table_name = 'task_terminal_sessions' and column_name in ('status','token_hash','claude_session_id','end_reason','active_skill','dropped_events','started_at','ended_at','last_capture_at')`;
     expect(columns).toHaveLength(0);
     await applyMigration(setup.client, MIGRATION);
+    await applyMigration(setup.client, "0053_review_cycles");
     const restored = await setup.client`select table_name from information_schema.tables where table_name in ('task_terminal_events','task_artifacts','task_artifact_versions')`;
     expect(restored).toHaveLength(3);
   });

@@ -1,5 +1,6 @@
 import type { ApprovedIssueRequest, CreationOutcome, GitHubIssueGateway, GitHubIssueLabelGateway, IssueEligibility, IssueLabelOutcome, IssueLabelRequest, IssueReceipt, LabelDefinitionOutcome, LabelDefinitionRequest } from "../../application/github/issueGateway";
 import { TaskError } from "../../application/services/tasks/taskErrors";
+import { issueReceipt } from "./githubIssueReceipt";
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_API_VERSION = "2026-03-10";
@@ -77,7 +78,7 @@ export class GitHubHttpIssueGateway implements GitHubIssueGateway, GitHubIssueLa
 function requestOptions(input: { token: string }, body?: unknown, method = "POST"): RequestInit {
   return { method, headers: { accept: "application/vnd.github+json", authorization: `Bearer ${input.token}`, "x-github-api-version": GITHUB_API_VERSION, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10_000), redirect: "error" };
 }
-function issuePayload(input: ApprovedIssueRequest) { return { title: input.title, body: input.body, ...(input.labels.length ? { labels: input.labels } : {}) }; }
+function issuePayload(input: ApprovedIssueRequest) { return { title: input.title, body: input.body, ...(input.labels.length ? { labels: input.labels } : {}), ...(input.assignees ? { assignees: input.assignees } : {}) }; }
 function labelsUrl(input: { owner: string; name: string }) { return `${GITHUB_API}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/labels`; }
 function definitionFailure(status: number): LabelDefinitionOutcome { if (status === 403 || status === 404) return "denied"; throw new TaskError(status === 429 ? "provider_rate_limited" : "provider_unavailable"); }
 function issueUrl(input: { owner: string; name: string }) { return `${GITHUB_API}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/issues`; }
@@ -86,15 +87,4 @@ function rejectionReason(status: number) { return status === 429 ? "provider_rat
 function retryAfter(value: string | null) { const seconds = Number(value); return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined; }
 function asRecord(value: unknown): JsonRecord { if (!value || typeof value !== "object" || Array.isArray(value)) throw new TaskError("invalid_provider_response"); return value as JsonRecord; }
 
-function receipt(value: JsonRecord, input: ApprovedIssueRequest): IssueReceipt {
-  const id = value.id;
-  const number = value.number;
-  const user = asRecord(value.user);
-  const url = value.html_url;
-  if (value.pull_request || (!Number.isSafeInteger(id) && typeof id !== "string") || !value.node_id || !Number.isSafeInteger(number) || Number(number) < 1 || String(user.id) !== input.publisherGithubId || typeof url !== "string" || !isExpectedIssueUrl(url, input, Number(number)) || typeof value.created_at !== "string" || Number.isNaN(Date.parse(value.created_at))) throw new TaskError("invalid_provider_response");
-  return { issueId: String(id), nodeId: String(value.node_id), number: Number(number), url, repositoryId: input.repositoryId, publisherGithubId: input.publisherGithubId, createdAt: value.created_at };
-}
-
-function isExpectedIssueUrl(value: string, input: ApprovedIssueRequest, number: number) {
-  try { const url = new URL(value); return url.protocol === "https:" && url.hostname === "github.com" && url.pathname === `/${input.owner}/${input.name}/issues/${number}` && !url.search && !url.hash; } catch { return false; }
-}
+function receipt(value: JsonRecord, input: ApprovedIssueRequest) { return issueReceipt(value, input); }

@@ -27,7 +27,7 @@ export class SessionStarter {
     if (!runtime) return this.fail(session, AGENT_UNAVAILABLE_REASON[session.agent]);
     try {
       const contextDir = this.deps.context.pathsOf(session.id).contextDir;
-      const handle = runtime.start({ sessionId: session.id, cwd: session.checkoutPath, prompt, contextDir, permissionMode: session.permissionMode, model: session.model ?? undefined, effort: session.effort ?? undefined, handlers: this.deps.handlers.handlersFor(session) });
+      const handle = runtime.start({ sessionId: session.id, cwd: session.checkoutPath, purpose: session.purpose, prompt, contextDir, permissionMode: session.permissionMode, model: session.model ?? undefined, effort: session.effort ?? undefined, handlers: this.deps.handlers.handlersFor(session) });
       this.deps.registry.set(session.id, handle);
       this.deps.log.info("started", { sessionId: session.id, taskId: session.taskId, mode: session.permissionMode, agent: session.agent, model: session.model, effort: session.effort });
     } catch (error) {

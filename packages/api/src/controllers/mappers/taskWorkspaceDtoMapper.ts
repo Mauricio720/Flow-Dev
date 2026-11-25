@@ -3,6 +3,7 @@ import { storedDraftLabels } from "../../application/services/tasks/draftRules";
 import { splitFailureCode } from "../../application/services/tasks/failureCode";
 import { planningDto } from "./planningDtoMapper";
 import { publicationDto, revisionDto, summaryDto } from "./taskDtoMapper";
+import { readyAssignmentView } from "../../application/services/tasks/readyAssignmentView";
 
 type Resolved<Method extends keyof TaskDao> = Awaited<ReturnType<TaskDao[Method]>>;
 
@@ -17,10 +18,11 @@ export type TaskWorkspaceParts = {
   lastOpened: Resolved<"terminalLastOpened">;
   execution: Resolved<"terminalExecution">;
   canAuthor: boolean;
+  now: Date;
 };
 
 export function workspaceDto(parts: TaskWorkspaceParts) {
   const { task, revision, canAuthor } = parts;
   const summary = mapTaskSummary(task, revision ? storedDraftLabels(revision.canonicalDraft) : []);
-  return { task: summaryDto(summary, parts.authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal: parts.pendingProposal, publication: publicationDto(parts.publication), activity: parts.activity, planning: planningDto(parts.planning, { canOperate: false }), terminal: { lastOpened: parts.lastOpened }, execution: parts.execution, permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? splitFailureCode(task.lastError) : null };
+  return { task: summaryDto(summary, parts.authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal: parts.pendingProposal, publication: publicationDto(parts.publication, parts.publication ? readyAssignmentView(parts.publication, parts.now) : null), activity: parts.activity, planning: planningDto(parts.planning, { canOperate: false }), terminal: { lastOpened: parts.lastOpened }, execution: parts.execution, permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? splitFailureCode(task.lastError) : null };
 }

@@ -1,10 +1,9 @@
-import type { RuntimeHandle, RuntimeHandlers, RuntimePermissionResult } from "../../application/terminal/agentSessionRuntime";
+import type { RuntimeHandle, RuntimePermissionResult } from "../../application/terminal/agentSessionRuntime";
 import { pollUntil } from "./scriptedSettle";
-import { contentStep } from "./scriptedStepContent";
+import { contentStep, isRequestStep } from "./scriptedStepContent";
 import type { ScriptStep } from "./scriptedSessionSteps";
-import { sessionEndHook, sessionHook, sessionStartHook, type SessionStartSource } from "./syntheticHooks";
-
-export type RunnerConfig = { claudeSessionId: string; cwd: string; handlers: RuntimeHandlers; steps: ScriptStep[]; source: SessionStartSource; firstMessage: string };
+import type { RunnerConfig } from "./scriptedRunnerConfig";
+import { sessionEndHook, sessionHook, sessionStartHook } from "./syntheticHooks";
 
 export class ScriptedSessionRunner implements RuntimeHandle {
   readonly received: string[] = [];
@@ -53,6 +52,7 @@ export class ScriptedSessionRunner implements RuntimeHandle {
     if (steps[0]?.kind === "fail") return void this.exit({ kind: "failed", detail: steps[0].detail });
     handlers.onHook(sessionStartHook({ claudeSessionId, cwd, source }));
     this.push(firstMessage);
+    this.buffered.shift();
     for (const step of steps) if (!this.closed && await this.execute(step) === "stop") return;
     while (!this.closed) await this.block();
   }
@@ -76,7 +76,8 @@ export class ScriptedSessionRunner implements RuntimeHandle {
   }
 
   private async speakOrAsk(step: ScriptStep) {
-    const outcome = await this.hold(contentStep(step, this.config, `toolu_${this.outcomes.length + 1}`));
+    const pending = contentStep(step, this.config, `toolu_${this.outcomes.length + 1}`);
+    const outcome = await (isRequestStep(step) ? this.hold(pending) : pending);
     if (outcome) this.outcomes.push(outcome);
   }
 

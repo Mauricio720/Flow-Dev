@@ -11,4 +11,6 @@ export type TaskCommand = { projectId: string; taskId: string; requestKey: strin
 export type AcceptedCommand = { taskId: string; operationId: string; acceptedMessageId: string; version: number };
 export type TaskToolName = "searchProject" | "readProjectFile" | "searchGitHubIssues" | "getGitHubIssue";
 export type TaskToolActivity = { toolCallId: string; operationId: string; tool: TaskToolName; target: string; status: "done" | "empty" | "unavailable"; reason: string | null; durationMs: number; sequence: number };
-export type TaskPublication = { issueId: string; issueNumber: number; issueUrl: string; createdAt: Date; title: string; bodyMarkdown: string; repository: string };
+export type ReadyAssignmentResult = "ready" | "not_assigned" | "ready_failed";
+export type ReadyAssignmentState = "pending" | ReadyAssignmentResult | "unconfirmed";
+export type TaskPublication = { issueId: string; issueNumber: number; issueUrl: string; createdAt: Date; title: string; bodyMarkdown: string; repository: string; assignToSelf: boolean; readyAssignment: ReadyAssignmentResult | null };

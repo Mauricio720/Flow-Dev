@@ -8,6 +8,7 @@ import { messageImageIds } from "./stagedTaskImages";
 import type { TaskEvidenceRecord } from "../../../../application/database/dao/taskDao";
 import { planningListStatus } from "../../../../application/services/tasks/planningRules";
 import { parseIssueDraft, storedDraftLabels } from "../../../../application/services/tasks/draftRules";
+import { publicationMapping } from "./publicationMapping";
 
 const AUTHORED_ORIGIN = "flow_dev";
 
@@ -65,8 +66,7 @@ export class DrizzleTaskReadDao {
 
   async publication(taskId: string) {
     const row = (await this.database.select().from(taskPublicationAttempts).where(and(eq(taskPublicationAttempts.taskId, taskId), eq(taskPublicationAttempts.outcome, "created"))).limit(1))[0];
-    if (!row?.issueId || !row.issueNumber || !row.issueUrl || !row.issueCreatedAt) return null;
-    return { issueId: row.issueId, issueNumber: row.issueNumber, issueUrl: row.issueUrl, createdAt: row.issueCreatedAt, title: row.titleSnapshot, bodyMarkdown: row.bodySnapshot, repository: `${row.approvedOwner}/${row.approvedName}` };
+    return row ? publicationMapping(row) : null;
   }
 
   async messages(taskId: string, value: string | undefined, limit: number) {

@@ -1,6 +1,6 @@
 import type { AssignedIssueGateway } from "../../github/assignedIssueGateway";
 import type { AttemptRecord, ClaimRecord, IssueClaimDao } from "../../database/dao/issueClaimDao";
-import { READY_STATUS_NAME, findOption } from "./assignedIssueRules";
+import { findReadyOption } from "./assignedIssueRules";
 import { isDispatchSettled } from "./issueClaimRules";
 import { translated } from "./assignedIssueTranslation";
 
@@ -22,7 +22,7 @@ export class IssueClaimReconciler {
 
   private async releaseIfReady(target: Target, observedOptionId: string | null) {
     const field = await translated(() => this.deps.gateway.statusField(target.token, target.claim.boardNodeId));
-    const ready = findOption(field.options, READY_STATUS_NAME);
+    const ready = findReadyOption(field.options);
     if (!ready || observedOptionId !== ready.id) return null;
     return this.settle(target, "failed", "dispatch_not_applied", observedOptionId);
   }

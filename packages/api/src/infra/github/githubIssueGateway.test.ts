@@ -28,8 +28,15 @@ describe("GitHubIssueGateway", () => {
       expect(JSON.parse(String(init?.body))).toEqual({ title: input.title, body: input.body });
       return Response.json(createdIssue, { status: 201 });
     });
-    await expect(new GitHubHttpIssueGateway(fetcher).create(input)).resolves.toMatchObject({ status: "created", receipt: { number: 41, repositoryId: "202", publisherGithubId: "501" } });
+    await expect(new GitHubHttpIssueGateway(fetcher).create(input)).resolves.toMatchObject({ status: "created", receipt: { number: 41, repositoryId: "202", publisherGithubId: "501", assigneeGithubIds: [] } });
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("sends an explicitly requested assignee and returns GitHub's assignee ids", async () => {
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ title: input.title, body: input.body, assignees: ["ana"] });
+      return Response.json({ ...createdIssue, assignees: [{ id: 88, login: "ana" }] }, { status: 201 });
+    });
+    await expect(new GitHubHttpIssueGateway(fetcher).create({ ...input, assignees: ["ana"] })).resolves.toMatchObject({ status: "created", receipt: { assigneeGithubIds: ["88"] } });
   });
   it("UT-034 keeps ambiguous delivery uncertain and never retries creation", async () => {
     const fetcher = vi.fn().mockRejectedValue(new TypeError("connection reset"));

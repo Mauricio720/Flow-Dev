@@ -116,6 +116,7 @@ export { taskExecutionActions, taskExecutionRuntimeBindings } from "./schema/tas
 export { taskExecutionRuns } from "./schema/tasks/taskExecutionRuns";
 export { taskUnifiedPackageApprovals, taskUnifiedPackageFiles, taskUnifiedPackages } from "./schema/tasks/taskUnifiedPackages";
 export { taskIssueClaimAttempts, taskIssueClaims, taskIssueSnapshots, taskIssueSources } from "./schema/tasks/sources";
+export { taskReviewCycles, taskReviewRounds } from "./schema/tasks/reviewCycles";
 export { localMachines, localPairings, localProjectLinks } from "./schema/localMachines";
 export { localCommandEvents, localCommands } from "./schema/localCommands";
 export { localCheckoutLocks } from "./schema/localCheckoutLocks";

@@ -6,7 +6,7 @@ export type TaskErrorReason =
   | "unsafe_source" | "invalid_field_path" | "stale_proposal"
   | "preview_not_ready" | "preview_changed" | "repository_archived"
   | "issues_disabled" | "repository_authorization_needed" | "destination_unavailable" | "identity_mismatch"
-  | "issue_permission_denied" | "attempt_not_uncertain" | "wrong_attempt"
+  | "issue_permission_denied" | "ready_board_missing" | "ready_status_missing" | "assign_permission_denied" | "attempt_not_uncertain" | "wrong_attempt"
   | "invalid_stored_content" | "service_unavailable" | "stale_execution" | "content_rejected"
   | "invalid_agent_output" | "invalid_agent_source" | "invalid_agent_activity" | "execution_mismatch" | "generation_timeout"
   | "invalid_path" | "invalid_query" | "unsupported_context" | "context_limit"
@@ -25,7 +25,7 @@ export type TaskErrorReason =
   | "planning_not_approved" | "checkout_missing" | "checkout_invalid" | "skill_missing" | "claude_unavailable" | "session_service_offline" | "terminal_disabled" | "session_already_active" | "prompt_invalid" | "attachment_missing" | "attachment_limit"
   | "session_control_denied" | "session_not_active" | "request_closed" | "request_answered" | "message_invalid" | "answer_incomplete" | "answer_invalid" | "decision_not_offered" | "secret_delivery_failed"
   | "image_too_large" | "unsupported_image_type" | "artifact_unavailable" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable"
-  | "plan_conflict" | "plan_invalid_order" | "plan_task_unknown" | "plan_task_duplicated" | "plan_item_started" | "plan_limits" | "task_set_unavailable" | "plan_control_denied" | "choice_invalid" | "agent_unavailable" | "model_unavailable" | "plan_item_blocked" | "plan_item_not_ready" | "spec_not_found";
+  | "plan_conflict" | "plan_invalid_order" | "plan_task_unknown" | "plan_task_duplicated" | "plan_item_started" | "plan_limits" | "task_set_unavailable" | "plan_control_denied" | "choice_invalid" | "agent_unavailable" | "model_unavailable" | "plan_item_blocked" | "plan_item_not_ready" | "spec_not_found" | "review_action_invalid" | "review_cycle_active" | "review_cycle_changed" | "review_tasks_incomplete" | "review_sessions_open";
 
 export class TaskError extends Error {
   constructor(readonly reason: TaskErrorReason, readonly fieldErrors?: Record<string, string>, cause?: unknown, readonly retryAfterSeconds?: number) {

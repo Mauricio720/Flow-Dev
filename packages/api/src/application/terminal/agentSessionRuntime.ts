@@ -1,5 +1,6 @@
 import type { SessionAgent } from "./sessionAgentCatalog";
 import type { AlwaysPermissionScope, PermissionDecision, PermissionMode, PermissionRequestKind } from "./sessionInteraction";
+import type { SessionPurposeKind } from "./sessionPurposeKind";
 
 export type HookPayload = Record<string, unknown>;
 export type RuntimePermissionRequest = { toolName: string; input: Record<string, unknown>; toolUseId: string; suggestions: unknown[]; permissionKind?: PermissionRequestKind; offers?: PermissionDecision[]; alwaysScope?: AlwaysPermissionScope | null };
@@ -19,8 +20,8 @@ export type RuntimeHandlers = {
 };
 
 export type RuntimeChoice = { model?: string; effort?: string };
-export type RuntimeStartInput = RuntimeChoice & { sessionId: string; cwd: string; prompt: string; contextDir: string; permissionMode: PermissionMode; handlers: RuntimeHandlers };
-export type RuntimeResumeInput = RuntimeChoice & { sessionId: string; claudeSessionId: string; cwd: string; contextDir: string; permissionMode: PermissionMode; firstMessage: string; handlers: RuntimeHandlers };
+export type RuntimeStartInput = RuntimeChoice & { sessionId: string; cwd: string; purpose?: SessionPurposeKind; prompt: string; contextDir: string; permissionMode: PermissionMode; handlers: RuntimeHandlers };
+export type RuntimeResumeInput = RuntimeChoice & { sessionId: string; claudeSessionId: string; cwd: string; purpose?: SessionPurposeKind; contextDir: string; permissionMode: PermissionMode; firstMessage: string; handlers: RuntimeHandlers };
 
 export interface RuntimeHandle {
   push(text: string): void;

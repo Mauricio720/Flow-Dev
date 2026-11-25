@@ -45,6 +45,8 @@ export type TaskDeletionFacts = {
   pendingDeletion: boolean;
 };
 
+export type StoppedReviewCycle = { id: string; taskId: string; round: number; stepRole: "review" | "execute"; reviewSessionId: string | null; executeSessionId: string | null; startedAt: Date };
+
 export interface IssueDeletionDao {
   reserve(input: ReserveDeletionInput): Promise<{ operation: DeletionOperation; created: boolean }>;
   byId(operationId: string): Promise<DeletionOperation | null>;
@@ -60,8 +62,8 @@ export interface IssueDeletionDao {
   pending(limit: number): Promise<DeletionOperation[]>;
   activeFenceState(taskId: string): Promise<DeletionState | null>;
   taskFacts(projectId: string, taskId: string): Promise<TaskDeletionFacts | null>;
-  cancelTaskWork(taskId: string, deletionOperationId: string): Promise<void>;
+  cancelTaskWork(taskId: string, deletionOperationId: string): Promise<StoppedReviewCycle[]>;
   publicationState(taskId: string): Promise<{ unresolved: boolean; createdIdentity: FrozenIssueIdentity | null }>;
-  remainingActiveWork(taskId: string): Promise<{ operations: string[]; runs: string[]; specs: string[] }>;
+  remainingActiveWork(taskId: string): Promise<{ operations: string[]; runs: string[]; specs: string[]; reviewSessions: string[] }>;
   resume(input: { operationId: string; state: DeletionState }): Promise<DeletionOperation>;
 }

@@ -10,6 +10,7 @@ export type RecorderEvents = {
 };
 
 export type RecorderDeps = { messages: Pick<SessionMessageDao, "insertAssistantMessage">; events: RecorderEvents; log: SessionLog };
+const STOP_CAPTURE_TRIGGER = "stop";
 
 export class SessionRecorder {
   constructor(private readonly deps: RecorderDeps) {}
@@ -37,6 +38,14 @@ export class SessionRecorder {
       await this.deps.events.capture(sessionId, "session_end");
     } catch (error) {
       this.deps.log.error("record_end_capture_failed", { sessionId, ...errorFields(error) });
+    }
+  }
+
+  async captureStop(sessionId: string) {
+    try {
+      await this.deps.events.capture(sessionId, STOP_CAPTURE_TRIGGER);
+    } catch (error) {
+      this.deps.log.error("record_stop_capture_failed", { sessionId, ...errorFields(error) });
     }
   }
 }

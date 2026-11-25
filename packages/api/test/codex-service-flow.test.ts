@@ -28,6 +28,7 @@ describe("Codex worker service flow", () => {
     try {
       await worker.supervisor.tick();
       await waitFor(record, "turn/start");
+      await waitForStatus(setup, session.id, "waiting");
       await worker.idle();
       await expect(sessionRowOf(setup, session.id)).resolves.toMatchObject({ status: "waiting", claudeSessionId: "thread-flow", agentVersion: "0.159.3", model: "model-1", effort: "high" });
       expect((await readFile(record, "utf8")).includes("thread/start")).toBe(true);

@@ -4,7 +4,6 @@ import type { BoardItemFacts } from "../../github/assignedIssueGateway";
 const ISSUE_CONTENT_TYPE = "Issue";
 const OPEN_ISSUE_STATE = "OPEN";
 export const IN_PROGRESS_STATUS_NAME = "in progress";
-export const READY_STATUS_NAME = "ready";
 
 export type EligibilityContext = { repositoryNodeId: string; githubUserId: string; readyOptionId: string; boardNodeId: string };
 export type Assessment = "eligible" | "malformed" | "not_issue" | "archived" | "closed" | "other_board" | "other_repository" | "not_ready" | "not_assigned" | "assignees_incomplete";
@@ -43,6 +42,4 @@ export function requestPayloadHash(parts: Record<string, string>) {
   return createHash("sha256").update(JSON.stringify(Object.entries(parts).sort(([left], [right]) => left.localeCompare(right)))).digest("hex");
 }
 
-export function findOption(options: { id: string; name: string }[], name: string) {
-  return options.find((option) => option.name.trim().toLowerCase() === name) ?? null;
-}
+export { findReadyOption } from "../projects/projectBoardRules";

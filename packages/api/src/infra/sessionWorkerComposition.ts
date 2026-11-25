@@ -13,6 +13,7 @@ import { SessionSupervisor } from "../application/services/terminal/sessionSuper
 import { runSessionLoop } from "../application/services/terminal/sessionWorkerLoop";
 import { requireDatabase, requireSql } from "./database/client";
 import { killChildProcesses } from "./terminal/killChildProcesses";
+import { buildReviewStep } from "./reviewStepComposition";
 import { buildWorkerParts, type WorkerOverrides, type WorkerParts } from "./sessionWorkerParts";
 
 export type { WorkerOverrides } from "./sessionWorkerParts";
@@ -26,9 +27,10 @@ function buildSteps(parts: WorkerParts) {
   return [
     new OrphanRecoveryStep({ control, messages, cancellation, identity, now, log }),
     new OpeningStep({ control, starter, identity, log }),
-    new SessionControlsStep({ registry, hostId: identity.hostId, status, controls: control, messages, cancellation, flush: () => handlers.flush(), captureEnd: (sessionId) => recorder.captureEnd(sessionId), now, log }),
     new SessionResumeStep({ status, messages, runtimes, handlers, registry, context, exit: parts.exit, cancellation, identity, now, log }),
     new MessageDeliveryStep({ registry, messages, now, log }),
+    buildReviewStep(parts),
+    new SessionControlsStep({ registry, hostId: identity.hostId, status, controls: control, messages, cancellation, flush: () => handlers.flush(), captureEnd: (sessionId) => recorder.captureEnd(sessionId), now, log }),
     new AnswerDispatchStep({ requests: parts.requests, status, registry: parts.pending, log }),
   ];
 }

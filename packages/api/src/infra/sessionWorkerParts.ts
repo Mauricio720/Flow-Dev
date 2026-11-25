@@ -13,7 +13,9 @@ import { SessionRequestGate } from "../application/services/terminal/sessionRequ
 import { SecretAnswerReceiver } from "../application/services/terminal/secretAnswerReceiver";
 import type { AgentSessionRuntime, SessionRuntimes } from "../application/terminal/agentSessionRuntime";
 import type { CodexCatalogProbe } from "../application/terminal/codexCatalogProbe";
+import type { ToolLocator } from "../application/terminal/toolLocator";
 import type { SessionMessageDao } from "../application/terminal/sessionInteractionPorts";
+import type { ReviewCycleWorkerDao } from "../application/database/dao/reviewCycleWorkerDao";
 import { CodexCatalogPublisher } from "../application/services/terminal/codexCatalogPublisher";
 import { CodexCatalogStep } from "../application/services/terminal/codexCatalogStep";
 import type { requireDatabase } from "./database/client";
@@ -23,6 +25,10 @@ import { DrizzleSessionControlDao } from "./database/dao/terminal/drizzleSession
 import { DrizzleSessionHostDao } from "./database/dao/terminal/drizzleSessionHostDao";
 import { DrizzleSessionMessageDao } from "./database/dao/terminal/drizzleSessionMessageDao";
 import { DrizzleSessionRequestDao } from "./database/dao/terminal/drizzleSessionRequestDao";
+import { DrizzleReviewCycleWorkerDao } from "./database/dao/review/drizzleReviewCycleWorkerDao";
+import { DrizzleIssueClaimDao } from "./database/dao/assigned-issues/drizzleIssueClaimDao";
+import { DrizzleTaskSetReadDao } from "./database/dao/artifacts/drizzleTaskSetReadDao";
+import { TaskSetLoader } from "../application/services/tasks-set/taskSetLoader";
 import { DrizzleSessionStatusDao } from "./database/dao/terminal/drizzleSessionStatusDao";
 import { DrizzleTerminalSessionDao } from "./database/dao/terminal/drizzleTerminalSessionDao";
 import { AgentSdkSessionRuntime } from "./terminal/agentSdkSessionRuntime";
@@ -36,9 +42,11 @@ import { CodexAppServerRuntime } from "./terminal/codex/codexAppServerRuntime";
 import { AppServerCodexCatalogTransport } from "./terminal/codex/codexCatalogTransport";
 import { CodexProcess } from "./terminal/codex/codexProcess";
 import { LocalCodexCatalogProbe } from "./terminal/codex/codexCatalogProbe";
+import { lazyReviewLauncher } from "./lazyReviewLauncher";
+import { createTerminalLauncher } from "./terminalComposition";
 
 type Database = ReturnType<typeof requireDatabase>;
-export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe };
+export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe; tools?: ToolLocator; reviewCycles?: ReviewCycleWorkerDao };
 
 function selectRuntime(env: NodeJS.ProcessEnv, log: SessionLog): AgentSessionRuntime {
   const script = scriptFromEnvironment(env);
@@ -51,9 +59,10 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const now = overrides.now ?? (() => new Date());
   const identity = { hostId: overrides.hostId ?? machineIdentity(), workerId: overrides.workerId ?? randomUUID() };
   const sessions = new DrizzleTerminalSessionDao(database);
-  const tools = new PathToolLocator(env);
-  const codexProbe = overrides.codexProbe ?? new LocalCodexCatalogProbe({ tools, transport: (binary) => new AppServerCodexCatalogTransport({ binary, env }), now });
-  const codexRuntime = new CodexAppServerRuntime({ process: new CodexProcess(tools, env), probe: codexProbe, log });
+  const tools = overrides.tools ?? new PathToolLocator(env);
+  const codexTools = new PathToolLocator(env);
+  const codexProbe = overrides.codexProbe ?? new LocalCodexCatalogProbe({ tools: codexTools, transport: (binary) => new AppServerCodexCatalogTransport({ binary, env }), now });
+  const codexRuntime = new CodexAppServerRuntime({ process: new CodexProcess(codexTools, env), probe: codexProbe, log });
   const runtimes = overrides.runtimes ?? { claude: selectRuntime(env, log), codex: codexRuntime };
   const requests = new DrizzleSessionRequestDao(database);
   const messages = overrides.messages ?? new DrizzleSessionMessageDao(database);
@@ -70,9 +79,14 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const recorder = new SessionRecorder({ messages, events: createTerminalEventController(database, { env }), log });
   const handlers = new SessionHandlerFactory({ recorder, permissions: overrides.permissions ?? broker, onExit: (session, outcome) => exit.handle(session, outcome), onAgentVersion: (sessionId, version) => sessions.markAgentVersion?.(sessionId, version) ?? Promise.resolve(), log });
   const hosts = new DrizzleSessionHostDao(database);
+  const reviewCycles = overrides.reviewCycles ?? new DrizzleReviewCycleWorkerDao(database);
+  const reviewClaims = new DrizzleIssueClaimDao(database);
+  const reviewTaskSets = new TaskSetLoader(new DrizzleTaskSetReadDao(database));
   const catalog = new CodexCatalogStep(new CodexCatalogPublisher({ hosts, probe: codexProbe, hostId: identity.hostId, now, log }));
   const control = new DrizzleSessionControlDao(database);
-  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context: new FileSessionContextBuilder(env), runtimes };
+  const context = new FileSessionContextBuilder(env);
+  const reviewLauncher = lazyReviewLauncher(() => createTerminalLauncher(database, { env, now, hostId: identity.hostId, tools, context, codexProbe }));
+  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context, runtimes, reviewCycles, reviewClaims, reviewTaskSets, reviewLauncher };
 }
 
 export type WorkerParts = ReturnType<typeof buildWorkerParts>;

@@ -19,12 +19,15 @@ import type { TaskArtifactController } from "../controllers/taskArtifactControll
 import { createProductionArtifactController } from "../infra/artifactComposition";
 import type { TerminalSessionController } from "../controllers/terminalSessionController";
 import { createProductionTerminalController } from "../infra/terminalComposition";
+import type { ReviewCycleController } from "../controllers/reviewCycleController";
+import { createProductionReviewController } from "../infra/reviewComposition";
+import { createReviewRouter } from "./review";
 import { createProductionSessionControllers, type SessionControllers } from "../infra/sessionInteractionComposition";
 import { createSessionRouter } from "./session";
 import { lazyController } from "./lazyController";
 import { taskPreviewInputSchema, taskPublishInputSchema, taskReconcilePublicationInputSchema } from "../schemas/tasks";
 
-export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController };
+export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController; review?: ReviewCycleController };
 
 export function createTasksRouter(controller?: TasksController, publicationController?: TaskPublicationController, extras: TasksRouterExtras = {}) {
   const getController = lazyController(controller, createProductionTasksController);
@@ -35,6 +38,7 @@ export function createTasksRouter(controller?: TasksController, publicationContr
   const getArtifactController = lazyController(extras.artifacts, createProductionArtifactController);
   const getTaskSetController = lazyController(extras.taskSet, createProductionTaskSetController);
   const getPlanController = lazyController(extras.plan, createProductionPlanController);
+  const getReviewController = lazyController(extras.review, createProductionReviewController);
   const call = <T>(operation: () => Promise<T>) => operation().catch(mapTaskError);
   return router({
     list: protectedProcedure.input(taskListInputSchema).query(({ ctx, input }) => call(() => getController().list(ctx.principal, input))),
@@ -54,6 +58,7 @@ export function createTasksRouter(controller?: TasksController, publicationContr
     artifacts: createArtifactsRouter(getArtifactController),
     taskSet: createTaskSetRouter(getTaskSetController),
     plan: createPlanRouter(getPlanController),
+    review: createReviewRouter(getReviewController),
     session: createSessionRouter(getSessionController),
     reconcilePublication: protectedProcedure.input(taskReconcilePublicationInputSchema).mutation(({ ctx, input }) => call(() => getPublicationController().reconcilePublication(ctx.principal, input))),
   });

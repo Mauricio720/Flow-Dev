@@ -20,7 +20,7 @@ export async function approveTaskPublication(database: Database, input: Publicat
     const attemptId = crypto.randomUUID();
     const version = input.expectedVersion + 1;
     await tx.insert(taskOperations).values({ id: operationId, taskId: input.taskId, kind: "publish", state: "queued", initiatedSessionId: input.sessionId, baseTaskVersion: input.expectedVersion, baseRevisionId: input.revisionId });
-    await tx.insert(taskPublicationAttempts).values({ id: attemptId, taskId: input.taskId, operationId, revisionId: input.revisionId, publisherUserId: input.actorUserId, publisherGithubId: input.publisherGithubId, repositoryId: input.repositoryId, repositoryNodeId: input.repositoryNodeId, approvedOwner: input.owner, approvedName: input.name, previewHash: input.previewHash, titleSnapshot: input.title, bodySnapshot: input.bodyMarkdown, approvalSessionId: input.sessionId });
+    await tx.insert(taskPublicationAttempts).values({ id: attemptId, taskId: input.taskId, operationId, revisionId: input.revisionId, publisherUserId: input.actorUserId, publisherGithubId: input.publisherGithubId, repositoryId: input.repositoryId, repositoryNodeId: input.repositoryNodeId, approvedOwner: input.owner, approvedName: input.name, previewHash: input.previewHash, titleSnapshot: input.title, bodySnapshot: input.bodyMarkdown, approvalSessionId: input.sessionId, assignToSelf: input.assignToSelf });
     const result = { taskId: input.taskId, attemptId, operationId, version, status: "publishing" as const, created: true };
     await tx.update(tasks).set({ status: "publishing", activeOperationId: operationId, lastError: null, version, updatedAt: new Date() }).where(and(eq(tasks.id, input.taskId), eq(tasks.version, input.expectedVersion)));
     await tx.insert(taskCommandReceipts).values({ projectId: input.projectId, actorUserId: input.actorUserId, action: "publish", requestKey: input.requestKey, payloadHash: hash, taskId: input.taskId, operationId, acceptedResult: result });
@@ -28,7 +28,7 @@ export async function approveTaskPublication(database: Database, input: Publicat
   });
 }
 
-export function findAcceptedTaskPublication(database: Database, input: Pick<PublicationApproval, "projectId" | "taskId" | "actorUserId" | "requestKey" | "expectedVersion" | "revisionId" | "repositoryId" | "previewHash">) {
+export function findAcceptedTaskPublication(database: Database, input: Pick<PublicationApproval, "projectId" | "taskId" | "actorUserId" | "requestKey" | "expectedVersion" | "revisionId" | "repositoryId" | "previewHash" | "assignToSelf">) {
   return findReplay(database, input as PublicationApproval, payloadHash(approvalPayload(input as PublicationApproval)));
 }
 
@@ -52,4 +52,4 @@ async function assertNoCapture(database: Database, input: PublicationApproval) {
   if (active.length) throw new TaskError("capture_active");
 }
 
-function approvalPayload(input: PublicationApproval) { return [input.taskId, input.expectedVersion, input.revisionId, input.repositoryId, input.previewHash]; }
+function approvalPayload(input: PublicationApproval) { return [input.taskId, input.expectedVersion, input.revisionId, input.repositoryId, input.previewHash, ...(input.assignToSelf ? ["assign_to_self"] : [])]; }

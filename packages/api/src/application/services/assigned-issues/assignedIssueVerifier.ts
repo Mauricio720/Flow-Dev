@@ -1,5 +1,5 @@
 import type { AssignedIssueGateway, BoardItemFacts } from "../../github/assignedIssueGateway";
-import { IN_PROGRESS_STATUS_NAME, READY_STATUS_NAME, assessItem, findOption, verifiedIssue } from "./assignedIssueRules";
+import { IN_PROGRESS_STATUS_NAME, assessItem, findReadyOption, verifiedIssue } from "./assignedIssueRules";
 import type { Assessment, VerifiedIssue } from "./assignedIssueRules";
 import { AssignedIssueError } from "./assignedIssueErrors";
 import type { AssignedIssueReason } from "./assignedIssueErrors";
@@ -22,7 +22,7 @@ export class AssignedIssueVerifier {
     if (!issue) throw new AssignedIssueError("issue_unavailable");
     if (issue.nodeId !== input.issueNodeId) throw new AssignedIssueError("board_item_invalid");
     if (issue.repositoryNodeId !== context.repository.nodeId || issue.repositoryId !== context.repository.githubId) throw new AssignedIssueError("repository_mismatch");
-    const ready = findOption(field.options, READY_STATUS_NAME);
+    const ready = findReadyOption(field.options);
     const progress = field.options.filter((option) => option.name.trim().toLowerCase() === IN_PROGRESS_STATUS_NAME);
     const assessment = await this.assessEligibility(context, item, ready?.id ?? "");
     return { item, issue, assessment, inProgressOptionId: progress.length === 1 ? progress[0]!.id : null, fieldId: field.fieldId };

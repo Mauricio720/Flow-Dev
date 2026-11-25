@@ -7,6 +7,7 @@ import { RepositoryDeletionAccess } from "../src/application/services/issue-dele
 import { CoordinatedDeletionStop } from "../src/application/services/issue-deletion/coordinatedDeletionStop";
 import { IssueDeletionService } from "../src/application/services/issue-deletion/issueDeletionService";
 import { IssueDeletionWorker } from "../src/application/services/issue-deletion/issueDeletionWorker";
+import { ConsoleSessionLog } from "../src/application/services/terminal/sessionLog";
 import { GitHubDeletionProvider } from "../src/infra/issue-deletion/gitHubDeletionProvider";
 import { GitHubHttpIssueDeletionGateway } from "../src/infra/github/githubIssueDeletionGateway";
 import { IssueDeletionController } from "../src/controllers/issueDeletionController";
@@ -37,7 +38,7 @@ export async function issueDeletionFixture() {
   const access = new RepositoryDeletionAccess(new ProjectAccessService(base.dao, base.permissions), base.permissions, base.authorization, new RepositoryAccessService(base.dao, base.permissions, base.authorization, base.github));
   const provider = new GitHubDeletionProvider(new GitHubHttpIssueDeletionGateway(world.fetcher), base.authorization);
   const clock = { now: NOW };
-  const stop = new CoordinatedDeletionStop({ dao });
+  const stop = new CoordinatedDeletionStop({ dao, log: new ConsoleSessionLog() });
   const service = new IssueDeletionService({ dao, access, provider, clock: () => clock.now });
   const { terminalEnv, terminalFiles } = await terminalDeletionState(base.database);
   const worker = new IssueDeletionWorker({ dao, access, provider, stop, owner: "test-worker", clock: () => clock.now, leaseMs: 60_000, terminalFiles });
