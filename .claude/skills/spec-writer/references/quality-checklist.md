@@ -31,6 +31,7 @@ Run every item against the draft, fix what fails, and report the score in the ha
 18. Does the Definition of Done use the project's real commands?
 18a. Does each matrix row name the failure it must catch and the boundary it exercises for real, with expected results taken from the requirements rather than from code (per the project's testing skill)?
 18b. Are doubles limited to slow, variable, costly or external dependencies, with a real database used wherever SQL, transactions or constraints are the risk, and with end-to-end tests reserved for the few critical journeys?
+18c. Are the matrix and the Definition of Done free of manual tests (manual smoke, manual spike, opt-in runs against real accounts or services), with risks that lack automated proof only named under "Sem prova automática"?
 
 ## Uncertainty
 19. Is every load-bearing unknown either answered or marked `[PRECISA ESCLARECER: …]`, with a suggestion and a matching Q-xx entry?

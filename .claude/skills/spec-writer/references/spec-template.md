@@ -125,10 +125,11 @@ Como <papel>, quero <capacidade>, para <benefício>.
 # Parte 3 — Verificação
 
 ## 22. Estratégia de testes
-<!-- Based on the project's testing skill (e.g. `software-testing`). State: the frameworks and harnesses already in the project; which boundaries are exercised for real for this feature (database, HTTP, external providers, UI) and what is replaced by doubles, and why; how variable inputs are controlled (clock, randomness, IDs, concurrency); the 1–3 critical end-to-end journeys; and which important risk still has no automated proof (exploration or manual check). No fixed ratio between levels. -->
+<!-- Based on the project's testing skill (e.g. `software-testing`). State: the frameworks and harnesses already in the project; which boundaries are exercised for real for this feature (database, HTTP, external providers, UI) and what is replaced by doubles, and why; how variable inputs are controlled (clock, randomness, IDs, concurrency); the 1–3 critical end-to-end journeys; and a "Sem prova automática" line naming the important risks no automated test proves (real model behavior, real external accounts), so the user checks them in their own manual test after the feature is done. Do not plan manual smokes, manual spikes or opt-in runs against real services: the user does all manual testing after every task. No fixed ratio between levels. -->
 
 ## 23. Matriz de verificação
 <!-- Compact: one row per requirement group or story, not one row per scenario. Every REQ, every story scenario and every edge case (B-xx) must be traceable to a row through the "Cobre" column. Name the test cases in a few words; spec-to-tasks turns them into concrete tests later. A typical L3 feature lands at 8–15 rows. -->
+<!-- Automated tests only: no row is a manual smoke, manual spike or run against real accounts. -->
 <!-- Each row is a risk card from the testing skill. "Falha que detecta" is the plausible wrong implementation the row must catch. "Fronteira real" names what is exercised for real and what is a double. The expected results in "Casos" come from the requirements (the oracle), never from the code. -->
 | ID | Cobre | Falha que detecta | Fronteira real | Casos (resumo) |
 |---|---|---|---|---|
@@ -136,7 +137,7 @@ Como <papel>, quero <capacidade>, para <benefício>.
 | V-02 | US-01–02 ponta a ponta | partes não conectadas na tela | UI + API + banco de teste | membro comenta, outro vê, autor edita e exclui |
 
 ## 24. Definição de pronto
-<!-- Real commands from the project (e.g. `pnpm --dir packages/api test`, `pnpm typecheck`); the e2e scenario that proves the P1 stories; no [PRECISA ESCLARECER] left; spec updated with what changed during implementation. -->
+<!-- Real automated commands from the project (e.g. `pnpm --dir packages/api test`, `pnpm typecheck`), never a manual smoke; the e2e scenario that proves the P1 stories; no [PRECISA ESCLARECER] left; spec updated with what changed during implementation. -->
 
 ---
 

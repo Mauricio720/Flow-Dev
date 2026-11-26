@@ -25,7 +25,7 @@ Headings are in Portuguese; translate them when writing in another language.
 <!-- For a bug: scenario 1 is the reproduction, which must fail before the fix and pass after. -->
 
 ## Verificação
-- <test file and the case to add or update, by level>
+- <test file and the case to add or update, by level; automated only, the user does manual testing after the work is done>
 - <real commands: e.g. `pnpm --dir apps/web exec vitest run <file>`, typecheck>
 
 ## Em aberto

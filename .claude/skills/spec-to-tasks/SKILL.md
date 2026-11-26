@@ -94,6 +94,8 @@ List every item that requires work, by its ID:
 
 A spec-writer verification matrix is compact (each V-xx row names several cases in a few words): expand each row into concrete cases (V-01a, V-01b…), each with its scenario and expected result. A Compozy `_tests.md` already has concrete IDs (UT/IT/E2E); use them as they are.
 
+Never turn anything into a manual-test step. The user runs their own manual test after every task is done. If an older spec still has a manual smoke, a manual spike or an opt-in run against real accounts in its matrix or Definição de pronto, leave it out of the tasks and say so in the plan you present.
+
 Write each concrete case the way the testing skill asks: scenario (input and initial state) → observable expected result, taken from the spec (the oracle) → the boundary that must be real. "Retorna 403 quando o usuário não é membro" is a case; "testar permissões" is not.
 
 ### 4. Plan, and present the plan before writing files

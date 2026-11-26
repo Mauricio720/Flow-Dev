@@ -114,6 +114,7 @@ Never silently settle a product decision that changes behavior.
 - **Boundaries, not labels.** Describe what each test exercises for real (database, HTTP, UI) and what is substituted. Do not choose tests by the words "unit" or "integration", and do not impose a fixed ratio between levels.
 - **Doubles only where needed.** Real collaborators where that stays fast and controlled. A real database where SQL, transactions or constraints are the risk. A controlled double for external providers, plus a separate contract check when compatibility is critical.
 - **Few end-to-end journeys,** only for the critical P1 flows. Rule details stay in narrower tests.
+- **No manual tests.** The user runs their own manual test of the whole feature after every task is done, outside the spec. So the spec never plans a manual smoke, a manual spike, a "passada manual" or an opt-in run against real accounts or real external services: none of them becomes a matrix row, a test case, a task step or an item of the Definição de pronto. When an important risk has no automated proof (real model behavior, a real third-party board, real subscriptions), name it in one line under "Sem prova automática" in the test strategy, so the user knows what to look at in their own test, and stop there. A premise that only the real world can confirm stays in Premissas or Riscos, never as a verification step.
 
 If the project has no testing skill, apply the same four points; they are good practice anyway.
 
@@ -134,7 +135,7 @@ Rules that matter most:
   - Each row lists the IDs it covers, the test level(s), the component, and the single most important expected result.
   - The test cases themselves are named, one line each, inside the row or in a short list. Do not write a separate test catalog.
   - The goal is that every REQ, every story scenario and every edge case is *traceable* to a row; spec-to-tasks later turns the rows into concrete tests.
-- **Definição de pronto:** uses the project's real commands.
+- **Definição de pronto:** uses the project's real automated commands only; no manual smoke or manual check.
 - **Large material** (a full schema, a long contract): put it in an appendix file next to the spec and link it.
 
 ## Step 6 — Self-review
