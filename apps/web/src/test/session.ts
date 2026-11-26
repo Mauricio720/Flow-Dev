@@ -1,4 +1,4 @@
-import type { EventEntry, MessageEntry, PermissionEntry, QuestionEntry, QuestionItem, SessionScope, SessionTimeline } from "@/features/issues/assigned-work/sessionContract";
+import type { EventEntry, MessageEntry, PermissionEntry, QuestionEntry, QuestionItem, RouteSwitchEntry, RouteSwitchView, SessionScope, SessionTimeline } from "@/features/issues/assigned-work/sessionContract";
 
 export const SESSION_SCOPE: SessionScope = { projectId: "00000000-0000-4000-8000-0000000000b1", taskId: "00000000-0000-4000-8000-0000000000c1", sessionId: "00000000-0000-4000-8000-0000000000e1" };
 export const AT = "2026-11-23T14:30:00.000Z";
@@ -35,4 +35,13 @@ export function questionOf(patch: Partial<QuestionEntry> = {}): QuestionEntry {
 
 export function permissionOf(patch: Partial<PermissionEntry> = {}): PermissionEntry {
   return { type: "permission", id: "p1", status: "pending", kind: "command", offers: ["allow", "allow_always", "deny"], alwaysScope: "project", tool: "Bash", display: { title: "Rodar comando:", body: "pnpm test" }, suggestedRule: "Bash(pnpm test:*)", at: AT, ...patch };
+}
+
+export const SWITCH_ID = "00000000-0000-4000-8000-0000000000f1";
+export const SWITCH_SUMMARY = "Mudança de texto em uma tela, sem regra nova";
+export const SWITCH_REASONS = ["As respostas fixaram o texto e a tela.", "Segue o padrão de planningCopy.ts."];
+
+export function routeSwitchOf(patch: Partial<RouteSwitchView> = {}): RouteSwitchEntry {
+  const proposal: RouteSwitchView = { id: SWITCH_ID, fromRoute: "prd", toRoute: "direct_execution", summary: SWITCH_SUMMARY, reasons: SWITCH_REASONS, state: "pending", decidedBy: null, decidedAt: null, proposedAt: AT, ...patch };
+  return { type: "route_switch", id: proposal.id, proposal, at: proposal.proposedAt };
 }

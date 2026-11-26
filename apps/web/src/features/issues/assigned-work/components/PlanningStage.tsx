@@ -49,7 +49,7 @@ function StageBody({ detail, actions, onRefresh }: Props) {
       {next && <p className="text-sm text-ink-2">Próxima ação: {next}.</p>}
       <AwaitingNote detail={detail} />
       <OperationNote detail={detail} />
-      {detail.planning.decision && <PlanningDecisionView decision={detail.planning.decision} lastOpened={detail.terminal.lastOpened ?? undefined} />}
+      {detail.planning.decision && <PlanningDecisionView decision={detail.planning.decision} lastOpened={detail.terminal.lastOpened ?? undefined} routeSwitch={detail.planning.routeSwitch} />}
       {actions ? <PlanningActions detail={detail} actions={actions} /> : <p className="text-sm text-ink-3">{READER_NOTE}</p>}
     </>
   );

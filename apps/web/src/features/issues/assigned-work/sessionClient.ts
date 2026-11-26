@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc/client";
-import type { PermissionDecision, QuestionAnswers, SessionScope, TaskScope } from "./sessionContract";
+import type { PermissionDecision, QuestionAnswers, RouteSwitchDecision, SessionScope, TaskScope } from "./sessionContract";
 
 export function fetchSessionTimeline(scope: SessionScope, after: string | undefined) {
   return trpc.tasks.session.timeline.query({ ...scope, after });
@@ -15,6 +15,10 @@ export function answerSessionQuestion(scope: TaskScope, input: { requestId: stri
 
 export function decideSessionPermission(scope: TaskScope, input: { requestId: string; decision: PermissionDecision; reason?: string }) {
   return trpc.tasks.session.decidePermission.mutate({ projectId: scope.projectId, taskId: scope.taskId, ...input });
+}
+
+export function decideRouteSwitch(scope: SessionScope, input: { proposalId: string; decision: RouteSwitchDecision; requestKey: string }) {
+  return trpc.tasks.session.decideRouteSwitch.mutate({ ...scope, ...input });
 }
 
 export function interruptSession(scope: SessionScope) {

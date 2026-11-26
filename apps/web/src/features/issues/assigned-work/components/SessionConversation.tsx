@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouteSwitchDecision } from "../hooks/useRouteSwitchDecision";
 import { useSessionActions } from "../hooks/useSessionActions";
 import { useSessionTimeline } from "../hooks/useSessionTimeline";
 import type { ExecutionSession } from "../executionContract";
@@ -22,6 +23,7 @@ export function SessionConversation(props: Props) {
 function SessionConversationContent({ scope, session, reader }: Props) {
   const timeline = useSessionTimeline(scope);
   const actions = useSessionActions(scope);
+  const routeSwitch = useRouteSwitchDecision(scope, timeline.retry);
   const status = timeline.status ?? session.status;
   const final = isFinalStatus(status);
   const canControl = timeline.loaded ? timeline.canControl && !final : false;
@@ -31,7 +33,7 @@ function SessionConversationContent({ scope, session, reader }: Props) {
       <SessionConnectionStatus session={{ ...session, status }} reader={timeline.loaded ? !timeline.canControl : reader} timeline={timeline} />
       {timeline.hiddenEntries > 0 && <p className="text-xs text-ink-3">{hiddenEntriesNote(timeline.hiddenEntries)}</p>}
       <ConversationScroll entryCount={timeline.entries.length} label={conversationLabelFor(session.agent)}>
-        {timeline.entries.map((entry) => <li key={entry.id}><SessionEntry entry={entry} agent={session.agent} canAnswer={canControl} actions={actions} /></li>)}
+        {timeline.entries.map((entry) => <li key={entry.id}><SessionEntry entry={entry} agent={session.agent} canAnswer={canControl} actions={actions} routeSwitch={routeSwitch} /></li>)}
       </ConversationScroll>
       {timeline.loaded && !timeline.failed && timeline.entries.length === 0 && <p className="text-sm text-ink-3">{NO_ENTRIES_NOTE}</p>}
       {timeline.loaded && !final && !timeline.canControl && <p role="note" className="text-sm text-ink-2">{READ_ONLY_NOTE}</p>}

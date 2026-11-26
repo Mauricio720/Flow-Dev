@@ -1,10 +1,11 @@
-import type { PlanningDecision } from "../contract";
+import type { PlanningDecision, PlanningDetail } from "../contract";
 import { COMPLEXITY_LABEL, NO_UNCERTAINTIES, OVERRIDE_NOTE, PLANNING_PROVIDER, ROUTE_LABEL, ROUTE_NEXT_NOTE, SNAPSHOT_BASIS, SOURCE_LABEL } from "../planningCopy";
 import { formatMoment } from "@/lib/tasks/formatMoment";
 import type { TerminalLastOpened } from "../terminalContract";
 import { openedNote } from "../terminalCopy";
+import { PlanningRouteSwitchRecord } from "./PlanningRouteSwitchRecord";
 
-type Props = { decision: PlanningDecision; lastOpened?: TerminalLastOpened };
+type Props = { decision: PlanningDecision; lastOpened?: TerminalLastOpened; routeSwitch?: PlanningDetail["routeSwitch"] };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -32,7 +33,7 @@ function ApprovalLine({ decision, lastOpened }: Props) {
   return <p className="text-sm text-merge-ink">Aprovado pela pessoa operadora{when && <> em <time dateTime={when} suppressHydrationWarning>{formatMoment(when)}</time></>}. {lastOpened ? openedNote(lastOpened.userName, lastOpened.openedAt) : ROUTE_NEXT_NOTE}</p>;
 }
 
-export function PlanningDecisionView({ decision, lastOpened }: Props) {
+export function PlanningDecisionView({ decision, lastOpened, routeSwitch = null }: Props) {
   const overridden = decision.decisionSource === "HUMAN_OVERRIDE";
   return (
     <article aria-label="Decisão de planejamento" className="space-y-4">
@@ -42,6 +43,7 @@ export function PlanningDecisionView({ decision, lastOpened }: Props) {
         <Field label="Recomendação original">{ROUTE_LABEL[decision.recommendedRoute]}</Field>
         <Field label="Rota salva">{ROUTE_LABEL[decision.selectedRoute]} · {SOURCE_LABEL[decision.decisionSource]}</Field>
       </dl>
+      <PlanningRouteSwitchRecord routeSwitch={routeSwitch} />
       <p className="text-[15px] leading-relaxed text-ink [overflow-wrap:anywhere]">{decision.summary}</p>
       {overridden && <p className="text-xs text-ink-3">{OVERRIDE_NOTE}</p>}
       <TextList label="Motivos da recomendação" items={decision.reasons} />

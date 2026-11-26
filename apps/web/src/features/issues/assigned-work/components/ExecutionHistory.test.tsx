@@ -81,4 +81,17 @@ describe("ExecutionHistory", () => {
     await userEvent.click(review!);
     expect(within(history).getByText("Rodou: git diff")).toBeTruthy();
   });
+
+  it("V-08j shows the switched route with an arrow and keeps the route alone for a session without a switch", () => {
+    const sessions = [
+      sessionOf({ id: "s1", status: "running" }),
+      sessionOf({ id: "s2", status: "ended", userName: "Ana", route: "prd", switchedTo: "direct_execution", endedAt: "2026-11-20T11:00:00.000Z" }),
+      sessionOf({ id: "s3", status: "ended", userName: "Bruno", route: "prd", switchedTo: null, endedAt: "2026-11-19T11:00:00.000Z" }),
+    ];
+    render(<ExecutionStage detail={detailWith(sessions)} reader />);
+    const [switched, kept] = within(screen.getByRole("list", { name: "Sessões anteriores" })).getAllByRole("button");
+    expect(switched!.textContent).toContain("Ana · PRD → Execução direta · ");
+    expect(kept!.textContent).toContain("Bruno · PRD · ");
+    expect(kept!.textContent).not.toContain("Execução direta");
+  });
 });

@@ -2,13 +2,15 @@ import { formatMoment } from "@/lib/tasks/formatMoment";
 import { renderArtifactMarkdown } from "../artifactMarkdown";
 import { EVENT_LABEL } from "../executionCopy";
 import { MARKDOWN_FRAME } from "../markdownFrame";
-import type { MessageEntry, TimelineEntry } from "../sessionContract";
+import type { MessageEntry, RouteSwitchEntry, TimelineEntry } from "../sessionContract";
+import type { RouteSwitchDecisionState } from "../hooks/useRouteSwitchDecision";
 import type { SessionActions } from "../hooks/useSessionActions";
 import { assistantLabelFor, QUEUED_LABEL, UNDELIVERED_LABEL, USER_LABEL } from "../sessionCopy";
 import { PermissionRequestCard } from "./PermissionRequestCard";
 import { QuestionRequestCard } from "./QuestionRequestCard";
+import { RouteSwitchCard } from "./RouteSwitchCard";
 
-type Props = { entry: TimelineEntry; agent: string; canAnswer: boolean; actions: SessionActions };
+type Props = { entry: TimelineEntry; agent: string; canAnswer: boolean; actions: SessionActions; routeSwitch: RouteSwitchDecisionState };
 
 const SPEAKER = "text-xs font-semibold text-ink-3";
 
@@ -27,9 +29,15 @@ function MessageLine({ entry, agent }: { entry: MessageEntry; agent: string }) {
   );
 }
 
-export function SessionEntry({ entry, agent, canAnswer, actions }: Props) {
+function RouteSwitchEntryCard({ entry, canAnswer, routeSwitch }: Pick<Props, "canAnswer" | "routeSwitch"> & { entry: RouteSwitchEntry }) {
+  const { id } = entry.proposal;
+  return <RouteSwitchCard proposal={entry.proposal} canDecide={canAnswer} pending={routeSwitch.pendingId === id} error={routeSwitch.errorFor(id)} onDecide={(decision) => void routeSwitch.decide(id, decision)} />;
+}
+
+export function SessionEntry({ entry, agent, canAnswer, actions, routeSwitch }: Props) {
   if (entry.type === "message") return <MessageLine entry={entry} agent={agent} />;
   if (entry.type === "event") return <p className="flex gap-3 text-sm text-ink-3"><Moment at={entry.at} /><span className="[overflow-wrap:anywhere]">{EVENT_LABEL[entry.kind](entry.summary)}</span></p>;
+  if (entry.type === "route_switch") return <RouteSwitchEntryCard entry={entry} canAnswer={canAnswer} routeSwitch={routeSwitch} />;
   if (entry.type === "question") return <QuestionRequestCard entry={entry} agent={agent} canAnswer={canAnswer} busy={actions.busy} onAnswer={actions.answer} />;
   return <PermissionRequestCard entry={entry} agent={agent} canAnswer={canAnswer} busy={actions.busy} onDecide={actions.decide} />;
 }

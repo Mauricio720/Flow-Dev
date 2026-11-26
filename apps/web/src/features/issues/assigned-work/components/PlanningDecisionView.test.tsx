@@ -1,10 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { routeSwitchOf } from "@/test/session";
 import { decisionOf } from "@/test/tasks";
 import { PlanningDecisionView } from "./PlanningDecisionView";
 
 const show = (patch = {}, lastOpened?: { userName: string; openedAt: string }) => render(<PlanningDecisionView decision={decisionOf(patch)} lastOpened={lastOpened} />);
-const APPROVED = { status: "approved", approvedByUserId: "u", approvedAt: "2026-10-05T12:00:00.000Z" };
+const APPROVED = { status: "approved", approvedByUserId: "u", approvedAt: "2026-10-05T12:00:00.000Z" } as const;
 
 describe("PlanningDecisionView", () => {
   it("UT-057 renders named pt-BR fields with planning agent attribution", () => {
@@ -64,5 +65,25 @@ describe("PlanningDecisionView", () => {
     show(APPROVED);
     expect(screen.getByText(/A próxima atividade ainda não foi iniciada\./)).toBeTruthy();
     expect(screen.queryByText(/Execução aberta no terminal/)).toBeNull();
+  });
+
+  it("V-08i keeps the recommended and the approved route and adds who confirmed the switch, when, and the reasons", () => {
+    const confirmedAt = new Date(2026, 10, 25, 10, 6).toISOString();
+    const routeSwitch = routeSwitchOf({ state: "confirmed", decidedBy: "Ana", decidedAt: confirmedAt }).proposal;
+    render(<PlanningDecisionView decision={decisionOf({ ...APPROVED, recommendedRoute: "prd", selectedRoute: "prd" })} routeSwitch={routeSwitch} />);
+    expect(screen.getByText("Recomendação original").nextElementSibling?.textContent).toBe("PRD");
+    expect(screen.getByText("Rota salva").nextElementSibling?.textContent).toBe("PRD · Recomendada pela análise");
+    const record = screen.getByRole("region", { name: "Troca de rota" });
+    expect(within(record).getByText("Trocada para Execução direta após as perguntas, confirmada por Ana em 25/11 10:06")).toBeTruthy();
+    const reasons = within(record).getByRole("list", { name: "Motivos da troca" });
+    expect(within(reasons).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["As respostas fixaram o texto e a tela.", "Segue o padrão de planningCopy.ts."]);
+  });
+
+  it("V-08i shows no switch record when the current decision has no confirmed switch", () => {
+    render(<PlanningDecisionView decision={decisionOf({ ...APPROVED, recommendedRoute: "prd", selectedRoute: "prd" })} routeSwitch={null} />);
+    expect(screen.getByText("Rota salva").nextElementSibling?.textContent).toBe("PRD · Recomendada pela análise");
+    expect(screen.queryByRole("region", { name: "Troca de rota" })).toBeNull();
+    expect(screen.queryByText(/Trocada para Execução direta/)).toBeNull();
+    expect(screen.queryByText("As respostas fixaram o texto e a tela.")).toBeNull();
   });
 });
