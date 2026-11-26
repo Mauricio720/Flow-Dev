@@ -6,16 +6,18 @@ import { TaskError } from "../../../../application/services/tasks/taskErrors";
 import { taskDraftRevisions, taskMessages, taskOperations, tasks } from "../../schema";
 import type { Database } from "../../client";
 import { loadRetainedEvidence } from "./retainedEvidence";
+import { loadGenerationImages } from "./generationImages";
 
 export async function loadGenerationInput(database: Database, claim: WorkerClaim): Promise<GenerationInput> {
   const operation = await findCurrentOperation(database, claim);
   const [messages, revision, evidence] = await Promise.all([
-    database.select({ role: taskMessages.role, content: taskMessages.content }).from(taskMessages).where(eq(taskMessages.taskId, claim.taskId)).orderBy(asc(taskMessages.sequence)),
+    database.select({ id: taskMessages.id, sequence: taskMessages.sequence, role: taskMessages.role, content: taskMessages.content }).from(taskMessages).where(eq(taskMessages.taskId, claim.taskId)).orderBy(asc(taskMessages.sequence)),
     operation.baseRevisionId ? database.select({ draft: taskDraftRevisions.canonicalDraft }).from(taskDraftRevisions).where(and(eq(taskDraftRevisions.taskId, claim.taskId), eq(taskDraftRevisions.id, operation.baseRevisionId))).limit(1) : Promise.resolve([]),
     loadRetainedEvidence(database, { taskId: claim.taskId, baseRevisionId: operation.baseRevisionId }),
   ]);
   const currentDraft = revision[0] ? parseIssueDraft(revision[0].draft) : null;
-  return { protocolVersion: 1, operationId: claim.operationId, executionId: claim.executionId, messages: messages.map((message) => ({ role: message.role as "user" | "assistant", content: message.content })), currentDraft, baseRevisionId: operation.baseRevisionId, retainedEvidence: evidence, contextCapability: claim.contextCapability };
+  const images = await loadGenerationImages(database, { taskId: claim.taskId, messages, draft: currentDraft });
+  return { protocolVersion: 1, operationId: claim.operationId, executionId: claim.executionId, messages: messages.map((message) => ({ role: message.role as "user" | "assistant", content: message.content })), currentDraft, baseRevisionId: operation.baseRevisionId, retainedEvidence: evidence, contextCapability: claim.contextCapability, ...images };
 }
 
 async function findCurrentOperation(database: Database, claim: WorkerClaim) {

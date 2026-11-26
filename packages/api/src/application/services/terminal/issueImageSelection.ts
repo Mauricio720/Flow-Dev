@@ -1,5 +1,6 @@
 import { ISSUE_IMAGE_BRANCH } from "../tasks/taskImageRules";
 import { MAX_ATTACHMENTS } from "./attachmentRules";
+import { AGENT_IMAGE_EXTENSIONS } from "../../agents/agentImages";
 
 export type IssueImageReference = { id: string; alt: string };
 export type StoredIssueImage = { id: string; contentType: string; byteSize: number; sha256: string };
@@ -9,7 +10,6 @@ const IMAGE_SYNTAX = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const DRAFT_IMAGE = new RegExp(`^flow-image:(${UUID})$`, "i");
 const PUBLISHED_IMAGE = new RegExp(`^https://github\\.com/[^/]+/[^/]+/blob/${ISSUE_IMAGE_BRANCH}/issue-images/${UUID}/(${UUID})\\.(?:png|jpg|gif|webp)\\?raw=true$`, "i");
-const EXTENSIONS: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
 
 function imageIdOf(source: string) {
   return DRAFT_IMAGE.exec(source)?.[1] ?? PUBLISHED_IMAGE.exec(source)?.[1] ?? null;
@@ -34,7 +34,7 @@ export function selectIssueImages(references: IssueImageReference[], stored: Sto
     const image = byId.get(reference.id);
     if (!image) continue;
     const position = choices.length + 1;
-    const name = reference.alt || `imagem-${position}.${EXTENSIONS[image.contentType] ?? "bin"}`;
+    const name = reference.alt || `imagem-${position}.${AGENT_IMAGE_EXTENSIONS[image.contentType] ?? "bin"}`;
     choices.push({ id: image.id, name, contentType: image.contentType, byteSize: image.byteSize, preselected: position <= MAX_ATTACHMENTS });
   }
   return choices;

@@ -21,7 +21,7 @@ export type PlanningInput = {
   inputHash: string;
   publication: PlanningPublicationInput;
 };
-export type PlanningDispatch = PlanningInput & { issueUrl: string; contextCapability: string };
+export type PlanningDispatch = PlanningInput & { issueUrl: string; contextCapability: string; images: AgentImage[]; omittedImages: OmittedImage[] };
 export type PlanningPublicationInput = {
   attemptId: string;
   repositoryId: string;
@@ -38,3 +38,4 @@ export class PlanningDomainError extends Error {
     this.name = "PlanningDomainError";
   }
 }
+import type { AgentImage, OmittedImage } from "../../agents/agentImages";

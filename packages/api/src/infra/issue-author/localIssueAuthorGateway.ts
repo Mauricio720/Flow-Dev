@@ -21,6 +21,8 @@ export class LocalIssueAuthorGateway implements IssueAuthorGateway {
       capability: input.contextCapability,
       instructions: this.instructions,
       prompt,
+      images: input.images,
+      omittedImages: input.omittedImages,
       outputSchema: this.outputSchema,
       timeoutMs: GENERATION_TIMEOUT_MS,
       signal: new AbortController().signal,

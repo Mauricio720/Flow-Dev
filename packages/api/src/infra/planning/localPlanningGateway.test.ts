@@ -10,7 +10,7 @@ const CAPABILITY = "p".repeat(40);
 
 const dispatch: PlanningDispatch = {
   protocolVersion: 1, operationId: "op-1", executionId: "exec-1", taskId: "task-1", inputHash: "hash-1", issueUrl: "https://github.com/acme/shop/issues/42", contextCapability: CAPABILITY,
-  publication: { attemptId: "attempt-1", repositoryId: "202", repositoryNodeId: "R_202", issueId: "I_42", issueNumber: 42, title: "Trocar texto do login", bodyMarkdown: "Trocar 'Entar' por 'Entrar'." },
+  publication: { attemptId: "attempt-1", repositoryId: "202", repositoryNodeId: "R_202", issueId: "I_42", issueNumber: 42, title: "Trocar texto do login", bodyMarkdown: "Trocar 'Entar' por 'Entrar'." }, images: [], omittedImages: [],
 };
 
 function model(overrides: Record<string, unknown> = {}) {
