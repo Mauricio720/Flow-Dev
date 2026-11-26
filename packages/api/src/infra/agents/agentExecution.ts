@@ -1,4 +1,5 @@
 import type { AgentChoice, AgentKind } from "../../application/agents/agentTypes";
+import type { AgentImage, OmittedImage } from "../../application/agents/agentImages";
 import { AgentRunError, type LocalAgentRunner } from "../../application/agents/localAgentRunner";
 import type { IssueContextDao, RecordedContextCall } from "../../application/database/dao/issueContextDao";
 import type { AgentSettingsService } from "../../application/services/projects/agentSettingsService";
@@ -21,6 +22,8 @@ export type AgentExecution<T> = {
   capability: string;
   instructions: string;
   prompt: string;
+  images: AgentImage[];
+  omittedImages: OmittedImage[];
   outputSchema: object;
   timeoutMs: number;
   signal: AbortSignal;
@@ -34,15 +37,15 @@ const INVALID_OUTPUT = "invalid_output";
 type InvalidOutput = { reason: string; outputBytes: number | null };
 type Outcome = { choice: AgentChoice; outcome: string; durationMs: number; exitCode: number | null; toolCalls: number; invalidOutput?: InvalidOutput };
 
-function writeLog(deps: AgentExecutionDeps, execution: { agent: AgentKind; operationId: string }, outcome: Outcome) {
-  const line = JSON.stringify({ operationId: execution.operationId, agent: execution.agent, ...outcome.choice, durationMs: outcome.durationMs, outcome: outcome.outcome, exitCode: outcome.exitCode, toolCalls: outcome.toolCalls, ...outcome.invalidOutput });
+function writeLog(deps: AgentExecutionDeps, execution: AgentExecution<unknown>, outcome: Outcome) {
+  const line = JSON.stringify({ operationId: execution.operationId, agent: execution.agent, ...outcome.choice, durationMs: outcome.durationMs, outcome: outcome.outcome, exitCode: outcome.exitCode, toolCalls: outcome.toolCalls, images: execution.images.length, omittedImages: execution.omittedImages.length, ...outcome.invalidOutput });
   (deps.log ?? console.info)(`[agents] run ${line}`);
 }
 
 async function runOnce<T>(deps: AgentExecutionDeps, execution: AgentExecution<T>, choice: AgentChoice) {
   const context = { url: deps.endpoint.urlFor(execution.executionId), capability: execution.capability };
   const { instructions, prompt, outputSchema, timeoutMs, signal } = execution;
-  const result = await deps.runner.run({ choice, instructions, prompt, outputSchema, context, timeoutMs, signal });
+  const result = await deps.runner.run({ choice, instructions, prompt, images: execution.images, outputSchema, context, timeoutMs, signal });
   const calls = await deps.contextDao.listCalls(execution.executionId);
   const value = execution.parse(result.output, calls);
   if (value === null) throw new AgentRunError(INVALID_OUTPUT, "contract_violation", result.exitCode ?? 0).withOutputBytes(Buffer.byteLength(JSON.stringify(result.output)));

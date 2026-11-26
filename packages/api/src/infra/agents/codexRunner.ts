@@ -10,6 +10,7 @@ import { runAgentProcess } from "./agentProcess";
 import { PROVIDER_INFO, unavailableDetail } from "./agentProviderInfo";
 import { CODEX_TOKEN_VARIABLE, codexArguments } from "./codexArguments";
 import { interpretCodex, isCodexComplete } from "./codexOutput";
+import { writeCodexImageFiles } from "./codexImageFiles";
 import { withoutSchemaMeta } from "./claudeArguments";
 
 const AUTH_FILE = "auth.json";
@@ -39,7 +40,8 @@ export class CodexRunner implements LocalAgentRunner {
     await Promise.all([mkdir(codexHome), mkdir(workDirectory)]);
     await symlink(authPath, join(codexHome, AUTH_FILE));
     await writeFile(schemaPath, JSON.stringify(withoutSchemaMeta(input.outputSchema)));
-    const args = codexArguments({ choice: input.choice, workDirectory, schemaPath, contextUrl: input.context.url });
+    const imagePaths = await writeCodexImageFiles(directory, input.images);
+    const args = codexArguments({ choice: input.choice, workDirectory, schemaPath, contextUrl: input.context.url, imagePaths });
     const env = buildAgentEnvironment(this.options.env ?? process.env, { CODEX_HOME: codexHome, [CODEX_TOKEN_VARIABLE]: input.context.capability });
     return runAgentProcess({ label: PROVIDER_INFO.codex.label, command: this.options.bin ?? PROVIDER_INFO.codex.command, args, env, cwd: workDirectory, stdin: `${input.instructions}\n\n${input.prompt}`, timeoutMs: input.timeoutMs, signal: input.signal, isComplete: isCodexComplete });
   }

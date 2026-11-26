@@ -2,6 +2,7 @@ import { AgentRunError, type AgentRunFailure } from "../../application/agents/lo
 import type { AgentProvider } from "../../application/agents/agentTypes";
 import type { ProcessResult } from "./agentProcess";
 import { PROVIDER_INFO, unavailableDetail } from "./agentProviderInfo";
+import { claudeResultEvent } from "./claudeStreamOutput";
 
 const SIGNED_OUT = /not logged in|please run \/login|authentication failed|oauth token (expired|revoked)|invalid api key|401 unauthorized|missing bearer|codex login/i;
 const USAGE_LIMIT = /hit your (usage |session |weekly )?limit|usage limit|limit reached|rate.?limit|too many requests/i;
@@ -18,7 +19,7 @@ function parseJson(text: string): Record<string, unknown> | null {
 }
 
 function claudeSignals(result: ProcessResult) {
-  const parsed = parseJson(result.stdout.trim());
+  const parsed = claudeResultEvent(result.stdout) ?? parseJson(result.stdout.trim());
   const text = typeof parsed?.result === "string" ? parsed.result : "";
   return { texts: [text, result.stderr], status: typeof parsed?.api_error_status === "number" ? parsed.api_error_status : null };
 }
@@ -51,7 +52,7 @@ export function classifyFailure(provider: AgentProvider, result: ProcessResult) 
 }
 
 export function claudeReportsError(stdout: string) {
-  return parseJson(stdout.trim())?.is_error === true;
+  return (claudeResultEvent(stdout) ?? parseJson(stdout.trim()))?.is_error === true;
 }
 
 export function withProviderDetail(provider: AgentProvider, error: unknown) {
