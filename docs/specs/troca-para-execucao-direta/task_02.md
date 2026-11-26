@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Migration 0055 e RouteSwitchDao
 type: backend
 complexity: high
@@ -39,12 +39,12 @@ Cria a tabela `task_route_switches` e o DAO que grava e lê as propostas. É aqu
 
 ## Mini-tarefas
 
-- [ ] **02.1 — Schema Drizzle e migration 0055 com rollback**
+- [x] **02.1 — Schema Drizzle e migration 0055 com rollback**
   - **Arquivos:** `packages/api/src/infra/database/schema/tasks/routeSwitches.ts` (criar), índice do schema que exporta as tabelas de `tasks/` (alterar), `packages/api/drizzle/0055_route_switches.sql` (criar), `packages/api/drizzle/0055_route_switches_rollback.sql` (criar), `packages/api/drizzle/meta/_journal.json` (alterar), `packages/api/test/databaseMigrations.ts` (alterar), `packages/api/test/route-switch-migration.test.ts` (criar)
   - **Testes:** V-10c
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-migration.test.ts` passa
   - **Nota:** espelhe `0053_review_cycles.sql` e `test/session-plans-migration.test.ts`. Antes de criar, confira se ainda não existe outra 0055.
-- [ ] **02.2 — Contrato, inserção da pendente e leituras**
+- [x] **02.2 — Contrato, inserção da pendente e leituras**
   - **Arquivos:** `packages/api/src/application/database/dao/routeSwitchDao.ts` (criar), `packages/api/src/infra/database/dao/terminal/drizzleRouteSwitchDao.ts` (criar), `packages/api/src/infra/database/dao/terminal/routeSwitchReads.ts` (criar), `packages/api/src/application/services/terminal/routeSwitchView.ts` (criar), `packages/api/src/application/services/terminal/routeSwitchView.test.ts` (criar), `packages/api/test/route-switch-dao.test.ts` (criar)
   - **Testes:** V-03b, V-02l
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-dao.test.ts` e `pnpm --dir packages/api exec vitest run src/application/services/terminal/routeSwitchView.test.ts` passam; `pnpm --dir packages/api typecheck` sem erros
@@ -58,7 +58,7 @@ Cria a tabela `task_route_switches` e o DAO que grava e lê as propostas. É aqu
     - o `answered_at` da última pergunta (`kind = 'question'`) respondida na sessão.
 
     `decidedByName` vem de `users.display_name ?? users.name`.
-- [ ] **02.3 — Decisão transacional com mensagem, replay e corrida**
+- [x] **02.3 — Decisão transacional com mensagem, replay e corrida**
   - **Arquivos:** `packages/api/src/infra/database/dao/terminal/routeSwitchDecision.ts` (criar), `packages/api/src/infra/database/dao/terminal/drizzleRouteSwitchDao.ts` (alterar), `packages/api/src/infra/database/dao/terminal/drizzleSessionMessageDao.ts` (alterar só para expor a inserção com `requestKey` recebendo a transação), `packages/api/test/route-switch-decision-dao.test.ts` (criar)
   - **Testes:** V-05d, V-06b, V-06c
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-decision-dao.test.ts test/session-send.test.ts` passa
@@ -99,3 +99,8 @@ Cria a tabela `task_route_switches` e o DAO que grava e lê as propostas. É aqu
 - A migration 0055 aparece no `_journal.json` e em `databaseMigrations.ts`.
 
 ## Registro de execução
+- 02.1 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-migration.test.ts` → passou (V-10c: checks, índices parciais e rollback/reaplicação). 0055 estava livre antes da criação.
+- 02.2 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-dao.test.ts` → passou (2 testes); `pnpm --dir packages/api exec vitest run src/application/services/terminal/routeSwitchView.test.ts` → passou (2 testes); `pnpm --dir packages/api typecheck` → passou.
+- 02.3 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-decision-dao.test.ts test/session-send.test.ts` → passou (2 arquivos, 11 testes).
+- Typecheck de fechamento — `pnpm --dir packages/api typecheck` → passou.
+- Integração completa — primeira execução: 183 arquivos/856 testes passaram e `session-latency.test.ts` falhou no limite de p95 sob carga; execução isolada desse arquivo passou; segunda execução completa: `pnpm --dir packages/api test:integration` → passou (184 arquivos, 857 testes; 2 arquivos e 5 testes ignorados).

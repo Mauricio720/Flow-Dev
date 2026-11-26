@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Contrato puro da troca: tipos, parser do bloco, regras e textos"
 type: backend
 complexity: medium
@@ -50,17 +50,17 @@ Entrega o núcleo sem banco de dados: os tipos da proposta, o parser do bloco `f
 
 ## Mini-tarefas
 
-- [ ] **01.1 — Tipos e parser do bloco com limites**
+- [x] **01.1 — Tipos e parser do bloco com limites**
   - **Arquivos:** `packages/api/src/application/terminal/routeSwitch.ts` (criar), `packages/api/src/application/services/terminal/routeSwitchBlock.ts` (criar), `packages/api/src/application/services/terminal/routeSwitchBlock.test.ts` (criar)
   - **Testes:** V-01a, V-01b, V-01c, V-01d, V-01e, V-01f, V-01g, V-01h
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run src/application/services/terminal/routeSwitchBlock.test.ts` passa
   - **Nota:** se a validação passar de 30 linhas, separe-a em `routeSwitchBlockFields.ts`. Formato aceito: a cerca ` ```flow-dev-troca-de-rota `, a linha `rota: execucao_direta`, a linha `resumo: …` e os motivos em linhas `- …`.
-- [ ] **01.2 — Regras puras: aceite, estado calculado e rota efetiva**
+- [x] **01.2 — Regras puras: aceite, estado calculado e rota efetiva**
   - **Arquivos:** `packages/api/src/application/services/tasks/routeSwitchRules.ts` (criar), `packages/api/src/application/services/tasks/routeSwitchRules.test.ts` (criar)
   - **Testes:** V-02a, V-02b, V-02c, V-02d, V-02e, V-02f, V-02g, V-02h, V-02i, V-02j, V-02k
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run src/application/services/tasks/routeSwitchRules.test.ts` passa
   - **Nota:** na ordem das guardas, sessão não elegível → `ignore` (PT-03); pendente → `ignore` (REQ-010); depois `already_switched`, `spec_exists`, `declined_without_answer`.
-- [ ] **01.3 — Parágrafo da troca e mensagens à sessão**
+- [x] **01.3 — Parágrafo da troca e mensagens à sessão**
   - **Arquivos:** `packages/api/src/application/services/terminal/terminalPromptCopy.ts` (alterar; se passar de 100 linhas, crie `routeSwitchCopy.ts` ao lado e reexporte), `packages/api/src/application/services/terminal/terminalPromptBuilder.test.ts` (alterar)
   - **Testes:** V-03e
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run src/application/services/terminal/terminalPromptBuilder.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
@@ -115,3 +115,7 @@ O padrão de funções puras com testes rápidos está em `planningTransitions.t
 - Nenhum arquivo novo com mais de 100 linhas nem função com mais de 30.
 
 ## Registro de execução
+- 01.1 — `pnpm --dir packages/api exec vitest run src/application/services/terminal/routeSwitchBlock.test.ts` → passou (12 testes).
+- 01.2 — `pnpm --dir packages/api exec vitest run src/application/services/tasks/routeSwitchRules.test.ts` → passou (19 testes).
+- 01.3 — `pnpm --dir packages/api exec vitest run src/application/services/terminal/terminalPromptBuilder.test.ts` → passou (11 testes); `pnpm --dir packages/api typecheck` → passou.
+- Fechamento da tarefa 01 — `pnpm --dir packages/api test` → passou (139 arquivos, 885 testes).

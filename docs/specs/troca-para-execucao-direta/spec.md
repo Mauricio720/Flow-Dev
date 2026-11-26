@@ -168,7 +168,7 @@ Como pessoa operadora ou leitora, quero ver que a rota foi trocada, por quem, qu
 ## 11. Premissas e dependências
 
 - **P-01 (confirmada em 2026-11-25):** a troca só vale enquanto o trabalho não tem spec capturada.
-- **P-02:** a mensagem de continuação que começa com `/flow-dev:direct-executor` ativa a skill no meio da sessão, tanto no Claude quanto no Codex. O Codex já traduz esse prefixo em `codexTurnInput.ts`; no Claude isso precisa ser confirmado no smoke (V-09).
+- **P-02 (confirmada no smoke de 2026-11-25):** a mensagem de continuação que começa com `/flow-dev:direct-executor` ativa a skill no meio da sessão, tanto no Claude quanto no Codex. O Codex já traduz esse prefixo em `codexTurnInput.ts`. No Claude, a conversa mostrou "Skill: direct-executor" logo depois da mensagem; no Codex, o agente anunciou o uso de `flow-dev:direct-executor` e leu o SKILL.md da skill. O texto da mensagem não precisa mudar.
 - **P-03:** a sessão continua com o agente, o modelo e o modo de permissão com que foi aberta.
 - **Dependência:** a migration 0055. As 0052 (Issue #6), 0053 (Issue #9) e 0054 (Issue #10) já estão reservadas.
 
@@ -334,7 +334,7 @@ Assim dá para medir quantas sessões de PRD viram execução direta, que é o e
 |---|---|---|---|
 | A IA propõe sem cumprir RN-01 (por exemplo, com regra de permissão em aberto) | Média | Médio | O cartão mostra os motivos e a operadora recusa; régua explícita no prompt |
 | A IA implementa antes da resposta | Baixa | Médio | Prompt explícito; smoke V-09 confere |
-| O prefixo `/flow-dev:direct-executor` no meio da sessão não ativa a skill no Claude (P-02) | Média | Baixo | A mensagem também descreve o que fazer; o smoke V-09 decide se troca por texto |
+| O prefixo `/flow-dev:direct-executor` no meio da sessão não ativa a skill no Claude (P-02) | Baixa (smoke de 2026-11-25: ativou no Claude e no Codex) | Baixo | A mensagem também descreve o que fazer |
 | A detecção falha e derruba a gravação do texto | Baixa | Alto | O detector roda depois do insert, com try/catch próprio e log |
 
 ---
@@ -390,3 +390,4 @@ B-05 (`ROUTING_MISMATCH` depois da troca) não muda nada no Flow Dev e não tem 
 
 - 2026-11-25 — Criação da spec a partir da Issue #14. Decisões do usuário: IA propõe e a operadora confirma; a mesma sessão continua; régua do DIRECT; vale para PRD e Tech Spec; nova proposta só com respostas novas; sem desfazer; rota nova com registro visível. Q-01 respondida: a primeira proposta não exige pergunta respondida.
 - 2026-11-25 — Tarefas geradas. P-01 confirmada. No parser: dois blocos são tratados como fora do formato; um bloco no meio do texto é reconhecido; um bloco de sessão não elegível é ignorado em silêncio.
+- 2026-11-25 — Smoke V-09b/V-09c feito com agentes reais (Claude Code: Opus, esforço máximo; Codex: gpt-6.1-terra, esforço máximo). Rodou no app e no worker do ambiente e2e, com GitHub falso e a Issue semeada "Trocar Entar por Entrar" aprovada como PRD. Nos dois, a IA propôs a troca sem perguntas (Q-01), parou antes da decisão e, depois da confirmação, implementou com o direct-executor sem escrever spec. P-02 confirmada. Numa primeira tentativa, o Codex parou para pedir o print de novo, porque o seed anexa uma imagem inválida de 11 bytes.

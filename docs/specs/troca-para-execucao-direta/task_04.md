@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Decisão: decideRouteSwitch, autorização e mensagem à sessão"
 type: backend
 complexity: high
@@ -42,12 +42,12 @@ Expõe a mutation `tasks.session.decideRouteSwitch`. A dona da sessão confirma 
 
 ## Mini-tarefas
 
-- [ ] **04.1 — Serviço e controller de decisão, com mensagem e log**
+- [x] **04.1 — Serviço e controller de decisão, com mensagem e log**
   - **Arquivos:** `packages/api/src/application/services/terminal/routeSwitchService.ts` (alterar) ou `routeSwitchDecisionService.ts` (criar), `packages/api/src/controllers/routeSwitchController.ts` (criar), `packages/api/src/application/services/tasks/taskErrors.ts` (alterar), `packages/api/test/route-switch-decide.test.ts` (criar)
   - **Testes:** V-05a, V-05b, V-05c
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-decide.test.ts` passa
   - **Nota:** o controller chama `requireOwnActive` **antes** de ler a proposta. Depois, confere se `record.sessionId`, `taskId` e o projeto da sessão batem com a entrada; se não baterem, `route_switch_not_found`. `already_decided` vira `TaskError("route_switch_decided")`. `decidedAt` vem do `now` injetado.
-- [ ] **04.2 — Procedure, schema, composição e mapeamento de erros**
+- [x] **04.2 — Procedure, schema, composição e mapeamento de erros**
   - **Arquivos:** `packages/api/src/schemas/session.ts` (alterar), `packages/api/src/routers/session.ts` (alterar), `packages/api/src/infra/sessionInteractionComposition.ts` (alterar: `SessionControllers` ganha `routeSwitches`), `packages/api/src/controllers/terminalErrorMapper.ts` (alterar), `packages/api/test/route-switch-decide-errors.test.ts` (criar)
   - **Testes:** V-06a, V-06d, V-06e, V-06f
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-decide-errors.test.ts test/route-switch-decide.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
@@ -86,3 +86,6 @@ Nenhuma.
 - `pnpm --dir packages/api test` e `test:integration` passam no fim da tarefa; `typecheck` sem erros.
 
 ## Registro de execução
+- 04.1 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-decide.test.ts` → passou (3 testes).
+- 04.2 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-decide-errors.test.ts test/route-switch-decide.test.ts` → passou (2 arquivos, 7 testes); `pnpm --dir packages/api typecheck` → passou. `terminalErrorMapper.ts` permaneceu inalterado porque já delega para `mapTaskError`; os novos códigos foram registrados no catálogo de erros de sessão, que esse mapper consulta.
+- Fechamento da tarefa 04 — `pnpm --dir packages/api test` → passou (140 arquivos, 887 testes); `pnpm --dir packages/api test:integration` → passou (187 arquivos, 872 testes; 2 arquivos e 5 testes ignorados).

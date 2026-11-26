@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: Rota efetiva nas leituras, timeline e exclusão
 type: backend
 complexity: medium
@@ -41,22 +41,22 @@ Faz a troca confirmada valer em todos os leitores: no prompt e na coluna `route`
 
 ## Mini-tarefas
 
-- [ ] **05.1 — Rota efetiva no prompt e na sessão nova**
+- [x] **05.1 — Rota efetiva no prompt e na sessão nova**
   - **Arquivos:** `packages/api/src/infra/database/dao/terminal/terminalPromptSource.ts` (alterar), `packages/api/src/application/database/dao/terminalSessionDao.ts` (alterar o tipo `ApprovedPlanning`), `packages/api/src/application/services/terminal/terminalPromptBuilder.ts` (alterar), quem monta o `PromptSource` a partir de `ApprovedPlanning` (procure `buildDefaultPrompt(`), `packages/api/src/application/services/terminal/terminalPromptBuilder.test.ts` (alterar), `packages/api/test/route-switch-effective-prompt.test.ts` (criar)
   - **Testes:** V-07d, V-07e
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run src/application/services/terminal/terminalPromptBuilder.test.ts` e `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-effective-prompt.test.ts` passam
   - **Nota:** confira se o launcher e o preview (`sessionLauncher.ts`, `sessionPurpose.ts`) usam `ApprovedPlanning.route` para mais alguma coisa além do prompt e da coluna `route`, e registre no log o que encontrou.
-- [ ] **05.2 — Chip da lista e registro no PlanningDetail**
+- [x] **05.2 — Chip da lista e registro no PlanningDetail**
   - **Arquivos:** `packages/api/src/infra/database/dao/assigned-issues/workProgressReads.ts` (alterar), `packages/api/src/infra/database/dao/tasks/planningProjection.ts` (alterar), `packages/api/src/application/database/dao/taskPlanningDao.ts` (alterar `PlanningProjectionRecord`), `packages/api/src/controllers/mappers/planningDtoMapper.ts` (alterar), `packages/api/test/route-switch-effective-reads.test.ts` (criar)
   - **Testes:** V-07a, V-07b, V-07c, V-07f
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-effective-reads.test.ts test/assigned-work-progress.test.ts test/planning-reads.test.ts` passa
   - **Nota:** `readRoutes` usa a decisão mais recente por tarefa. Junte a confirmada **dessa** decisão (left join por `planning_decision_id` e `status='confirmed'`) e aplique `effectiveRoute`.
-- [ ] **05.3 — Histórico com switchedTo e timeline com o item da troca**
+- [x] **05.3 — Histórico com switchedTo e timeline com o item da troca**
   - **Arquivos:** `packages/api/src/infra/database/dao/terminal/drizzleTerminalExecutionDao.ts` (alterar), `packages/api/src/application/services/terminal/terminalExecutionReader.ts` (alterar), `packages/api/src/infra/database/dao/terminal/drizzleSessionTimelineDao.ts` (alterar), `packages/api/src/application/database/dao/sessionTimelineDao.ts` (alterar `TimelineRows`), `packages/api/src/application/services/terminal/sessionTimelineMerge.ts` (alterar; se passar de 100 linhas, crie `routeSwitchTimelineEntry.ts`), `packages/api/test/route-switch-timeline.test.ts` (criar)
   - **Testes:** V-07g, V-07h, V-07i, V-07j
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-timeline.test.ts test/session-timeline.test.ts` passa
   - **Nota:** no `messageEntry`, quando `role === "assistant"`, use `parseRouteSwitchBlock(content).text`. O cursor `after` da timeline usa `changedAt`; para o item da troca, `changedAt = decidedAt ?? proposedAt`, para a mudança de estado chegar no mesmo ciclo de leitura (NFR-01).
-- [ ] **05.4 — Exclusão apaga as propostas e as suítes existentes seguem verdes**
+- [x] **05.4 — Exclusão apaga as propostas e as suítes existentes seguem verdes**
   - **Arquivos:** `packages/api/src/infra/database/dao/issue-deletion/drizzleIssueDeletionDao.ts` ou `deletionPurge.ts` (alterar; o primeiro já tem 142 linhas, então ponha a nova remoção em `deletionPurge.ts`), `packages/api/test/issue-deletion-terminal.test.ts` (alterar)
   - **Testes:** V-10a, V-10b
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/issue-deletion-terminal.test.ts` passa; depois, `pnpm --dir packages/api test` e `pnpm --dir packages/api test:integration` passam inteiros
@@ -102,3 +102,7 @@ Faz a troca confirmada valer em todos os leitores: no prompt e na coluna `route`
 - `pnpm --dir packages/api test`, `test:integration` e `typecheck` passam no fim da tarefa.
 
 ## Registro de execução
+- 05.1 — `pnpm --dir packages/api exec vitest run src/application/services/terminal/terminalPromptBuilder.test.ts` → passou (12 testes); `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-effective-prompt.test.ts` → passou (1 teste cobrindo V-07d e V-07e). `sessionLauncher.ts` e `sessionPurpose.ts` usam `ApprovedPlanning.route` para a rota da sessão; o prompt também recebe a rota efetiva e `switchedFrom`. O cenário de replan usa a API e o worker de planejamento para criar e aprovar uma decisão nova.
+- 05.2 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-effective-reads.test.ts test/assigned-work-progress.test.ts test/planning-reads.test.ts` → passou (3 arquivos, 41 testes). `readProgress` retorna a rota efetiva da decisão atual; pendente/recusada não alteram a rota; `PlanningDetail.routeSwitch` contém somente a confirmada atual e volta a `null` sem ela.
+- 05.3 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-timeline.test.ts test/session-timeline.test.ts` → passou (2 arquivos, 5 testes). O histórico assinala somente a sessão confirmada e mantém sua rota original; a timeline remove o bloco da mensagem, apresenta o cartão na proposta, calcula expiração e reenvia a mudança para `confirmed` pelo cursor de `decidedAt`.
+- 05.4 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/issue-deletion-terminal.test.ts` → passou (1 arquivo, 5 testes). `pnpm --dir packages/api test` → passou (140 arquivos, 888 testes). `pnpm --dir packages/api test:integration` → primeira execução teve duas falhas transitórias em `review-cycle-guards` e `review-cycle-sessions`, ambas passaram isoladamente; a execução completa seguinte passou (190 arquivos, 2 ignorados; 876 testes passaram, 5 ignorados). `pnpm --dir packages/api typecheck` → passou.

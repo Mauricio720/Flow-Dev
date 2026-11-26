@@ -47,13 +47,13 @@ Numa sessão de PRD ou Tech Spec, a IA propõe a troca com o bloco `flow-dev-tro
 <!-- Keep this table in sync with each task file's frontmatter `status`. The implementer updates it when starting and finishing a task. -->
 | Tarefa | Tipo | Complexidade | Depende de | Mini-tarefas | Status |
 |---|---|---|---|---|---|
-| [01 — Contrato puro da troca: tipos, parser do bloco, regras e textos](task_01.md) | backend | medium | — | 0/3 | pending |
-| [02 — Migration 0055 e RouteSwitchDao](task_02.md) | backend | high | 01 | 0/3 | pending |
-| [03 — Proposta: detector no recorder e RouteSwitchService.propose](task_03.md) | backend | high | 02 | 0/2 | pending |
-| [04 — Decisão: decideRouteSwitch, autorização e mensagem à sessão](task_04.md) | backend | high | 02 | 0/2 | pending |
-| [05 — Rota efetiva nas leituras, timeline e exclusão](task_05.md) | backend | medium | 02 | 0/4 | pending |
-| [06 — Cartão da troca, registro no Planejamento e seta no histórico](task_06.md) | frontend | medium | 04, 05 | 0/3 | pending |
-| [07 — Jornada e2e e smoke com Claude e Codex](task_07.md) | test | medium | 03, 06 | 0/2 | pending |
+| [01 — Contrato puro da troca: tipos, parser do bloco, regras e textos](task_01.md) | backend | medium | — | 3/3 | completed |
+| [02 — Migration 0055 e RouteSwitchDao](task_02.md) | backend | high | 01 | 3/3 | completed |
+| [03 — Proposta: detector no recorder e RouteSwitchService.propose](task_03.md) | backend | high | 02 | 2/2 | completed |
+| [04 — Decisão: decideRouteSwitch, autorização e mensagem à sessão](task_04.md) | backend | high | 02 | 2/2 | completed |
+| [05 — Rota efetiva nas leituras, timeline e exclusão](task_05.md) | backend | medium | 02 | 4/4 | completed |
+| [06 — Cartão da troca, registro no Planejamento e seta no histórico](task_06.md) | frontend | medium | 04, 05 | 3/3 | completed |
+| [07 — Jornada e2e e smoke com Claude e Codex](task_07.md) | test | medium | 03, 06 | 2/2 | completed |
 
 **Podem rodar em paralelo:** 03, 04 e 05, depois de 02. Os arquivos não se cruzam: 03 mexe no recorder e no worker, 04 no router e no controller, 05 nos leitores e na timeline. Os textos que as três usam saem prontos da 01.
 
@@ -75,6 +75,8 @@ Veja o progresso e a próxima mini-tarefa liberada a qualquer momento: `python3 
 
 ## Revisão final
 <!-- spec-conformance acrescenta uma linha por revisão final: data · review-NNN · veredito · caminho do relatório. -->
+- 2026-11-25 · review-001 · APROVADO COM RESSALVAS (0 bloqueantes, 0 importantes, 5 menores, 3 de spec a discutir) · reviews/review-001.md
+- 2026-11-25 · review-002 · APROVADO COM RESSALVAS (0 bloqueantes, 0 importantes, 2 menores, 2 de spec a discutir; as 5 correções de código da review-001 foram conferidas) · reviews/review-002.md
 
 ## Restrições globais
 - Regras de `.agents/rules/code-standards.md`: sem comentários, arquivo `.ts` com no máximo 100 linhas, função com no máximo 30, até 3 parâmetros, sem linha em branco dentro de função, constantes nomeadas para números e textos.

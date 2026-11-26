@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 title: "Proposta: detector no recorder e RouteSwitchService.propose"
 type: backend
 complexity: high
@@ -39,12 +39,12 @@ Liga o texto da IA à proposta. Depois de gravar a mensagem da IA, o `SessionRec
 
 ## Mini-tarefas
 
-- [ ] **03.1 — RouteSwitchService.propose com aceite, descarte idempotente e logs**
+- [x] **03.1 — RouteSwitchService.propose com aceite, descarte idempotente e logs**
   - **Arquivos:** `packages/api/src/application/services/terminal/routeSwitchService.ts` (criar), `packages/api/src/application/services/terminal/routeSwitchDiscardKey.ts` (criar), `packages/api/test/route-switch-propose.test.ts` (criar)
   - **Testes:** V-03a, V-04a, V-04b, V-04c, V-04d, V-04e
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-propose.test.ts` passa
   - **Nota:** para um bloco `{ valid: false }`, descarte `malformed` só se a sessão for elegível, isto é, se `evaluateProposal` não devolveria `ignore`. A `requestKey` do descarte é um UUID determinístico derivado de `assistantMessageId`, por exemplo um UUID v5 com namespace constante; ela fica em `routeSwitchDiscardKey.ts`. `propose` não tem a decisão e a lê do contexto (`currentDecisionId`); sem decisão aprovada, o resultado é `ignored`.
-- [ ] **03.2 — Detector no SessionRecorder e ligação no worker**
+- [x] **03.2 — Detector no SessionRecorder e ligação no worker**
   - **Arquivos:** `packages/api/src/application/services/terminal/sessionRecorder.ts` (alterar), `packages/api/src/infra/sessionWorkerParts.ts` (alterar), `packages/api/test/session-recorder.test.ts` (alterar)
   - **Testes:** V-03c, V-03d, V-03f
   - **Pronto quando:** `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/session-recorder.test.ts test/route-switch-propose.test.ts` passa; `pnpm --dir packages/api typecheck` sem erros
@@ -87,3 +87,6 @@ Liga o texto da IA à proposta. Depois de gravar a mensagem da IA, o `SessionRec
 - `pnpm --dir packages/api test` e `pnpm --dir packages/api test:integration` passam no fim da tarefa; `typecheck` sem erros.
 
 ## Registro de execução
+- 03.1 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/route-switch-propose.test.ts` → passou (5 testes).
+- 03.2 — `pnpm --dir packages/api exec vitest run --config vitest.integration.config.ts test/session-recorder.test.ts test/route-switch-propose.test.ts` → passou (2 arquivos, 14 testes); `pnpm --dir packages/api typecheck` → passou.
+- Fechamento da tarefa 03 — `pnpm --dir packages/api test` → passou (140 arquivos, 887 testes); `pnpm --dir packages/api test:integration` → passou (185 arquivos, 865 testes; 2 arquivos e 5 testes ignorados).
