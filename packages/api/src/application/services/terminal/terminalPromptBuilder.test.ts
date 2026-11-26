@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { MAX_PROMPT_LENGTH, appendAttachmentsSection, buildDefaultPrompt, promptProblem, type PromptSource } from "./terminalPromptBuilder";
+import { ROUTE_SWITCH_CONFIRMED_MESSAGE, ROUTE_SWITCH_DECLINED_MESSAGE, ROUTE_SWITCHED_SUFFIX, routeSwitchDiscardMessage } from "./terminalPromptCopy";
 
 const SOURCE: PromptSource = {
   route: "direct_execution",
+  switchedFrom: null,
   issueNumber: 42,
   title: "Trocar 'Entar' por 'Entrar'",
   url: "https://github.com/acme/shop/issues/42",
@@ -41,6 +43,29 @@ describe("buildDefaultPrompt", () => {
     expect(prompt.length).toBeLessThanOrEqual(MAX_PROMPT_LENGTH);
     expect(prompt).toContain(`\n${TRUNCATION_MARKER}\n\nRota aprovada:`);
     expect(prompt.endsWith("- Confirmar o idioma")).toBe(true);
+  });
+
+  it("V-03e includes the route switch proposal in spec prompts only", () => {
+    for (const route of ["prd", "tech_spec"] as const) {
+      const prompt = buildDefaultPrompt({ ...SOURCE, route });
+      expect(prompt).toContain("flow-dev-troca-de-rota");
+      expect(prompt).toContain("nada de O QUÊ em aberto");
+      expect(prompt).toContain("não implemente antes dela");
+    }
+    expect(buildDefaultPrompt(SOURCE)).not.toContain("flow-dev-troca-de-rota");
+  });
+
+  it("V-07d puts the originating approved route and switch suffix in the direct prompt", () => {
+    const prompt = buildDefaultPrompt({ ...SOURCE, route: "direct_execution", switchedFrom: "prd" });
+    expect(prompt.startsWith(DIRECT_COMMAND)).toBe(true);
+    expect(prompt).toContain("Rota aprovada: PRD · trocada para Execução direta · Complexidade: Baixa");
+  });
+
+  it("exports the route switch messages from the product contract", () => {
+    expect(ROUTE_SWITCH_CONFIRMED_MESSAGE).toContain("/flow-dev:direct-executor A troca para execução direta foi confirmada.");
+    expect(ROUTE_SWITCH_DECLINED_MESSAGE).toBe("A troca para execução direta foi recusada. Continue com a spec. Só proponha de novo depois de uma nova pergunta respondida.");
+    expect(routeSwitchDiscardMessage("malformed")).toBe("A proposta de troca não foi aceita: o bloco veio fora do formato. Continue com a spec.");
+    expect(ROUTE_SWITCHED_SUFFIX).toBe("trocada para Execução direta");
   });
 });
 

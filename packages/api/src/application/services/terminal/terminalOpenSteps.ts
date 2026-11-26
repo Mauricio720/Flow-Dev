@@ -8,7 +8,7 @@ import type { AttachmentPlan, SessionAttachmentDelivery } from "./sessionAttachm
 export type PrepareStepDeps = { sessions: TerminalSessionDao; context: SessionContextBuilder; delivery: SessionAttachmentDelivery; log: TerminalLog };
 
 export function promptSource(planning: ApprovedPlanning) {
-  return { route: planning.route, issueNumber: planning.issue.number, title: planning.issue.title, url: planning.issue.url, body: planning.issue.body, complexity: planning.complexity, reasons: planning.reasons, uncertainties: planning.uncertainties };
+  return { route: planning.route, switchedFrom: planning.switchedFrom, issueNumber: planning.issue.number, title: planning.issue.title, url: planning.issue.url, body: planning.issue.body, complexity: planning.complexity, reasons: planning.reasons, uncertainties: planning.uncertainties };
 }
 
 export function openedResult(session: TerminalSessionRecord, unavailableIssueImages = 0) {

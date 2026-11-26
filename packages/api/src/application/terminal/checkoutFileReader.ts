@@ -7,4 +7,5 @@ export type CheckoutRead =
 
 export interface CheckoutFileReader {
   read(input: { checkoutPath: string; path: string }): Promise<CheckoutRead>;
+  listTopLevelMarkdown(input: { checkoutPath: string; folder: string }): Promise<string[]>;
 }

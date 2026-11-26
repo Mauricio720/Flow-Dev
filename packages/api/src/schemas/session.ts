@@ -16,3 +16,4 @@ export const sessionSendInputSchema = sessionScope.extend({ content: z.string().
 export const sessionControlInputSchema = sessionScope.strict();
 export const sessionAnswerQuestionInputSchema = scope.extend({ requestId: z.string().uuid(), answers: z.record(z.string().max(MAX_KEY_LENGTH), answer).refine((value) => Object.keys(value).length <= MAX_QUESTIONS_PER_REQUEST) }).strict();
 export const sessionDecidePermissionInputSchema = scope.extend({ requestId: z.string().uuid(), decision: z.enum(PERMISSION_DECISIONS), reason: z.string().max(TRANSPORT_FREE_TEXT_LIMIT).optional() }).strict();
+export const sessionDecideRouteSwitchInputSchema = sessionScope.extend({ proposalId: z.string().uuid(), decision: z.enum(["confirm", "decline"]), requestKey: z.string().uuid() }).strict();

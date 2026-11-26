@@ -6,6 +6,8 @@ import { taskIssueClaims, taskIssueSources, taskOperations, taskPlanningDecision
 import type { Database } from "../../client";
 import { loadSource } from "../assigned-issues/sourceRecords";
 import { planningSourceRecord } from "./planningSourceRecord";
+import { findConfirmedForDecision } from "../terminal/routeSwitchReads";
+import { toDecidedRouteSwitchView } from "../../../../application/services/terminal/routeSwitchView";
 
 const HISTORY_LIMIT = 20;
 
@@ -15,7 +17,9 @@ export async function readPlanningProjection(database: Database, taskId: string)
   const [operation, decision, publication, source] = await Promise.all([findOperation(database, task.planningOperationId), findDecision(database, task), findPublication(database, taskId), findSource(database, taskId)]);
   const history = decision ? await findHistory(database, taskId, decision.id) : [];
   const retained = publication && { taskId, outcome: publication.outcome, repositoryBindingMatches: publication.repositoryId === task.repositoryId && publication.repositoryNodeId === task.repositoryNodeId, attemptId: publication.id, repositoryId: publication.repositoryId, repositoryNodeId: publication.repositoryNodeId, issueId: publication.issueId ?? "", issueNumber: publication.issueNumber ?? 0, title: publication.titleSnapshot, bodyMarkdown: publication.bodySnapshot, issueUrl: publication.issueUrl ?? "" };
-  return { taskStatus: task.status, planningStatus: task.planningStatus as PlanningStatus | null, activeOperationId: task.activeOperationId, operation, decision, publication: retained ?? null, source, history };
+  const routeSwitchRecord = decision ? await findConfirmedForDecision(database, decision.id) : null;
+  const routeSwitch = routeSwitchRecord ? toDecidedRouteSwitchView(routeSwitchRecord) : null;
+  return { taskStatus: task.status, planningStatus: task.planningStatus as PlanningStatus | null, activeOperationId: task.activeOperationId, operation, decision, routeSwitch, publication: retained ?? null, source, history };
 }
 
 async function findOperation(database: Database, operationId: string | null) {

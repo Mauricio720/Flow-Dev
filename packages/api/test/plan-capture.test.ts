@@ -80,4 +80,12 @@ describe("capture in a plan session", () => {
     const { set } = await world.harness.caller.taskSet.get({ projectId: world.setup.project.id, taskId: world.setup.taskId });
     expect(set!.tasks[0]).toMatchObject({ id: "task_01", status: "in_progress", miniTotal: 1 });
   });
+
+  it("captures a task file changed by a shell command, which leaves no edit event, and only once per content", async () => {
+    const world = await planSession();
+    await writeFileIn(world.clone, TASK_ONE, "---\nstatus: completed\n---\n");
+    expect(await captured(world, world.sessionId, "stop")).toEqual({ files: 1, created: 1, failures: 0 });
+    expect(await captured(world, world.sessionId, "stop")).toEqual({ files: 0, created: 0, failures: 0 });
+    expect(await versionsByPath(world)).toEqual({ [TASK_ONE]: [{ version: 1, skill: "plano-de-execucao", content: "---\nstatus: completed\n---\n", sessionId: world.sessionId, trigger: "stop" }] });
+  });
 });

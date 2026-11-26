@@ -4,6 +4,7 @@ import type { PermissionMode, SessionRuntimeKind } from "../../terminal/sessionI
 import type { SessionPurposeKind } from "../../terminal/sessionPurposeKind";
 import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 import type { SessionAttachmentLinks } from "./terminalAttachmentLinks";
+import type { RouteSwitchFromRoute } from "../../terminal/routeSwitch";
 
 export type TerminalSessionRecord = {
   id: string;
@@ -50,6 +51,7 @@ export type TerminalSessionRecord = {
 export type ApprovedPlanning = {
   decisionId: string;
   route: PlanningRoute;
+  switchedFrom: RouteSwitchFromRoute | null;
   complexity: PlanningComplexity;
   reasons: string[];
   uncertainties: string[];

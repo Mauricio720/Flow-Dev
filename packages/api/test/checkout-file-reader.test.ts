@@ -69,4 +69,14 @@ describe("FsCheckoutFileReader", () => {
     expect(await read("docs/specs/x/spec.md", linked)).toMatchObject({ kind: "content", relativePath: "docs/specs/x/spec.md" });
     expect(await read(join(checkout, "docs/specs/x/spec.md"), linked)).toMatchObject({ kind: "content", relativePath: "docs/specs/x/spec.md" });
   });
+
+  it("lists the Markdown files at the top of a folder in the checkout, without subfolders, and nothing for a missing folder or one outside it", async () => {
+    const { outer, checkout, put } = await clone();
+    for (const path of ["docs/specs/x/_tasks.md", "docs/specs/x/task_01.md", "docs/specs/x/reviews/etapa.md", "docs/specs/x/notas.txt", "docs/specs/y/task_01.md"]) await put(path, "# x");
+    await put("fora/task_01.md", "# x", outer);
+    const list = (folder: string) => reader.listTopLevelMarkdown({ checkoutPath: checkout, folder });
+    expect(await list("docs/specs/x")).toEqual(["docs/specs/x/_tasks.md", "docs/specs/x/task_01.md"]);
+    expect(await list("docs/specs/sumiu")).toEqual([]);
+    expect(await list("../fora")).toEqual([]);
+  });
 });

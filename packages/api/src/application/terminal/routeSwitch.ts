@@ -1,0 +1,20 @@
+export type RouteSwitchStatus = "pending" | "confirmed" | "declined";
+export const CONFIRMED_ROUTE_SWITCH_STATUS: RouteSwitchStatus = "confirmed";
+export type RouteSwitchState = RouteSwitchStatus | "expired";
+export type RouteSwitchFromRoute = "prd" | "tech_spec";
+export type RouteSwitchDecision = "confirm" | "decline";
+export type RouteSwitchDiscardReason = "declined_without_answer" | "spec_exists" | "already_switched" | "malformed";
+export type RouteSwitchView = {
+  id: string;
+  fromRoute: RouteSwitchFromRoute;
+  toRoute: "direct_execution";
+  summary: string;
+  reasons: string[];
+  state: RouteSwitchState;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  proposedAt: string;
+};
+export const ROUTE_SWITCH_SUMMARY_LIMIT = 500;
+export const ROUTE_SWITCH_MAX_REASONS = 8;
+export const ROUTE_SWITCH_REASON_LIMIT = 300;

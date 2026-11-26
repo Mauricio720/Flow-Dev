@@ -8,6 +8,7 @@ import { SessionHandlerFactory } from "../application/services/terminal/sessionH
 import { ConsoleSessionLog, type SessionLog } from "../application/services/terminal/sessionLog";
 import type { SessionPermissions } from "../application/services/terminal/sessionPermissions";
 import { SessionRecorder } from "../application/services/terminal/sessionRecorder";
+import { RouteSwitchService } from "../application/services/terminal/routeSwitchService";
 import { SessionRequestBroker } from "../application/services/terminal/sessionRequestBroker";
 import { SessionRequestGate } from "../application/services/terminal/sessionRequestGate";
 import { SecretAnswerReceiver } from "../application/services/terminal/secretAnswerReceiver";
@@ -31,6 +32,7 @@ import { DrizzleTaskSetReadDao } from "./database/dao/artifacts/drizzleTaskSetRe
 import { TaskSetLoader } from "../application/services/tasks-set/taskSetLoader";
 import { DrizzleSessionStatusDao } from "./database/dao/terminal/drizzleSessionStatusDao";
 import { DrizzleTerminalSessionDao } from "./database/dao/terminal/drizzleTerminalSessionDao";
+import { DrizzleRouteSwitchDao } from "./database/dao/terminal/drizzleRouteSwitchDao";
 import { AgentSdkSessionRuntime } from "./terminal/agentSdkSessionRuntime";
 import { FileSessionContextBuilder } from "./terminal/fileSessionContextBuilder";
 import { machineIdentity } from "./terminal/machineIdentity";
@@ -46,7 +48,7 @@ import { lazyReviewLauncher } from "./lazyReviewLauncher";
 import { createTerminalLauncher } from "./terminalComposition";
 
 type Database = ReturnType<typeof requireDatabase>;
-export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe; tools?: ToolLocator; reviewCycles?: ReviewCycleWorkerDao };
+export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; routeSwitches?: Pick<RouteSwitchService, "propose">; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe; tools?: ToolLocator; reviewCycles?: ReviewCycleWorkerDao };
 
 function selectRuntime(env: NodeJS.ProcessEnv, log: SessionLog): AgentSessionRuntime {
   const script = scriptFromEnvironment(env);
@@ -76,7 +78,8 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const broker = new SessionRequestBroker({ requests, status, registry: pending, tracker, gate, log });
   const secretAnswerReceiver = new SecretAnswerReceiver({ requests, status, registry: pending, gate });
   const secretAnswerListener = overrides.secretAnswerSql ? new PostgresSecretAnswerListener(overrides.secretAnswerSql, (delivery) => secretAnswerReceiver.receive(delivery)) : null;
-  const recorder = new SessionRecorder({ messages, events: createTerminalEventController(database, { env }), log });
+  const routeSwitches = overrides.routeSwitches ?? new RouteSwitchService({ routeSwitches: new DrizzleRouteSwitchDao(database), messages, log, now });
+  const recorder = new SessionRecorder({ messages, events: createTerminalEventController(database, { env }), routeSwitches, log });
   const handlers = new SessionHandlerFactory({ recorder, permissions: overrides.permissions ?? broker, onExit: (session, outcome) => exit.handle(session, outcome), onAgentVersion: (sessionId, version) => sessions.markAgentVersion?.(sessionId, version) ?? Promise.resolve(), log });
   const hosts = new DrizzleSessionHostDao(database);
   const reviewCycles = overrides.reviewCycles ?? new DrizzleReviewCycleWorkerDao(database);

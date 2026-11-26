@@ -6,7 +6,7 @@ import { planningDto } from "./planningDtoMapper";
 const createdAt = new Date("2026-10-05T12:00:00.000Z");
 const publication = { outcome: "created", taskId: "t", repositoryBindingMatches: true, attemptId: "a", repositoryId: "1", repositoryNodeId: "R", issueId: "2", issueNumber: 3, issueUrl: "https://github.com/a/b/issues/3", title: "Título", bodyMarkdown: "Corpo" };
 const decision: PlanningDecisionRecord = { id: "d", taskId: "t", publicationAttemptId: "a", sourceSnapshotId: null, requesterUserId: null, sourceFormatVersion: 1, operationId: "o", executionId: "e", version: 1, recommendedRoute: "tech_spec", complexity: "medium", summary: "Resumo", reasons: ["Motivo"], uncertainties: [], selectedRoute: "tech_spec", decisionSource: "AI", status: "review", createdAt, approvedByUserId: null, approvedAt: null };
-const record = (overrides: Partial<PlanningProjectionRecord>): PlanningProjectionRecord => ({ taskStatus: "published", planningStatus: "review", activeOperationId: null, operation: null, decision, publication, source: null, history: [], ...overrides });
+const record = (overrides: Partial<PlanningProjectionRecord>): PlanningProjectionRecord => ({ taskStatus: "published", planningStatus: "review", activeOperationId: null, operation: null, decision, routeSwitch: null, publication, source: null, history: [], ...overrides });
 const author = { canOperate: true };
 
 describe("planning DTO mapper", () => {

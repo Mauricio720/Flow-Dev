@@ -1,10 +1,13 @@
 import type { TimelineEventRow, TimelineRows } from "../../database/dao/sessionTimelineDao";
 import type { PermissionDecision, PermissionPayload, PermissionRequestKind, QuestionPayload } from "../../terminal/sessionInteraction";
 import type { SessionMessageRecord, SessionRequestRecord } from "../../terminal/sessionInteractionPorts";
+import { parseRouteSwitchBlock } from "./routeSwitchBlock";
+import { toRouteSwitchView } from "./routeSwitchView";
 
 export type TimelineEntry =
   | { type: "message"; id: string; role: SessionMessageRecord["role"]; content: string; truncated: boolean; queued: boolean; undelivered: boolean; at: string }
   | { type: "event"; id: string; kind: TimelineEventRow["kind"]; summary: string; at: string }
+  | { type: "route_switch"; id: string; proposal: ReturnType<typeof toRouteSwitchView>; at: string }
   | { type: "question"; id: string; status: SessionRequestRecord["status"]; questions: QuestionPayload["questions"]; answers?: Record<string, string | string[]>; at: string }
   | { type: "permission"; id: string; status: SessionRequestRecord["status"]; kind: PermissionRequestKind; offers: PermissionDecision[]; alwaysScope: "project" | "machine" | null; tool: string; display: { title: string; body: string }; suggestedRule: string | null; decision?: string; reason?: string; at: string };
 
@@ -13,7 +16,12 @@ type Ordered = { entry: TimelineEntry; changedAt: Date };
 function messageEntry(message: SessionMessageRecord): Ordered {
   const queued = message.role === "user" && message.deliveredAt === null && !message.undelivered;
   const changedAt = message.deliveredAt && message.deliveredAt > message.occurredAt ? message.deliveredAt : message.occurredAt;
-  return { changedAt, entry: { type: "message", id: message.id, role: message.role, content: message.content, truncated: message.truncated, queued, undelivered: message.undelivered, at: message.occurredAt.toISOString() } };
+  const content = message.role === "assistant" ? parseRouteSwitchBlock(message.content).text : message.content;
+  return { changedAt, entry: { type: "message", id: message.id, role: message.role, content, truncated: message.truncated, queued, undelivered: message.undelivered, at: message.occurredAt.toISOString() } };
+}
+
+function routeSwitchEntry(record: TimelineRows["routeSwitches"][number], status: TimelineRows["sessionStatus"]): Ordered {
+  return { changedAt: record.decidedAt ?? record.proposedAt, entry: { type: "route_switch", id: record.id, proposal: toRouteSwitchView(record, status), at: record.proposedAt.toISOString() } };
 }
 
 function requestEntry(request: SessionRequestRecord): Ordered {
@@ -38,6 +46,6 @@ function eventEntry(event: TimelineEventRow): Ordered {
 }
 
 export function mergeTimeline(rows: TimelineRows): Ordered[] {
-  const all = [...rows.messages.map(messageEntry), ...rows.requests.map(requestEntry), ...rows.events.map(eventEntry)];
+  const all = [...rows.messages.map(messageEntry), ...rows.requests.map(requestEntry), ...rows.events.map(eventEntry), ...rows.routeSwitches.map((row) => routeSwitchEntry(row, rows.sessionStatus))];
   return all.sort((left, right) => left.entry.at.localeCompare(right.entry.at) || left.entry.id.localeCompare(right.entry.id));
 }

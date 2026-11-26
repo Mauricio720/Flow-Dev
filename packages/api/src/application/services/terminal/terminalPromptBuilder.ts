@@ -1,5 +1,6 @@
 import type { PlanningComplexity, PlanningRoute } from "../tasks/planningContracts";
-import { ATTACHMENTS_HEADING, BODY_TRUNCATION_MARKER, COMPLEXITY_LABEL, NO_UNCERTAINTIES, REASONS_HEADING, ROUTE_INSTRUCTION, ROUTE_LABEL, UNCERTAINTIES_HEADING } from "./terminalPromptCopy";
+import type { RouteSwitchFromRoute } from "../../terminal/routeSwitch";
+import { ATTACHMENTS_HEADING, BODY_TRUNCATION_MARKER, COMPLEXITY_LABEL, NO_UNCERTAINTIES, REASONS_HEADING, ROUTE_INSTRUCTION, ROUTE_LABEL, ROUTE_SWITCHED_SUFFIX, UNCERTAINTIES_HEADING } from "./terminalPromptCopy";
 
 export const MAX_PROMPT_LENGTH = 20_000;
 const SECTION_SEPARATOR = "\n\n";
@@ -7,6 +8,7 @@ const LINE_SEPARATOR = "\n";
 
 export type PromptSource = {
   route: PlanningRoute;
+  switchedFrom: RouteSwitchFromRoute | null;
   issueNumber: number;
   title: string;
   url: string;
@@ -37,7 +39,8 @@ function fitBody(body: string, room: number) {
 
 export function buildDefaultPrompt(source: PromptSource) {
   const head = [ROUTE_INSTRUCTION[source.route], `Issue #${source.issueNumber} — ${source.title}${LINE_SEPARATOR}${source.url}`].join(SECTION_SEPARATOR);
-  const routeLine = `Rota aprovada: ${ROUTE_LABEL[source.route]} · Complexidade: ${COMPLEXITY_LABEL[source.complexity]}`;
+  const route = source.switchedFrom ? `${ROUTE_LABEL[source.switchedFrom]} · ${ROUTE_SWITCHED_SUFFIX}` : ROUTE_LABEL[source.route];
+  const routeLine = `Rota aprovada: ${route} · Complexidade: ${COMPLEXITY_LABEL[source.complexity]}`;
   const tail = [routeLine, section(REASONS_HEADING, source.reasons), section(UNCERTAINTIES_HEADING, source.uncertainties, NO_UNCERTAINTIES)].join(SECTION_SEPARATOR);
   const room = MAX_PROMPT_LENGTH - head.length - tail.length - SECTION_SEPARATOR.length * 2;
   return [head, fitBody(source.body, room), tail].join(SECTION_SEPARATOR);

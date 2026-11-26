@@ -1,5 +1,6 @@
 import type { PlanningAssessment, PlanningRoute, PlanningStatus } from "../../services/tasks/planningContracts";
 import type { PlanningPublicationRecord } from "../../services/tasks/planningRules";
+import type { RouteSwitchView } from "../../terminal/routeSwitch";
 
 export type PlanningReceipt = { taskId: string; operationId: string | null; decisionId: string | null; version: number; decisionVersion: number | null };
 export type PlanningCommandResult = PlanningReceipt & { replayed: boolean };
@@ -7,7 +8,7 @@ export type PlanningDecisionRecord = PlanningAssessment & { id: string; taskId: 
 export type PlanningOperationRecord = { id: string; state: string; createdAt: Date; lastError: string | null; nextRunAt: Date; attempts: number };
 export type PlanningSourceRecord = { snapshotId: string; revision: number; origin: "flow_dev" | "external"; publicationAttemptId: string | null; issueNodeId: string; issueNumber: number; issueUrl: string; repositoryId: string; repositoryNodeId: string; title: string; bodyMarkdown: string; contentHash: string; claim: { state: string; operatorUserId: string | null; revision: number } | null };
 export type PlanningDecisionSummary = { id: string; version: number; status: "review" | "approved"; selectedRoute: PlanningRoute; sourceSnapshotId: string | null; createdAt: Date };
-export type PlanningProjectionRecord = { taskStatus: string; planningStatus: PlanningStatus | null; activeOperationId: string | null; operation: PlanningOperationRecord | null; decision: PlanningDecisionRecord | null; publication: PlanningPublicationRecord | null; source: PlanningSourceRecord | null; history: PlanningDecisionSummary[] };
+export type PlanningProjectionRecord = { taskStatus: string; planningStatus: PlanningStatus | null; activeOperationId: string | null; operation: PlanningOperationRecord | null; decision: PlanningDecisionRecord | null; routeSwitch: RouteSwitchView | null; publication: PlanningPublicationRecord | null; source: PlanningSourceRecord | null; history: PlanningDecisionSummary[] };
 export type PlanningCommandTarget = { projectId: string; taskId: string; actorUserId: string; requestKey: string; payloadHash: string };
 type Versioned = PlanningCommandTarget & { expectedVersion: number };
 type Accepting = Versioned & { sessionId: string };

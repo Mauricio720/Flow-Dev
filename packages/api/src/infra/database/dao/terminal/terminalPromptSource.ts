@@ -3,6 +3,8 @@ import type { ApprovedPlanning } from "../../../../application/database/dao/term
 import type { PlanningComplexity, PlanningRoute } from "../../../../application/services/tasks/planningContracts";
 import type { Database } from "../../client";
 import { taskIssueSnapshots, taskIssueSources, taskPlanningDecisions, taskPublicationAttempts, tasks } from "../../schema";
+import { DrizzleRouteSwitchDao } from "./drizzleRouteSwitchDao";
+import { effectiveRoute } from "../../../../application/services/tasks/routeSwitchRules";
 
 const APPROVED_STATUS = "approved";
 type Decision = typeof taskPlanningDecisions.$inferSelect;
@@ -36,5 +38,8 @@ export async function readApprovedPlanning(database: Database, taskId: string): 
   if (!decision) return null;
   const issue = await readIssue(database, decision);
   if (!issue) return null;
-  return { decisionId: decision.id, route: decision.selectedRoute as PlanningRoute, complexity: decision.complexity as PlanningComplexity, reasons: decision.reasons, uncertainties: decision.uncertainties, issue };
+  const confirmedSwitch = await new DrizzleRouteSwitchDao(database).findConfirmedForDecision(decision.id);
+  const approvedRoute = decision.selectedRoute as PlanningRoute;
+  const route = effectiveRoute({ approvedRoute, currentDecisionId: decision.id, confirmedSwitch });
+  return { decisionId: decision.id, route, switchedFrom: confirmedSwitch?.fromRoute ?? null, complexity: decision.complexity as PlanningComplexity, reasons: decision.reasons, uncertainties: decision.uncertainties, issue };
 }

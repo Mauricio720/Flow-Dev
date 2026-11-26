@@ -3,10 +3,11 @@ import type { ExecutionSessionRow, TerminalExecutionDao } from "../../../../appl
 import type { SessionAgent } from "../../../../application/terminal/sessionAgentCatalog";
 import type { SessionPurposeKind } from "../../../../application/terminal/sessionPurposeKind";
 import type { PlanningRoute } from "../../../../application/services/tasks/planningContracts";
+import { CONFIRMED_ROUTE_SWITCH_STATUS } from "../../../../application/terminal/routeSwitch";
 import type { SessionRuntimeKind } from "../../../../application/terminal/sessionInteraction";
 import type { TerminalSessionStatus } from "../../../../application/terminal/terminalSessionStatus";
 import type { Database } from "../../client";
-import { taskTerminalSessions, users } from "../../schema";
+import { taskRouteSwitches, taskTerminalSessions, users } from "../../schema";
 import { queryArtifactSummaries, queryAttachments, queryEventCounts, queryRecentEvents } from "./terminalExecutionQueries";
 
 const OPENING_STATUS = "opening";
@@ -17,7 +18,9 @@ export class DrizzleTerminalExecutionDao implements TerminalExecutionDao {
 
   async sessionsOf(taskId: string): Promise<ExecutionSessionRow[]> {
     const rows = await this.database.select({ id: taskTerminalSessions.id, status: taskTerminalSessions.status, runtime: taskTerminalSessions.runtime, route: taskTerminalSessions.route, name: users.name, displayName: users.displayName, openedAt: taskTerminalSessions.openedAt, lastSignalAt: taskTerminalSessions.lastSignalAt, endedAt: taskTerminalSessions.endedAt, droppedEvents: taskTerminalSessions.droppedEvents, filesRemovedAt: taskTerminalSessions.filesRemovedAt, purpose: taskTerminalSessions.purpose, planItemId: taskTerminalSessions.planItemId, agent: taskTerminalSessions.agent, model: taskTerminalSessions.model, effort: taskTerminalSessions.effort }).from(taskTerminalSessions).innerJoin(users, eq(users.id, taskTerminalSessions.userId)).where(eq(taskTerminalSessions.taskId, taskId)).orderBy(desc(taskTerminalSessions.openedAt));
-    return rows.map(({ name, displayName, ...row }) => ({ ...row, status: row.status as TerminalSessionStatus, runtime: row.runtime as SessionRuntimeKind, route: row.route as PlanningRoute, purpose: row.purpose as SessionPurposeKind, agent: row.agent as SessionAgent, userName: displayName ?? name }));
+    const switches = rows.length ? await this.database.select({ sessionId: taskRouteSwitches.sessionId }).from(taskRouteSwitches).where(and(eq(taskRouteSwitches.taskId, taskId), eq(taskRouteSwitches.status, CONFIRMED_ROUTE_SWITCH_STATUS))) : [];
+    const switched = new Set(switches.map((row) => row.sessionId));
+    return rows.map(({ name, displayName, ...row }) => ({ ...row, switchedTo: switched.has(row.id) ? "direct_execution" as const : null, status: row.status as TerminalSessionStatus, runtime: row.runtime as SessionRuntimeKind, route: row.route as PlanningRoute, purpose: row.purpose as SessionPurposeKind, agent: row.agent as SessionAgent, userName: displayName ?? name }));
   }
 
   recentEvents(sessionIds: string[], limit: number) {

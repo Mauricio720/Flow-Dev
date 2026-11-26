@@ -7,7 +7,7 @@ const CONTEXT = "/session/context";
 
 describe("Codex turn inputs and prompts", () => {
   it("uses the context skill path for route and generation prompts", () => {
-    const route = codexTurnInput({ prompt: buildDefaultPrompt({ route: "tech_spec", issueNumber: 8, title: "Login", url: "https://example.test/8", body: "Contexto", complexity: "medium", reasons: [], uncertainties: [] }), contextDir: CONTEXT });
+  const route = codexTurnInput({ prompt: buildDefaultPrompt({ route: "tech_spec", switchedFrom: null, issueNumber: 8, title: "Login", url: "https://example.test/8", body: "Contexto", complexity: "medium", reasons: [], uncertainties: [] }), contextDir: CONTEXT });
     const generation = codexTurnInput({ prompt: buildGenerationPrompt("docs/specs/login/spec.md"), contextDir: CONTEXT });
     expect(route.input[0]).toEqual({ type: "skill", name: "spec-writer", path: `${CONTEXT}/skills/spec-writer/SKILL.md` });
     expect(route.displayText).toContain("[spec-writer] Escreva a spec");

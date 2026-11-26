@@ -1,6 +1,6 @@
 import type { ArtifactCaptureTrigger } from "../../terminal/artifactCaptureTrigger";
 
-export type CaptureSession = { id: string; taskId: string; projectId: string; checkoutPath: string; lastCaptureAt: Date | null };
+export type CaptureSession = { id: string; taskId: string; projectId: string; checkoutPath: string; lastCaptureAt: Date | null; captureFolder: string | null };
 export type TouchedFile = { path: string; skill: string; occurredAt: Date };
 export type ArtifactKey = { taskId: string; projectId: string; relativePath: string };
 export type LatestVersion = { artifactId: string; version: number; sha256: string };

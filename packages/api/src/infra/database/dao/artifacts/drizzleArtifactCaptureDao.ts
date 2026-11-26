@@ -2,6 +2,7 @@ import { and, desc, eq, gt, isNotNull, like } from "drizzle-orm";
 import type { ArtifactCaptureDao, ArtifactCaptureStore, CaptureSession, TouchedFile } from "../../../../application/database/dao/artifactCaptureDao";
 import type { Database } from "../../client";
 import { taskTerminalEvents, taskTerminalSessions } from "../../schema";
+import { lockSessionWithFolder } from "../terminal/lockedSessionFolder";
 import { findLatestVersion, insertFailure, insertVersion, removeFailure } from "./artifactVersionWrites";
 
 const FILE_EDIT_KIND = "file_edit";
@@ -44,9 +45,10 @@ export class DrizzleArtifactCaptureDao implements ArtifactCaptureDao {
   withCaptureLock<T>(sessionId: string, work: (session: CaptureSession, store: ArtifactCaptureStore) => Promise<T>): Promise<T | null> {
     return this.database.transaction(async (tx) => {
       const database = tx as unknown as Database;
-      const [row] = await database.select().from(taskTerminalSessions).where(eq(taskTerminalSessions.id, sessionId)).for("update");
-      if (!row) return null;
-      const session = { id: row.id, taskId: row.taskId, projectId: row.projectId, checkoutPath: row.checkoutPath, lastCaptureAt: row.lastCaptureAt };
+      const found = await lockSessionWithFolder(database, sessionId);
+      if (!found) return null;
+      const { row, captureFolder } = found;
+      const session: CaptureSession = { id: row.id, taskId: row.taskId, projectId: row.projectId, checkoutPath: row.checkoutPath, lastCaptureAt: row.lastCaptureAt, captureFolder };
       return work(session, new DrizzleArtifactCaptureStore(database));
     });
   }

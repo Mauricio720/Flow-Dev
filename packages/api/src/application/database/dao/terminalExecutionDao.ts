@@ -10,6 +10,7 @@ export type ExecutionSessionRow = {
   status: TerminalSessionStatus;
   runtime: SessionRuntimeKind;
   route: PlanningRoute;
+  switchedTo: "direct_execution" | null;
   userName: string;
   openedAt: Date;
   lastSignalAt: Date;

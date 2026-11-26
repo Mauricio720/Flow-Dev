@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import type { LatestVersion, TouchedFile } from "../../database/dao/artifactCaptureDao";
+import { PLAN_EXECUTION_SKILL } from "./planCaptureRule";
 
 const MARKDOWN_SUFFIX = ".md";
+
+export type CaptureCandidate = { path: string; skill: string };
 
 export function markdownFilesOf(touched: TouchedFile[]): TouchedFile[] {
   return touched.filter((file) => file.path.endsWith(MARKDOWN_SUFFIX));
@@ -18,4 +21,9 @@ export function needsNewVersion(latest: LatestVersion | null, sha256: string): b
 export function latestOccurrence(touched: TouchedFile[]): Date | null {
   if (touched.length === 0) return null;
   return new Date(Math.max(...touched.map((file) => file.occurredAt.getTime())));
+}
+
+export function folderCandidates(touched: TouchedFile[], folderFiles: string[]): CaptureCandidate[] {
+  const touchedPaths = new Set(touched.map((file) => file.path));
+  return folderFiles.filter((path) => path.endsWith(MARKDOWN_SUFFIX) && !touchedPaths.has(path)).map((path) => ({ path, skill: PLAN_EXECUTION_SKILL }));
 }

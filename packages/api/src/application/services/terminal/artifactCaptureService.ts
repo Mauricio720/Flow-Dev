@@ -1,7 +1,7 @@
-import type { ArtifactCaptureDao, ArtifactCaptureStore, CaptureSession, TouchedFile } from "../../database/dao/artifactCaptureDao";
+import type { ArtifactCaptureDao, ArtifactCaptureStore, CaptureSession } from "../../database/dao/artifactCaptureDao";
 import type { ArtifactCaptureTrigger } from "../../terminal/artifactCaptureTrigger";
 import type { CheckoutFileReader } from "../../terminal/checkoutFileReader";
-import { latestOccurrence, markdownFilesOf, needsNewVersion, sha256Of } from "./artifactCapturePlan";
+import { folderCandidates, latestOccurrence, markdownFilesOf, needsNewVersion, sha256Of, type CaptureCandidate } from "./artifactCapturePlan";
 import { ARTIFACT_FAILURE_MESSAGES } from "./artifactFailureCopy";
 import type { TerminalLog } from "./terminalLaunchLog";
 
@@ -23,16 +23,29 @@ export class ArtifactCaptureService {
 
   private async captureLocked(run: CaptureRun): Promise<CaptureSummary> {
     const touched = markdownFilesOf(await run.store.touchedSince(run.session.id, run.session.lastCaptureAt));
-    const outcomes: FileOutcome[] = [];
-    for (const file of touched) outcomes.push(await this.captureFile(run, file));
+    const touchedOutcomes = await this.captureAll(run, touched);
+    const folderOutcomes = await this.captureAll(run, folderCandidates(touched, await this.folderFiles(run.session)));
+    const outcomes = [...touchedOutcomes, ...folderOutcomes];
     const watermark = latestOccurrence(touched);
     if (watermark) await run.store.markCaptured(run.session.id, watermark);
-    const summary = { files: touched.length, created: outcomes.filter((outcome) => outcome.created).length, failures: outcomes.filter((outcome) => outcome.failure).length };
+    const changedInFolder = folderOutcomes.filter((outcome) => outcome.created || outcome.failure).length;
+    const summary = { files: touched.length + changedInFolder, created: outcomes.filter((outcome) => outcome.created).length, failures: outcomes.filter((outcome) => outcome.failure).length };
     this.deps.log.captureDone({ sessionId: run.session.id, ...summary, failureReasons: outcomes.flatMap((outcome) => outcome.failure ?? []).join(",") });
     return summary;
   }
 
-  private async captureFile(run: CaptureRun, file: TouchedFile): Promise<FileOutcome> {
+  private async captureAll(run: CaptureRun, files: CaptureCandidate[]): Promise<FileOutcome[]> {
+    const outcomes: FileOutcome[] = [];
+    for (const file of files) outcomes.push(await this.captureFile(run, file));
+    return outcomes;
+  }
+
+  private folderFiles(session: CaptureSession): Promise<string[]> {
+    if (session.captureFolder === null) return Promise.resolve([]);
+    return this.deps.reader.listTopLevelMarkdown({ checkoutPath: session.checkoutPath, folder: session.captureFolder });
+  }
+
+  private async captureFile(run: CaptureRun, file: CaptureCandidate): Promise<FileOutcome> {
     const read = await this.deps.reader.read({ checkoutPath: run.session.checkoutPath, path: file.path });
     const key = { taskId: run.session.taskId, projectId: run.session.projectId };
     if (read.kind === "outside") return { created: false, failure: null };
