@@ -2,9 +2,9 @@ import { createHmac } from "node:crypto";
 import type { BrowserContext } from "@playwright/test";
 import { e2eAuthSecret } from "./environment";
 
-const SESSION_COOKIE = "better-auth.session_token";
+export const SESSION_COOKIE = "better-auth.session_token";
 
-function signedSessionValue(token: string) {
+export function signedSessionValue(token: string) {
   const signature = createHmac("sha256", e2eAuthSecret ?? "").update(token).digest("base64");
   return encodeURIComponent(`${token}.${signature}`);
 }

@@ -1,5 +1,5 @@
 import { DEFAULT_TRANSPORT, githubGraphql } from "./githubGraphql";
-import { GITHUB_TIMEOUT_MS } from "./githubRequest";
+import { GITHUB_TIMEOUT_MS, githubApiBase } from "./githubRequest";
 import { BOARD_ITEMS_QUERY, BOARD_ITEM_QUERY, ISSUE_ASSIGNEES_QUERY } from "./assignedIssueQueries";
 import type { BoardItemData, BoardItemsData, IssueAssigneesData } from "./assignedIssueQueries";
 import { BOARD_NODE_QUERY, SET_STATUS_MUTATION } from "./projectBoardQueries";
@@ -11,7 +11,7 @@ import { RepositoryUnavailableError } from "../../application/github/repositoryE
 
 export class GitHubHttpAssignedIssueGateway implements AssignedIssueGateway {
   private readonly transport: ReturnType<typeof DEFAULT_TRANSPORT>;
-  constructor(fetcher: typeof fetch = fetch, baseUrl = "https://api.github.com", timeoutMs = GITHUB_TIMEOUT_MS) { this.transport = DEFAULT_TRANSPORT(fetcher, baseUrl, timeoutMs); }
+  constructor(fetcher: typeof fetch = fetch, baseUrl = githubApiBase(), timeoutMs = GITHUB_TIMEOUT_MS) { this.transport = DEFAULT_TRANSPORT(fetcher, baseUrl, timeoutMs); }
 
   async statusField(token: string, boardNodeId: string): Promise<StatusField> {
     const data = await this.graphql<BoardNodeData>(token, BOARD_NODE_QUERY, { id: boardNodeId });

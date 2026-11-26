@@ -2,7 +2,7 @@ import type { ApprovedIssueRequest, CreationOutcome, GitHubIssueGateway, GitHubI
 import { TaskError } from "../../application/services/tasks/taskErrors";
 import { issueReceipt } from "./githubIssueReceipt";
 
-const GITHUB_API = "https://api.github.com";
+import { githubApiBase } from "./githubRequest";
 const GITHUB_API_VERSION = "2026-03-10";
 type Fetcher = typeof fetch;
 type JsonRecord = Record<string, unknown>;
@@ -66,7 +66,7 @@ export class GitHubHttpIssueGateway implements GitHubIssueGateway, GitHubIssueLa
 
   private async get(token: string, path: string): Promise<JsonRecord> {
     let response: Response;
-    try { response = await this.fetcher(`${GITHUB_API}${path}`, requestOptions({ token }, undefined, "GET")); }
+    try { response = await this.fetcher(`${githubApiBase()}${path}`, requestOptions({ token }, undefined, "GET")); }
     catch { throw new TaskError("provider_unavailable"); }
     if (response.status === 429) throw new TaskError("provider_rate_limited");
     if (!response.ok) throw new TaskError("destination_unavailable");
@@ -79,9 +79,9 @@ function requestOptions(input: { token: string }, body?: unknown, method = "POST
   return { method, headers: { accept: "application/vnd.github+json", authorization: `Bearer ${input.token}`, "x-github-api-version": GITHUB_API_VERSION, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10_000), redirect: "error" };
 }
 function issuePayload(input: ApprovedIssueRequest) { return { title: input.title, body: input.body, ...(input.labels.length ? { labels: input.labels } : {}), ...(input.assignees ? { assignees: input.assignees } : {}) }; }
-function labelsUrl(input: { owner: string; name: string }) { return `${GITHUB_API}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/labels`; }
+function labelsUrl(input: { owner: string; name: string }) { return `${githubApiBase()}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/labels`; }
 function definitionFailure(status: number): LabelDefinitionOutcome { if (status === 403 || status === 404) return "denied"; throw new TaskError(status === 429 ? "provider_rate_limited" : "provider_unavailable"); }
-function issueUrl(input: { owner: string; name: string }) { return `${GITHUB_API}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/issues`; }
+function issueUrl(input: { owner: string; name: string }) { return `${githubApiBase()}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.name)}/issues`; }
 function rejected(response: Response): CreationOutcome { return { status: "rejected", reason: rejectionReason(response.status), ...(response.status === 429 ? { retryAfterSeconds: retryAfter(response.headers.get("retry-after")) } : {}) }; }
 function rejectionReason(status: number) { return status === 429 ? "provider_rate_limited" : status === 410 ? "issues_disabled" : status === 422 ? "content_rejected" : status === 401 ? "repository_authorization_needed" : status === 403 ? "issue_permission_denied" : "destination_unavailable"; }
 function retryAfter(value: string | null) { const seconds = Number(value); return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined; }

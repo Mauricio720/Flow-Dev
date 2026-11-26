@@ -1,4 +1,4 @@
-import { GITHUB_TIMEOUT_MS, githubRequest } from "./githubRequest";
+import { GITHUB_TIMEOUT_MS, githubApiBase, githubRequest } from "./githubRequest";
 import type { GitHubRepositoryGateway, RepositoryContext, RepositoryPage } from "../../application/github/repositoryGateway";
 import type { RepositoryIdentity, RepositoryVisibility } from "../../application/database/dao/projectDao";
 import { decodeRepositoryPage } from "../../application/pagination/cursor";
@@ -6,7 +6,7 @@ import { RepositoryIdentityMismatchError, RepositoryRateLimitedError, Repository
 
 const ACCEPT = "application/vnd.github+json";
 export class GitHubHttpRepositoryGateway implements GitHubRepositoryGateway {
-  constructor(private readonly fetcher: typeof fetch = fetch, private readonly baseUrl = "https://api.github.com", private readonly timeoutMs = GITHUB_TIMEOUT_MS) {}
+  constructor(private readonly fetcher: typeof fetch = fetch, private readonly baseUrl = githubApiBase(), private readonly timeoutMs = GITHUB_TIMEOUT_MS) {}
   async listAccessible(token: string, cursor?: string): Promise<RepositoryPage> {
     const page = parsePage(cursor);
     const response = await this.request<unknown[]>(`/user/repos?affiliation=owner%2Ccollaborator%2Corganization_member&per_page=100&page=${page}`, token);

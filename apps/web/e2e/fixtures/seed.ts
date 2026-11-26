@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 import type { Sql } from "postgres";
+import { grantRepositoryAccess } from "./repositoryCredential";
 
 const GITHUB_PROVIDER = "github";
 const SESSION_HOURS = 1;
@@ -7,6 +8,7 @@ const MAX_GITHUB_ID = 2_000_000_000;
 
 export type SeededUser = { id: string; login: string; githubId: string; sessionToken: string };
 export type SeededProject = { id: string; name: string; repository: string };
+type UserOptions = { admin?: boolean; repositoryAccess?: boolean };
 type ProjectOptions = { label?: string; description?: string | null; visibility?: "public" | "private"; assignedTo?: SeededUser[] };
 
 function suffix() {
@@ -24,7 +26,7 @@ export class ProjectSeed {
 
   constructor(private readonly sql: Sql) {}
 
-  async user(options: { admin?: boolean } = {}): Promise<SeededUser> {
+  async user(options: UserOptions = {}): Promise<SeededUser> {
     const login = `e2e-${suffix()}`;
     const account = githubId();
     const sessionToken = randomUUID();
@@ -33,7 +35,12 @@ export class ProjectSeed {
     await this.sql`insert into accounts (user_id, provider_id, account_id) values (${row.id}, ${GITHUB_PROVIDER}, ${account})`;
     await this.sql`insert into sessions (token, user_id, expires_at) values (${sessionToken}, ${row.id}, now() + make_interval(hours => ${SESSION_HOURS}))`;
     if (options.admin) await this.designateAdmin(account, login);
+    if (options.repositoryAccess) await grantRepositoryAccess(this.sql, { id: row.id, githubId: account });
     return { id: row.id, login, githubId: account, sessionToken };
+  }
+
+  async operator(options: Omit<UserOptions, "repositoryAccess"> = {}): Promise<SeededUser> {
+    return this.user({ ...options, repositoryAccess: true });
   }
 
   async project(options: ProjectOptions = {}): Promise<SeededProject> {

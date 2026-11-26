@@ -24,6 +24,7 @@ As skills locais ficam em `.agents/skills/<nome>/SKILL.md`; o Claude encontra as
 | Criar, mover ou revisar arquivos de frontend no Next.js; decidir onde ficam páginas, componentes, hooks ou providers | `nextjs-folder-structure` |
 | Criar ou alterar operações de backend, controllers, serviços, DAOs, repositórios ou integrações | `layered-backend` |
 | Criar, alterar ou consumir procedimentos tRPC, routers, contexto, middleware ou tratamento de erros tRPC | `trpc-nextjs` |
+| Criar, rodar, depurar ou destravar testes Playwright (`apps/web/e2e`), inclusive jornadas da operadora e specs que pulam ou caem no login | `e2e-environment` |
 | Criar, modificar, avaliar ou otimizar uma skill | `skill-creator` |
 
 Em uma funcionalidade tRPC ponta a ponta, combine `nextjs-folder-structure` para o frontend, `trpc-nextjs` para a fronteira de transporte e `layered-backend` para a lógica e os dados.
@@ -36,6 +37,7 @@ Mantenha a verificação proporcional à mudança:
 
 - Durante a implementação, rode apenas os arquivos de teste afetados (`pnpm --dir <pacote> exec vitest run <arquivo>`) e o `typecheck` do pacote alterado. Não rode typecheck a cada edição; agrupe as edições e verifique uma vez.
 - Rode a suíte completa de cada pacote alterado (`test`, e `test:integration` em `packages/api`) uma única vez, ao final da tarefa. Repita somente o que falhou até corrigir e então confirme com uma execução completa.
+- Antes do primeiro Playwright da sessão (e depois de cada migration nova), rode `pnpm --dir apps/web e2e:prepare`; detalhes na skill `e2e-environment`. Spec pulado não conta como verificado.
 - `pnpm build` e Playwright (`test:e2e`) só entram quando a tarefa altera rotas, configuração de build ou um fluxo visível coberto por um spec; nesse caso rode apenas o spec afetado. E2E completo pertence aos gates de feature e release.
 - Não aumente `testTimeout` nem reduza workers para contornar lentidão; investigue a causa.
 - `pnpm --dir packages/api test:integration` sobe sozinho um PostgreSQL descartável em memória (precisa de `pg_config`, `initdb` e `pg_ctl` instalados) e leva cerca de um minuto. Não defina `TEST_DATABASE_URL` localmente: com ela a suíte usa o servidor indicado e fica várias vezes mais lenta.

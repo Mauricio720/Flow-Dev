@@ -3,7 +3,7 @@ import type { GitHubIssueDeletionGateway, InspectExpectation, IssueFacts, Provid
 import { ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
 import { RepositoryAuthorizationNeededError, RepositoryForbiddenError, RepositoryNotFoundError, RepositoryRateLimitedError } from "../../application/github/repositoryErrors";
 import { githubGraphql, type GraphqlTransport, DEFAULT_TRANSPORT } from "./githubGraphql";
-import { GITHUB_TIMEOUT_MS } from "./githubRequest";
+import { GITHUB_TIMEOUT_MS, githubApiBase } from "./githubRequest";
 
 const INSPECT_QUERY = `query($id: ID!) {
   node(id: $id) {
@@ -44,7 +44,7 @@ type RawRepository = { node?: ({ __typename?: string } & { id?: string | null; d
 export class GitHubHttpIssueDeletionGateway implements GitHubIssueDeletionGateway {
   private readonly transport: GraphqlTransport;
 
-  constructor(fetcher: typeof fetch = fetch, baseUrl = "https://api.github.com", timeoutMs = GITHUB_TIMEOUT_MS) {
+  constructor(fetcher: typeof fetch = fetch, baseUrl = githubApiBase(), timeoutMs = GITHUB_TIMEOUT_MS) {
     this.transport = DEFAULT_TRANSPORT(fetcher, baseUrl, timeoutMs);
   }
 

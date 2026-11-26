@@ -1,21 +1,18 @@
+import "./e2e/fixtures/loadE2eEnvironment";
 import { defineConfig, devices } from "@playwright/test";
-import { sessionScriptDirectory } from "./e2e/fixtures/sessionScript";
-import { terminalStateDirectory } from "./e2e/fixtures/sessionFiles";
+import { e2eServerEnvironment } from "./e2e/fixtures/serverEnvironment";
 
-const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
-const terminalEnvironment = {
-  FLOW_DEV_TERMINAL_ENABLED: "true",
-  FLOW_DEV_SESSION_FAKE_SCRIPT: sessionScriptDirectory,
-  XDG_STATE_HOME: terminalStateDirectory,
-};
+const DEFAULT_BASE_URL = "http://127.0.0.1:3100";
+const baseURL = process.env.E2E_BASE_URL ?? DEFAULT_BASE_URL;
+const { port } = new URL(baseURL);
 
 export default defineConfig({
   testDir: "./e2e",
-  globalSetup: "./e2e/sessionWorkerSetup.ts",
+  globalSetup: "./e2e/globalSetup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: "list",
   use: { baseURL, trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: { command: "pnpm dev", url: baseURL, reuseExistingServer: !process.env.CI, env: { ...(process.env as Record<string, string>), ...terminalEnvironment } },
+  webServer: { command: `pnpm exec next dev -p ${port} -H 127.0.0.1`, url: baseURL, reuseExistingServer: !process.env.CI, env: { ...(process.env as Record<string, string>), ...e2eServerEnvironment(baseURL) } },
 });

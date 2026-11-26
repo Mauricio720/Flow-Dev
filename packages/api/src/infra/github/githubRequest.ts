@@ -1,8 +1,17 @@
 import { RepositoryAuthorizationNeededError, RepositoryForbiddenError, RepositoryNotFoundError, RepositoryRateLimitedError, RepositoryUnavailableError } from "../../application/github/repositoryErrors";
 
 export const GITHUB_TIMEOUT_MS = 10_000;
+const GITHUB_API_ROOT = "https://api.github.com";
+const GITHUB_API_OVERRIDE_VARIABLE = "FLOW_DEV_GITHUB_API_URL";
+const PRODUCTION_ENVIRONMENT = "production";
 const SECONDARY_LIMIT_WAIT_SECONDS = 60;
 type RequestInput = { url: string; init?: RequestInit };
+
+export function githubApiBase() {
+  const override = process.env[GITHUB_API_OVERRIDE_VARIABLE];
+  if (!override || process.env.NODE_ENV === PRODUCTION_ENVIRONMENT) return GITHUB_API_ROOT;
+  return override;
+}
 
 export async function githubRequest<T>(fetcher: typeof fetch, input: RequestInput, timeoutMs = GITHUB_TIMEOUT_MS): Promise<{ body: T; headers: Headers }> {
   const controller = new AbortController();

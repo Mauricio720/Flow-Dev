@@ -4,7 +4,7 @@ import { createGitRepository } from "./fixtures/gitRepository";
 import { writeSessionScript } from "./fixtures/sessionScript";
 import { EXECUTION_SCRIPT, GENERATION_SCRIPT, SPEC_PATH } from "./fixtures/taskPlanScripts";
 
-const CONTROLLED_PROVIDERS_REASON = "Requer GitHub e quadro de projeto controlados, com acesso pessoal ao repositório: a tela do trabalho só libera a operadora com a verificação do GitHub.";
+const JOURNEY_GAP_REASON = "A verificação da operadora já passa no ambiente E2E (GitHub falso). Falta a jornada: a sessão falsa de geração grava os 3 arquivos, mas tasks.taskSet.get volta vazio; o roteiro provavelmente precisa simular a skill spec-to-tasks.";
 const START_SESSION = { name: "Iniciar sessão" };
 const WITHIN_TEN_SECONDS = { timeout: 10_000 };
 
@@ -35,8 +35,8 @@ async function planOneSessionPerTask(page: Page) {
 }
 
 test.fixme("V-41 the operator generates the tasks, plans one session per task, runs the first and the second is released", async ({ page, seed, workSeed, signInAs }) => {
-  test.info().annotations.push({ type: "feature-gate", description: CONTROLLED_PROVIDERS_REASON });
-  const operator = await seed.user();
+  test.info().annotations.push({ type: "journey-gap", description: JOURNEY_GAP_REASON });
+  const operator = await seed.operator();
   const project = await seed.project({ label: "Plano", assignedTo: [operator] });
   const clone = await createGitRepository(project.repository);
   const work = await workSeed.approvedWork(project, operator);

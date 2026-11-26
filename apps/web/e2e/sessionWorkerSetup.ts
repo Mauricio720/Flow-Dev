@@ -2,8 +2,7 @@ import { spawn } from "node:child_process";
 import { hostname, userInfo } from "node:os";
 import postgres from "postgres";
 import { e2eConfigured, e2eDatabaseUrl } from "./fixtures/environment";
-import { terminalStateDirectory } from "./fixtures/sessionFiles";
-import { sessionScriptDirectory } from "./fixtures/sessionScript";
+import { e2eServerEnvironment } from "./fixtures/serverEnvironment";
 
 const READY_TIMEOUT_MS = 60_000;
 const READY_POLL_MS = 500;
@@ -24,9 +23,9 @@ async function waitForHeartbeat(hostId: string) {
   throw new Error("O serviço de sessões não mandou o primeiro heartbeat a tempo.");
 }
 
-export default async function startSessionWorker() {
+export async function startSessionWorker(baseURL: string) {
   if (!e2eConfigured) return undefined;
-  const environment = { ...process.env, DATABASE_URL: e2eDatabaseUrl, NODE_ENV: "test", FLOW_DEV_SESSION_FAKE_SCRIPT: sessionScriptDirectory, XDG_STATE_HOME: terminalStateDirectory };
+  const environment = { ...process.env, ...e2eServerEnvironment(baseURL), NODE_ENV: "test" };
   const worker = spawn("pnpm", ["--dir", API_PACKAGE, "exec", "tsx", "src/cli/terminalSessionsWorker.ts"], { env: environment as NodeJS.ProcessEnv, stdio: "inherit", detached: true });
   await waitForHeartbeat(`${hostname()}:${userInfo().username}`);
   return async () => {

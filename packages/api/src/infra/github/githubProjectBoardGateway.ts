@@ -1,4 +1,4 @@
-import { GITHUB_TIMEOUT_MS } from "./githubRequest";
+import { GITHUB_TIMEOUT_MS, githubApiBase } from "./githubRequest";
 import { DEFAULT_TRANSPORT, githubGraphql } from "./githubGraphql";
 import { BacklogStatusMissingError, BoardStatusMissingError, ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
 import type { BacklogItem, BoardItemTarget, BoardReference, BoardStatus, GitHubProjectBoardGateway, IssuePresence, ProjectBoard } from "../../application/github/projectBoardGateway";
@@ -12,7 +12,7 @@ type StatusTarget = { fieldId: string; optionId: string };
 
 export class GitHubHttpProjectBoardGateway implements GitHubProjectBoardGateway {
   private readonly transport: ReturnType<typeof DEFAULT_TRANSPORT>;
-  constructor(fetcher: typeof fetch = fetch, baseUrl = "https://api.github.com", timeoutMs = GITHUB_TIMEOUT_MS) { this.transport = DEFAULT_TRANSPORT(fetcher, baseUrl, timeoutMs); }
+  constructor(fetcher: typeof fetch = fetch, baseUrl = githubApiBase(), timeoutMs = GITHUB_TIMEOUT_MS) { this.transport = DEFAULT_TRANSPORT(fetcher, baseUrl, timeoutMs); }
 
   async resolve(token: string, reference: BoardReference): Promise<ProjectBoard> {
     const query = reference.ownerKind === "organization" ? ORGANIZATION_BOARD_QUERY : USER_BOARD_QUERY;

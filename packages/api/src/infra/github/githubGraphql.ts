@@ -1,4 +1,4 @@
-import { GITHUB_TIMEOUT_MS, githubRequest } from "./githubRequest";
+import { GITHUB_TIMEOUT_MS, githubApiBase, githubRequest } from "./githubRequest";
 import { ProjectBoardNotFoundError } from "../../application/github/projectBoardGateway";
 import { RepositoryAuthorizationNeededError, RepositoryForbiddenError, RepositoryRateLimitedError, RepositoryUnavailableError } from "../../application/github/repositoryErrors";
 
@@ -7,7 +7,7 @@ const RATE_LIMIT_WAIT_SECONDS = 60;
 type GraphqlError = { type?: string };
 export type GraphqlTransport = { fetcher: typeof fetch; baseUrl: string; timeoutMs: number };
 
-export const DEFAULT_TRANSPORT = (fetcher: typeof fetch = fetch, baseUrl = "https://api.github.com", timeoutMs = GITHUB_TIMEOUT_MS): GraphqlTransport => ({ fetcher, baseUrl, timeoutMs });
+export const DEFAULT_TRANSPORT = (fetcher: typeof fetch = fetch, baseUrl = githubApiBase(), timeoutMs = GITHUB_TIMEOUT_MS): GraphqlTransport => ({ fetcher, baseUrl, timeoutMs });
 
 export async function githubGraphql<T>(transport: GraphqlTransport, token: string, query: string, variables: Record<string, unknown>): Promise<T> {
   const init = { method: "POST", headers: { accept: ACCEPT, "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ query, variables }) };

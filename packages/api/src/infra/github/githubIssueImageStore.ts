@@ -1,7 +1,7 @@
 import type { IssueImageStore, IssueImageWrite } from "../../application/github/issueImageStore";
 import { TaskError } from "../../application/services/tasks/taskErrors";
 
-const GITHUB_API = "https://api.github.com";
+import { githubApiBase } from "./githubRequest";
 const GITHUB_API_VERSION = "2026-03-10";
 const REQUEST_TIMEOUT_MS = 20_000;
 const BRANCH_README_PATH = "README.md";
@@ -61,7 +61,7 @@ export class GitHubHttpIssueImageStore implements IssueImageStore {
   }
 
   private async send(repository: Repository, path: string, request?: WriteRequest) {
-    const url = `${GITHUB_API}/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}/${path}`;
+    const url = `${githubApiBase()}/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.name)}/${path}`;
     try { return await this.fetcher(url, requestOptions(repository.token, request)); }
     catch (error) { throw new TaskError("provider_unavailable", undefined, error); }
   }

@@ -4,7 +4,7 @@ import type { RepositoryIdentity } from "../../application/database/dao/projectD
 import { boundedText, fileEvidence, fullName, issueEvidence, isIssue, repoPath, safePath, safeQuery, safeString, unavailable } from "./scopedContextHelpers";
 import { searchProject, type ProjectReader } from "./projectSearch";
 
-const API_ROOT = "https://api.github.com";
+import { githubApiBase } from "./githubRequest";
 const MAX_SOURCE_BYTES = 1024 * 1024;
 const MAX_EXCERPT_CHARS = 2_000;
 type Json = Record<string, unknown>;
@@ -68,7 +68,7 @@ export class GitHubScopedContextGateway implements ScopedContextGateway {
     return { type: "file", text: new TextDecoder("utf-8", { fatal: true }).decode(bytes) };
   }
   private async get(token: string, path: string): Promise<Json> {
-    const response = await this.fetcher(API_ROOT + path, { headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "x-github-api-version": "2022-11-28" }, signal: AbortSignal.timeout(10_000), redirect: "error" });
+    const response = await this.fetcher(githubApiBase() + path, { headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "x-github-api-version": "2022-11-28" }, signal: AbortSignal.timeout(10_000), redirect: "error" });
     if (!response.ok) throw new Error("github_unavailable");
     const value: unknown = JSON.parse(await boundedText(response, 2 * 1024 * 1024));
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_github_response");
