@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 import { ChevronRightIcon, GitHubMark } from "@/components/icons";
 import { SignOutButton } from "@/components/shared/SignOutButton";
 import { Button } from "@/components/ui/button";
+import { AI_ACCOUNTS_PATH } from "@/lib/navigation/accountRoutes";
 import { PROJECTS_PATH, projectPath } from "@/lib/navigation/projectRoutes";
 import type { Project } from "@/lib/projects/contract";
 import { SHELL_MENUS, type ShellSection } from "./ShellNav";
 
 const GITHUB_ORIGIN = "https://github.com";
+const AI_ACCOUNTS_LABEL = "Contas de IA";
 
 type Props = { project: Project; section: ShellSection; drawer: ReactNode };
 
@@ -37,6 +39,7 @@ export function ShellHeader({ project, section, drawer }: Props) {
           <li aria-current="page" className="truncate font-medium text-ink">{label}</li>
         </ol>
       </nav>
+      <Button variant="ghost" size="sm" asChild><Link href={AI_ACCOUNTS_PATH}>{AI_ACCOUNTS_LABEL}</Link></Button>
       {url && (
         <Button variant="ghost" size="sm" asChild>
           <a href={url} target="_blank" rel="noopener noreferrer" aria-label="Repositório no GitHub">

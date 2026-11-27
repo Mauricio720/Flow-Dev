@@ -6,6 +6,7 @@ import type { TaskItem } from "../taskSetContract";
 import type { AgentChoice, AgentOption } from "../terminalContract";
 import { AgentChoiceField } from "./AgentChoiceField";
 import { PlanTaskRow } from "./PlanTaskRow";
+import { SessionAccountLabel } from "./SessionAccountLabel";
 
 type Props = {
   position: number;
@@ -30,6 +31,7 @@ export function PlanSessionCard({ position, item, plan, tasks, agents, canEdit, 
           {editable ? <Button type="button" size="sm" variant="secondary" onClick={(event) => onChooseTasks(event.currentTarget)}>{CHOOSE_TASKS_LABEL}</Button> : null}
         </div>
         <AgentChoiceField compact agents={agents} value={item.choice} readOnly={!editable} onChange={onChoice} />
+        <SessionAccountLabel agent={item.choice.agent} />
         <ul className="divide-y divide-line rounded-md border border-line">{item.taskIds.map((taskId) => <PlanTaskRow key={taskId} taskId={taskId} tasks={tasks} plan={plan} editable={editable} onMove={onMove} />)}</ul>
       </div>
       {children}

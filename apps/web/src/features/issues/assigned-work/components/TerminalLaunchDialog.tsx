@@ -45,7 +45,7 @@ export function TerminalLaunchDialog({ projectId, taskId, purpose = ROUTE_PURPOS
           <h2 id="terminal-title" ref={heading} tabIndex={-1} className="text-lg font-semibold">{copy.title}</h2>
           <p className="text-sm leading-relaxed text-ink-2">{copy.intro}</p>
         </header>
-        <TerminalLaunchBody launch={launch} projectId={projectId} attachments={attachments} />
+        <TerminalLaunchBody launch={launch} projectId={projectId} attachments={attachments} onClose={close} />
         <TerminalLaunchFooter launch={launch} attachments={attachments} onClose={close} onConfirm={() => void confirm()} onConfirmAdditional={() => void confirmAdditional()} />
       </section>
     </dialog>

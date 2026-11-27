@@ -4,6 +4,7 @@ import { EXECUTION_STAGE_LABEL } from "../executionCopy";
 import { latestSession } from "../executionModel";
 import { TERMINAL_SESSION_LABEL } from "../sessionCopy";
 import type { ConversationFocus } from "../stageTabs";
+import { historyAccountText, sessionAccountText } from "../workAccountsCopy";
 import { ArtifactSection } from "./ArtifactSection";
 import { ExecutionEventList } from "./ExecutionEventList";
 import { ExecutionHistory } from "./ExecutionHistory";
@@ -22,6 +23,7 @@ export function ExecutionStage({ detail, reader, conversation = null, onConversa
   const scope = { projectId: detail.task.projectId, taskId: detail.task.id };
   return (
     <section aria-label={EXECUTION_STAGE_LABEL} className="space-y-4">
+      <p className="text-xs text-ink-3">{sessionAccountText(historyAccountText(session.account))}</p>
       {session.runtime === "flow_dev" ? (
         <SessionConversation scope={{ ...scope, sessionId: session.id }} session={session} reader={reader} />
       ) : (

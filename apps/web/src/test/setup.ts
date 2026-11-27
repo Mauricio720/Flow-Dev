@@ -3,6 +3,7 @@ import { afterEach, vi } from "vitest";
 
 vi.mock("@/lib/trpc/client", () => ({
   trpc: {
+    agentAccounts: { list: { query: vi.fn() }, create: { mutate: vi.fn() }, rename: { mutate: vi.fn() }, verify: { mutate: vi.fn() }, remove: { mutate: vi.fn() } },
     assignedIssues: {
       list: { query: vi.fn() },
       byIssue: { query: vi.fn() },
@@ -44,6 +45,8 @@ vi.mock("@/lib/trpc/client", () => ({
       taskSet: { get: { query: vi.fn() } },
       plan: { get: { query: vi.fn() }, save: { mutate: vi.fn() } },
       review: { get: { query: vi.fn() }, start: { mutate: vi.fn() }, request: { mutate: vi.fn() } },
+      worktree: { choose: { mutate: vi.fn() } },
+      workAccounts: { get: { query: vi.fn() }, set: { mutate: vi.fn() } },
       planning: {
         start: { mutate: vi.fn() },
         retry: { mutate: vi.fn() },

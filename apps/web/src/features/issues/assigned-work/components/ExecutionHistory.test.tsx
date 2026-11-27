@@ -94,4 +94,5 @@ describe("ExecutionHistory", () => {
     expect(kept!.textContent).toContain("Bruno · PRD · ");
     expect(kept!.textContent).not.toContain("Execução direta");
   });
+
 });
