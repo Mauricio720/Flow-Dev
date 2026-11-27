@@ -3,6 +3,8 @@ import type { SavePlanInput, SavePlanResult } from "../../../../application/data
 import type { PlanItemDraft } from "../../../../application/services/tasks-set/planTypes";
 import type { Database } from "../../client";
 import { taskSessionPlanItems, taskSessionPlans, taskTerminalSessions } from "../../schema";
+import { rewriteDependencies } from "./planItemDependencies";
+import type { WrittenItem } from "./planItemDependencies";
 
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 type ItemWrite = { planId: string; position: number; draft: PlanItemDraft; existing: boolean; started: boolean };
@@ -28,15 +30,16 @@ async function startedItemIds(tx: Transaction, itemIds: string[]) {
   return new Set(rows.map((row) => row.id!));
 }
 
-async function writeItem(tx: Transaction, write: ItemWrite) {
+async function writeItem(tx: Transaction, write: ItemWrite): Promise<WrittenItem> {
   const { planId, position, draft, existing, started } = write;
   const content = { taskIds: draft.taskIds, agent: draft.choice.agent, model: draft.choice.model, effort: draft.choice.effort };
   if (!existing) {
-    await tx.insert(taskSessionPlanItems).values({ planId, position, ...content });
-    return;
+    const [created] = await tx.insert(taskSessionPlanItems).values({ planId, position, ...content }).returning({ id: taskSessionPlanItems.id });
+    return { id: created!.id, started: false, after: draft.after };
   }
   const changes = started ? { position } : { position, ...content };
   await tx.update(taskSessionPlanItems).set(changes).where(eq(taskSessionPlanItems.id, draft.id!));
+  return { id: draft.id!, started, after: draft.after };
 }
 
 async function replaceItems(tx: Transaction, planId: string, drafts: PlanItemDraft[]) {
@@ -47,10 +50,12 @@ async function replaceItems(tx: Transaction, planId: string, drafts: PlanItemDra
   const removable = [...storedIds].filter((id) => !kept.has(id) && !started.has(id));
   if (removable.length > 0) await tx.delete(taskSessionPlanItems).where(inArray(taskSessionPlanItems.id, removable));
   await tx.update(taskSessionPlanItems).set({ position: sql`${taskSessionPlanItems.position} + ${POSITION_OFFSET}` }).where(eq(taskSessionPlanItems.planId, planId));
+  const written: WrittenItem[] = [];
   for (const [index, draft] of drafts.entries()) {
     const existing = draft.id !== undefined && storedIds.has(draft.id);
-    await writeItem(tx, { planId, position: index + FIRST_POSITION, draft, existing, started: existing && started.has(draft.id!) });
+    written.push(await writeItem(tx, { planId, position: index + FIRST_POSITION, draft, existing, started: existing && started.has(draft.id!) }));
   }
+  await rewriteDependencies(tx, written);
 }
 
 export function savePlan(database: Database, input: SavePlanInput): Promise<SavePlanResult> {

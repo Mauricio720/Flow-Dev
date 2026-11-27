@@ -1,4 +1,6 @@
 import type { ExecutionPlanDao } from "../application/database/dao/executionPlanDao";
+import type { PlanRunDao } from "../application/database/dao/planRunDao";
+import { planRunView } from "../application/services/plan-run/planRunView";
 import type { IssueClaimDao } from "../application/database/dao/issueClaimDao";
 import type { TaskSetReadDao } from "../application/database/dao/taskSetReadDao";
 import type { WorkAuthorization } from "../application/services/assigned-issues/workAuthorization";
@@ -24,6 +26,7 @@ export type ExecutionPlanDeps = {
   authorization: Pick<WorkAuthorization, "requireOperate">;
   agents: ReadonlySet<SessionAgent>;
   catalog?: SessionCatalogStatus;
+  runs?: Pick<PlanRunDao, "findByPlan">;
   log: PlanLog;
 };
 
@@ -45,7 +48,8 @@ export class ExecutionPlanController {
     const status = this.deps.catalog ? await this.deps.catalog.codexStatus(input.taskId) : null;
     const running = this.deps.catalog ? await this.deps.catalog.running() : true;
     const agents = this.deps.catalog ? publishedAgentAvailability(this.deps.agents, status, running) : agentAvailability(this.deps.agents);
-    return buildPlanView({ plan, set, canEdit, agents });
+    const run = plan && this.deps.runs ? await this.deps.runs.findByPlan(plan.id) : null;
+    return buildPlanView({ plan, set, canEdit, agents, run: planRunView(run) });
   }
 
   async save(actor: SessionPrincipal, input: PlanSaveInput) {

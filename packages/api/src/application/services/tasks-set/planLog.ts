@@ -5,6 +5,11 @@ export interface PlanLog {
   saved(fields: PlanLogFields): void;
   conflict(fields: PlanLogFields): void;
   itemStarted(fields: PlanLogFields): void;
+  runStarted(fields: PlanLogFields): void;
+  runSessionStarted(fields: PlanLogFields): void;
+  runPaused(fields: PlanLogFields): void;
+  runResumed(fields: PlanLogFields): void;
+  runCompleted(fields: PlanLogFields): void;
 }
 
 const LOG_PREFIX = "[plan]";
@@ -29,5 +34,25 @@ export class ConsolePlanLog implements PlanLog {
 
   itemStarted(fields: PlanLogFields) {
     console.info(formatPlanLog("item_started", fields));
+  }
+
+  runStarted(fields: PlanLogFields) {
+    console.info(formatPlanLog("run_started", fields));
+  }
+
+  runSessionStarted(fields: PlanLogFields) {
+    console.info(formatPlanLog("run_session_started", fields));
+  }
+
+  runPaused(fields: PlanLogFields) {
+    console.info(formatPlanLog("run_paused", fields));
+  }
+
+  runResumed(fields: PlanLogFields) {
+    console.info(formatPlanLog("run_resumed", fields));
+  }
+
+  runCompleted(fields: PlanLogFields) {
+    console.info(formatPlanLog("run_completed", fields));
   }
 }

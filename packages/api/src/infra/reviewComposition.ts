@@ -46,7 +46,7 @@ export function createReviewController(database: Database, overrides: ReviewOver
   return new ReviewCycleController({ service, repositories: overrides.repositories ?? createRepositoryAccessService(database), tasks: taskSets, authorization: overrides.authorization ?? createWorkAuthorization(database), now });
 }
 
-function createGuard(input: { database: Database; env: NodeJS.ProcessEnv; context: SessionContextBuilder; checkouts: DrizzleLocalCheckoutDao; projects: DrizzleProjectDao; catalog: SessionCatalogStatus; tools: ToolLocator; now: () => Date }) {
+export function createGuard(input: { database: Database; env: NodeJS.ProcessEnv; context: SessionContextBuilder; checkouts: DrizzleLocalCheckoutDao; projects: DrizzleProjectDao; catalog: SessionCatalogStatus; tools: ToolLocator; now: () => Date }) {
   const verifier = new LocalCheckoutService({ checkouts: input.checkouts, inspector: new ExecGitCheckoutInspector(), projects: input.projects, permissions: new DrizzleAccessDao(input.database) });
   const log = new ConsoleTerminalLog();
   return new TerminalOpenGuard({ env: input.env, checkouts: input.checkouts, verifier, tools: input.tools, context: input.context, service: input.catalog, log, codexProbe: new PublishedCodexCatalog(input.catalog, input.now) });

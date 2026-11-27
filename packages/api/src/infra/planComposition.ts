@@ -10,6 +10,7 @@ import { requireDatabase } from "./database/client";
 import { DrizzleTaskSetReadDao } from "./database/dao/artifacts/drizzleTaskSetReadDao";
 import { DrizzleIssueClaimDao } from "./database/dao/assigned-issues/drizzleIssueClaimDao";
 import { DrizzleExecutionPlanDao } from "./database/dao/plans/drizzleExecutionPlanDao";
+import { DrizzlePlanRunDao } from "./database/dao/plans/drizzlePlanRunDao";
 import { REGISTERED_SESSION_AGENTS } from "./registeredSessionAgents";
 import { createRepositoryAccessService } from "./repositoryAccessFactory";
 import { HeartbeatSessionServiceStatus } from "../application/services/terminal/sessionServiceStatus";
@@ -31,6 +32,7 @@ export function createPlanController(database: Database, overrides: PlanOverride
     authorization: overrides.workAuthorization ?? createWorkAuthorization(database),
     agents: overrides.agents ?? REGISTERED_SESSION_AGENTS,
     catalog: new HeartbeatSessionServiceStatus({ hosts: new DrizzleSessionHostDao(database), hostId: machineIdentity(), now: () => new Date() }),
+    runs: new DrizzlePlanRunDao(database),
     log,
   });
 }

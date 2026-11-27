@@ -92,7 +92,7 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const control = new DrizzleSessionControlDao(database);
   const context = new FileSessionContextBuilder(env);
   const reviewLauncher = lazyReviewLauncher(() => createTerminalLauncher(database, { env, now, hostId: identity.hostId, tools, context, codexProbe }));
-  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context, runtimes, reviewCycles, reviewClaims, reviewTaskSets, reviewLauncher, accountGate: account.gate };
+  return { database, env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context, runtimes, reviewCycles, reviewClaims, reviewTaskSets, reviewLauncher, accountGate: account.gate };
 }
 
 export type WorkerParts = ReturnType<typeof buildWorkerParts>;

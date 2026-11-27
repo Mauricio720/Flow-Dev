@@ -14,6 +14,7 @@ import { runSessionLoop } from "../application/services/terminal/sessionWorkerLo
 import { requireDatabase, requireSql } from "./database/client";
 import { killChildProcesses } from "./terminal/killChildProcesses";
 import { buildReviewStep } from "./reviewStepComposition";
+import { buildPlanRunStep } from "./planRunStepComposition";
 import { buildWorkerParts, type WorkerOverrides, type WorkerParts } from "./sessionWorkerParts";
 
 export type { WorkerOverrides } from "./sessionWorkerParts";
@@ -30,6 +31,7 @@ function buildSteps(parts: WorkerParts) {
     new SessionResumeStep({ status, messages, runtimes, handlers, registry, context, exit: parts.exit, cancellation, identity, now, log, accountGate }),
     new MessageDeliveryStep({ registry, messages, now, log }),
     buildReviewStep(parts),
+    buildPlanRunStep(parts),
     new SessionControlsStep({ registry, hostId: identity.hostId, status, controls: control, messages, cancellation, flush: () => handlers.flush(), captureEnd: (sessionId) => recorder.captureEnd(sessionId), now, log }),
     new AnswerDispatchStep({ requests: parts.requests, status, registry: parts.pending, log }),
   ];

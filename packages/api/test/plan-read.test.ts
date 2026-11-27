@@ -22,8 +22,8 @@ describe("tasks.plan.get", () => {
     const view = await world.harness.caller.plan.get(world.scope);
     expect(view).toMatchObject({ version: 3, stale: false, unassigned: [], canEdit: true });
     expect(view.items).toEqual([
-      { id: items[0]!.id, position: 1, taskIds: ["task_01"], choice: OPUS_MAX, state: "running", started: true, blockedBy: [], forced: null, latestSessionId: session.id },
-      { id: items[1]!.id, position: 2, taskIds: ["task_02", "task_03"], choice: OPUS_MAX, state: "blocked", started: false, blockedBy: [{ taskId: "task_01", status: "pending" }], forced: null, latestSessionId: null },
+      { id: items[0]!.id, position: 1, taskIds: ["task_01"], choice: OPUS_MAX, state: "running", started: true, after: [], waitingSessions: [], blockedBy: [], forced: null, latestSessionId: session.id },
+      { id: items[1]!.id, position: 2, taskIds: ["task_02", "task_03"], choice: OPUS_MAX, state: "blocked", started: false, after: [], waitingSessions: [], blockedBy: [{ taskId: "task_01", status: "pending" }], forced: null, latestSessionId: null },
     ]);
     await world.setup.authorize(world.setup.readerId);
     const asMember = await world.harness.callerFor(world.setup.readerId).plan.get(world.scope);

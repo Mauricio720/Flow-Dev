@@ -13,7 +13,7 @@ const manifestVersion = (version: number, content: string): CapturedFile => ({ a
 
 function loaderWith(manifests: CapturedFile[]) {
   const dao: TaskSetReadDao = { taskInProject: async () => true, specs: async () => [], manifests: async () => manifests, folderFiles: async () => [] };
-  const log: PlanLog = { manifestInvalid: vi.fn(), saved: vi.fn(), conflict: vi.fn(), itemStarted: vi.fn() };
+  const log: PlanLog = { manifestInvalid: vi.fn(), saved: vi.fn(), conflict: vi.fn(), itemStarted: vi.fn(), runStarted: vi.fn(), runSessionStarted: vi.fn(), runPaused: vi.fn(), runResumed: vi.fn(), runCompleted: vi.fn() };
   return { log, loader: new TaskSetLoader(dao, log), manifests };
 }
 

@@ -1,4 +1,4 @@
-import { check, integer, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, index, integer, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { users } from "../../schema";
 import { tasks } from "./records";
@@ -30,8 +30,17 @@ export const taskSessionPlanItems = pgTable("task_session_plan_items", {
 }, (table) => [
   check("task_session_plan_items_position_check", sql`${table.position} >= 1`),
   check("task_session_plan_items_agent_check", sql`${table.agent} in ('claude','codex')`),
-  check("task_session_plan_items_task_ids_check", sql`cardinality(${table.taskIds}) between 1 and 30 and array_to_string(${table.taskIds}, ',', '#') ~ '^task_[0-9]{2}(,task_[0-9]{2})*$'`),
+  check("task_session_plan_items_task_ids_check", sql`cardinality(${table.taskIds}) between 0 and 30 and (cardinality(${table.taskIds}) = 0 or array_to_string(${table.taskIds}, ',', '#') ~ '^task_[0-9]{2}(,task_[0-9]{2})*$')`),
   check("task_session_plan_items_model_check", sql`char_length(${table.model}) between 1 and 64`),
   check("task_session_plan_items_effort_check", sql`char_length(${table.effort}) between 1 and 64`),
   uniqueIndex("task_session_plan_items_plan_position_unique").on(table.planId, table.position),
+]);
+
+export const taskSessionPlanItemDependencies = pgTable("task_session_plan_item_dependencies", {
+  itemId: uuid("item_id").notNull().references(() => taskSessionPlanItems.id, { onDelete: "cascade" }),
+  afterItemId: uuid("after_item_id").notNull().references(() => taskSessionPlanItems.id, { onDelete: "cascade" }),
+}, (table) => [
+  primaryKey({ name: "task_session_plan_item_dependencies_pk", columns: [table.itemId, table.afterItemId] }),
+  check("task_session_plan_item_dependencies_self_check", sql`${table.itemId} <> ${table.afterItemId}`),
+  index("task_session_plan_item_dependencies_after_idx").on(table.afterItemId),
 ]);
