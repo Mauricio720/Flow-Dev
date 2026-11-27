@@ -1,0 +1,10 @@
+export const RUN_PLAN_LABEL = "Executar o plano";
+export const PAUSE_RUN_LABEL = "Pausar";
+export const RESUME_RUN_LABEL = "Retomar";
+export const RUN_REGION_LABEL = "Execução do plano";
+export const RUNNING_TEXT = "Executando";
+export const COMPLETED_TEXT = "Plano concluído";
+export const RUN_FAILED = "Não foi possível mudar a execução do plano agora. Tente de novo.";
+export const runningSessionText = (position: number) => `${RUNNING_TEXT} · Sessão ${position}`;
+export const pausedReasonText = (reason: string) => `Pausada: ${reason}`;
+export const pausedByText = (name: string) => `Pausada por ${name}`;

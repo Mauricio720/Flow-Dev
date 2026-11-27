@@ -18,7 +18,7 @@ describe("ExecutionPlanEditor shortcuts and read-only", () => {
     await userEvent.click(screen.getByRole("button", { name: "Todas numa sessão" }));
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
     await waitFor(() => expect(save).toHaveBeenCalledOnce());
-    expect(save.mock.calls[0]![0]).toEqual({ ...SCOPE, version: 3, items: [{ id: A, taskIds: ["task_01"], choice: OPUS_MAX_INPUT }, { taskIds: ["task_02", "task_03", "task_04"], choice: OPUS_MAX_INPUT }] });
+    expect(save.mock.calls[0]![0]).toEqual({ ...SCOPE, version: 3, items: [{ id: A, taskIds: ["task_01"], choice: OPUS_MAX_INPUT, after: [] }, { taskIds: ["task_02", "task_03", "task_04"], choice: OPUS_MAX_INPUT, after: [] }] });
   });
 
   it("applies one choice to every session that was not started from the shortcut", async () => {

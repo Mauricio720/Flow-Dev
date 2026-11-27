@@ -1,6 +1,4 @@
-import { DEFAULT_CHOICE } from "./launchPurposeModel";
 import type { EditableItem, EditablePlan } from "./planContract";
-import { nextKey } from "./planEditorModel";
 
 export type TaskPlace = { kind: "none" } | { kind: "item"; key: string; position: number; started: boolean };
 
@@ -27,23 +25,10 @@ function releasing(items: EditableItem[], taskIds: string[]) {
   return items.map((item) => (item.started ? item : { ...item, taskIds: item.taskIds.filter((taskId) => !chosen.has(taskId)) }));
 }
 
-function withoutEmptySessions(items: EditableItem[]) {
-  return items.filter((item) => item.started || item.taskIds.length > 0);
-}
-
 export function setSessionTasks(plan: EditablePlan, input: { key: string; taskIds: string[] }): EditablePlan {
   const target = plan.items.find((item) => item.key === input.key);
   if (!target || target.started) return plan;
   const picked = pickableTasks(plan, input.taskIds);
   const released = releasing(plan.items, picked);
-  const filled = released.map((item) => (item.key === input.key ? { ...item, taskIds: picked } : item));
-  return { ...plan, items: withoutEmptySessions(filled) };
-}
-
-export function createSessionWith(plan: EditablePlan, taskIds: string[]): EditablePlan {
-  const picked = pickableTasks(plan, taskIds);
-  if (picked.length === 0) return plan;
-  const kept = withoutEmptySessions(releasing(plan.items, picked));
-  const created: EditableItem = { key: nextKey(plan), taskIds: picked, choice: DEFAULT_CHOICE, started: false };
-  return { ...plan, items: [...kept, created] };
+  return { ...plan, items: released.map((item) => (item.key === input.key ? { ...item, taskIds: picked } : item)) };
 }

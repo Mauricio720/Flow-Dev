@@ -1,19 +1,20 @@
-import type { EditablePlan, MoveTarget } from "../planContract";
+import { Button } from "@/components/ui/button";
+import { REMOVE_FROM_SESSION_LABEL } from "../planCopy";
+import { writeDrag } from "../planDragData";
 import type { TaskItem } from "../taskSetContract";
-import { PlanTaskSessionSelect } from "./PlanTaskSessionSelect";
 
-type Props = { taskId: string; tasks: TaskItem[]; plan: EditablePlan; editable: boolean; onMove: (taskId: string, target: MoveTarget) => void };
+type Props = { taskId: string; tasks: TaskItem[]; editable: boolean; onRemove?: (taskId: string) => void };
 
-export function PlanTaskRow({ taskId, tasks, plan, editable, onMove }: Props) {
+export function PlanTaskRow({ taskId, tasks, editable, onRemove }: Props) {
   const task = tasks.find((candidate) => candidate.id === taskId);
   const number = task?.number ?? taskId;
   return (
-    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-3 py-2 text-sm">
+    <li draggable={editable} onDragStart={editable ? (event) => writeDrag(event, { kind: "task", taskId }) : undefined} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-3 py-2 text-sm">
       <span className="flex min-w-0 items-baseline gap-3">
         <span className="font-mono text-[13px] tabular-nums text-ink-3">{number}</span>
         <span className="text-ink [overflow-wrap:anywhere]">{task?.title ?? taskId}</span>
       </span>
-      {editable ? <PlanTaskSessionSelect task={{ id: taskId, number }} plan={plan} onMove={(target) => onMove(taskId, target)} /> : null}
+      {editable && onRemove ? <Button type="button" size="sm" variant="ghost" onClick={() => onRemove(taskId)}>{REMOVE_FROM_SESSION_LABEL}</Button> : null}
     </li>
   );
 }

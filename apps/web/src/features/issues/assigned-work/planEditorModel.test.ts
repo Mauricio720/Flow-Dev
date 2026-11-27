@@ -7,7 +7,7 @@ const HAIKU_MEDIUM = { agent: "claude", model: "haiku", effort: "medium" } as co
 const SONNET_HIGH = { agent: "claude", model: "sonnet", effort: "high" } as const;
 const TASKS = ["task_01", "task_02", "task_03"];
 
-const item = (key: string, taskIds: string[], patch: Partial<EditableItem> = {}): EditableItem => ({ key, id: key, taskIds, choice: OPUS_MAX, started: false, ...patch });
+const item = (key: string, taskIds: string[], patch: Partial<EditableItem> = {}): EditableItem => ({ key, id: key, taskIds, choice: OPUS_MAX, started: false, after: [], ...patch });
 const planOf = (items: EditableItem[]): EditablePlan => ({ version: 4, items });
 const summary = (plan: EditablePlan) => plan.items.map((entry) => [entry.started, entry.taskIds, entry.choice.model, entry.choice.effort]);
 
@@ -31,29 +31,20 @@ describe("planEditorModel", () => {
     expect(summary(sameChoiceForAll(plan, HAIKU_MEDIUM))).toEqual([[true, ["task_01"], "opus", "max"], [false, ["task_02"], "haiku", "medium"], [false, ["task_03"], "haiku", "medium"]]);
   });
 
-  it("V-35r moves a task to a new session in Opus and Maximum, and drops the session that was left empty", () => {
+  it("V-07b moves a task out of its session and keeps the session, now empty, in the draft", () => {
     const plan = planOf([item("a", ["task_01"]), item("b", ["task_02"]), item("c", ["task_03"])]);
-    const moved = moveTask(plan, "task_03", { kind: "new" });
-    expect(summary(moved)).toEqual([[false, ["task_01"], "opus", "max"], [false, ["task_02"], "opus", "max"], [false, ["task_03"], "opus", "max"]]);
-    expect(moved.items[2]!.id).toBeUndefined();
     const unassigned = moveTask(plan, "task_02", { kind: "none" });
-    expect(unassigned.items.map((entry) => entry.taskIds)).toEqual([["task_01"], ["task_03"]]);
+    expect(unassigned.items.map((entry) => entry.taskIds)).toEqual([["task_01"], [], ["task_03"]]);
     expect(assignedIds(unassigned).has("task_02")).toBe(false);
+    expect(moveTask(unassigned, "task_02", { kind: "item", key: "b" }).items.map((entry) => entry.taskIds)).toEqual([["task_01"], ["task_02"], ["task_03"]]);
   });
 
-  it("moves a task between sessions keeping the tasks in number order, and does not touch a started session", () => {
+  it("V-07c moves a task between sessions keeping the tasks in number order, and does not touch a started session", () => {
     const plan = planOf([item("a", ["task_02"]), item("b", ["task_01", "task_03"]), item("s", ["task_09"], { started: true })]);
     const moved = moveTask(plan, "task_01", { kind: "item", key: "a" });
     expect(moved.items.map((entry) => entry.taskIds)).toEqual([["task_01", "task_02"], ["task_03"], ["task_09"]]);
     expect(moveTask(plan, "task_09", { kind: "none" })).toBe(plan);
     expect(moveTask(plan, "task_01", { kind: "item", key: "s" })).toBe(plan);
-  });
-
-  it("gives each new session a key that does not collide, even after one was removed", () => {
-    const first = moveTask(planOf([]), "task_01", { kind: "new" });
-    const second = moveTask(first, "task_02", { kind: "new" });
-    const third = moveTask(moveTask(second, "task_01", { kind: "none" }), "task_03", { kind: "new" });
-    expect(new Set(third.items.map((entry) => entry.key)).size).toBe(third.items.length);
   });
 
   it("finds the session of a task and changes the choice of one session that was not started", () => {
@@ -72,7 +63,7 @@ describe("planEditorModel", () => {
   });
 
   it("builds the save input with the version that was read, the ids of the saved sessions and none for the new ones", () => {
-    const plan = planOf([item("a", ["task_01"]), { key: "new-1", taskIds: ["task_02"], choice: SONNET_HIGH, started: false }]);
-    expect(toSaveInput(plan)).toEqual({ version: 4, items: [{ id: "a", taskIds: ["task_01"], choice: OPUS_MAX }, { taskIds: ["task_02"], choice: SONNET_HIGH }] });
+    const plan = planOf([item("a", ["task_01"]), { key: "new-1", taskIds: ["task_02"], choice: SONNET_HIGH, started: false, after: [] }]);
+    expect(toSaveInput(plan)).toEqual({ version: 4, items: [{ id: "a", taskIds: ["task_01"], choice: OPUS_MAX, after: [] }, { taskIds: ["task_02"], choice: SONNET_HIGH, after: [] }] });
   });
 });

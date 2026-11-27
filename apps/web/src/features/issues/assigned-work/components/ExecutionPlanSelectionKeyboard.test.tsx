@@ -9,8 +9,8 @@ import { A, B, OPUS_MAX_INPUT, SCOPE, applyChoice, mountEditor, openSessionTasks
 const save = vi.mocked(trpc.tasks.plan.save.mutate);
 const TITLES = ["Esquema", "Rotas", "Tela", "Docs"];
 const titlesIn = (container: HTMLElement) => TITLES.filter((title) => within(container).queryByText(title));
-const chooseButton = (position: number) => within(sessionCard(position)).getByRole("button", { name: "Escolher tarefas" });
-const chooseControls = () => screen.queryAllByRole("button", { name: /^(Escolher tarefas|Nova sessão)$/ });
+const chooseButton = (position: number) => within(sessionCard(position)).getByRole("button", { name: "Adicionar tarefas" });
+const chooseControls = () => screen.queryAllByRole("button", { name: /^(Adicionar tarefas|Nova sessão)$/ });
 const saveButton = () => screen.getByRole("button", { name: "Salvar" }) as HTMLButtonElement;
 
 async function tabUntil(target: HTMLElement) {
@@ -21,7 +21,7 @@ async function tabUntil(target: HTMLElement) {
 beforeEach(() => void vi.useFakeTimers({ shouldAdvanceTime: true }));
 
 describe("ExecutionPlanEditor task choice by keyboard, cancel and read only", () => {
-  it("V-02h lets the person check and uncheck with Space and close with Escape, returning the focus to Escolher tarefas", async () => {
+  it("V-02h lets the person check and uncheck with Space and close with Escape, returning the focus to Adicionar tarefas", async () => {
     await mountEditor();
     await tabUntil(chooseButton(1));
     await userEvent.keyboard(" ");
@@ -39,9 +39,9 @@ describe("ExecutionPlanEditor task choice by keyboard, cancel and read only", ()
     expect(saveButton().disabled).toBe(true);
   });
 
-  it("V-02i closes with Cancelar without changing the draft, and the focus goes back to Nova sessão", async () => {
+  it("V-02i closes with Cancelar without changing the draft, and the focus goes back to Adicionar tarefas", async () => {
     await mountEditor();
-    const trigger = screen.getByRole("button", { name: "Nova sessão" });
+    const trigger = chooseButton(2);
     await userEvent.click(trigger);
     await userEvent.click(taskChoice("03"));
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancelar" }));
@@ -63,7 +63,7 @@ describe("ExecutionPlanEditor task choice by keyboard, cancel and read only", ()
     await applyChoice();
     await userEvent.click(saveButton());
     expect((await screen.findByRole("alert")).textContent).toBe("A tarefa 02 depende da 01, que está numa sessão posterior.");
-    expect(save).toHaveBeenCalledWith({ ...SCOPE, version: 3, items: [{ id: A, taskIds: ["task_02", "task_03"], choice: OPUS_MAX_INPUT }, { id: B, taskIds: ["task_01", "task_04"], choice: OPUS_MAX_INPUT }] });
+    expect(save).toHaveBeenCalledWith({ ...SCOPE, version: 3, items: [{ id: A, taskIds: ["task_02", "task_03"], choice: OPUS_MAX_INPUT, after: [] }, { id: B, taskIds: ["task_01", "task_04"], choice: OPUS_MAX_INPUT, after: [] }] });
   });
 
   it("V-02k offers no way to choose tasks to someone who only reads", async () => {

@@ -39,18 +39,19 @@ describe("ExecutionPlanEditor choosing the tasks of a session", () => {
     expect(save).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
     expect(save).toHaveBeenCalledOnce();
-    expect(save).toHaveBeenCalledWith({ ...SCOPE, version: 3, items: [{ id: A, taskIds: ["task_01", "task_04"], choice: OPUS_MAX_INPUT }, { id: B, taskIds: ["task_02"], choice: OPUS_MAX_INPUT }] });
+    expect(save).toHaveBeenCalledWith({ ...SCOPE, version: 3, items: [{ id: A, taskIds: ["task_01", "task_04"], choice: OPUS_MAX_INPUT, after: [] }, { id: B, taskIds: ["task_02"], choice: OPUS_MAX_INPUT, after: [] }] });
   });
 
-  it("V-02c removes the session that is left empty, and renumbers the count", async () => {
+  it("V-02c keeps the session that is left empty, with the empty text", async () => {
     await mountEditor();
     await openSessionTasks(2);
     await userEvent.click(taskChoice("02"));
     await userEvent.click(taskChoice("04"));
     await applyChoice();
-    expect(screen.getByText("1 sessão")).toBeTruthy();
+    expect(screen.getByText("2 sessões")).toBeTruthy();
     const headings = within(screen.getByRole("list", { name: "Sessões do plano" })).getAllByRole("heading", { level: 3 });
-    expect(headings.map((heading) => heading.textContent)).toEqual(["Sessão 1"]);
+    expect(headings.map((heading) => heading.textContent)).toEqual(["Sessão 1", "Sessão 2"]);
+    expect(within(sessionCard(2)).getByText("Sem tarefas. Arraste tarefas para cá ou use Adicionar tarefas.")).toBeTruthy();
     expect(titlesIn(screen.getByRole("region", { name: "Sem sessão" }))).toEqual(["Rotas", "Docs"]);
   });
 
