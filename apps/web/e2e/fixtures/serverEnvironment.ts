@@ -3,6 +3,7 @@ import { terminalStateDirectory } from "./sessionFiles";
 import { sessionScriptDirectory } from "./sessionScript";
 
 export const E2E_NEXT_DIST_DIR = ".next-e2e";
+const FAKE_AGENT_LOGIN_STATE = "logged_in";
 
 export function e2eServerEnvironment(baseURL: string): Record<string, string> {
   if (!e2eDatabaseUrl || !e2eAuthSecret || !e2eRepositoryTokenKey) return terminalEnvironment();
@@ -18,5 +19,5 @@ export function e2eServerEnvironment(baseURL: string): Record<string, string> {
 }
 
 function terminalEnvironment() {
-  return { FLOW_DEV_TERMINAL_ENABLED: "true", FLOW_DEV_SESSION_FAKE_SCRIPT: sessionScriptDirectory, XDG_STATE_HOME: terminalStateDirectory };
+  return { FLOW_DEV_TERMINAL_ENABLED: "true", FLOW_DEV_SESSION_FAKE_SCRIPT: sessionScriptDirectory, XDG_STATE_HOME: terminalStateDirectory, FLOW_DEV_AGENT_LOGIN_FAKE: FAKE_AGENT_LOGIN_STATE };
 }

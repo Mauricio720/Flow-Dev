@@ -7,13 +7,14 @@ import { issueContentHash } from "./repositoryCredential";
 const ISSUE_TITLE = "Trocar Entar por Entrar";
 const DEFAULT_BODY = "Trocar 'Entar' por 'Entrar'";
 const DEFAULT_ROUTE = "direct_execution";
+const DEFAULT_WORKTREE_MODE = "checkout";
 const PLANNING_REASONS = JSON.stringify(["Mudança pequena e isolada"]);
 const GUARDED_TRIGGERS = [["task_planning_decisions", "task_planning_decision_immutable"], ["task_issue_snapshots", "task_issue_snapshots_immutable"], ["task_draft_revisions", "task_draft_revisions_append_only"]] as const;
-const BEFORE_PLAN_OPERATIONS = ["task_route_switches", "task_session_plans", "task_artifacts", "task_terminal_attachments", "task_terminal_sessions", "task_images", "task_planning_decisions", "task_issue_claims"] as const;
+const BEFORE_PLAN_OPERATIONS = ["task_worktree_choices", "task_route_switches", "task_session_plans", "task_artifacts", "task_terminal_attachments", "task_terminal_sessions", "task_images", "task_planning_decisions", "task_issue_claims"] as const;
 const AFTER_PLAN_OPERATIONS = ["task_issue_snapshots", "task_issue_sources", "task_publication_attempts", "task_operations", "task_draft_revisions"] as const;
 
 export type SeededWork = { taskId: string; issueNumber: number; imageId: string };
-export type ApprovedWorkOptions = { body?: string; route?: "direct_execution" | "prd" | "tech_spec" };
+export type ApprovedWorkOptions = { body?: string; route?: "direct_execution" | "prd" | "tech_spec"; worktree?: "worktree" | "checkout" | null };
 
 export class WorkSeed {
   private readonly taskIds: string[] = [];
@@ -21,7 +22,7 @@ export class WorkSeed {
   constructor(private readonly sql: Sql) {}
 
   async approvedWork(project: SeededProject, operator: SeededUser, options: ApprovedWorkOptions = {}): Promise<SeededWork> {
-    const { body = DEFAULT_BODY, route = DEFAULT_ROUTE } = options;
+    const { body = DEFAULT_BODY, route = DEFAULT_ROUTE, worktree = DEFAULT_WORKTREE_MODE } = options;
     const taskId = randomUUID();
     const imageId = randomUUID();
     const sql = this.sql;
@@ -41,6 +42,7 @@ export class WorkSeed {
     await sql`insert into task_planning_decisions (id, task_id, source_format_version, source_snapshot_id, requester_user_id, operation_id, execution_id, recommended_route, selected_route, decision_source, complexity, summary, reasons, uncertainties) values (${ids.decision}, ${taskId}, 2, ${ids.snapshot}, ${operator.id}, ${ids.planOperation}, ${randomUUID()}, ${route}, ${route}, 'AI', 'low', 'Resumo', ${PLANNING_REASONS}::text::jsonb, '[]'::jsonb)`;
     await sql`update task_planning_decisions set status = 'approved', approved_by_user_id = ${operator.id}, approved_at = now() where id = ${ids.decision}`;
     await sql`update tasks set planning_status = 'approved', planning_decision_id = ${ids.decision} where id = ${taskId}`;
+    if (worktree) await sql`insert into task_worktree_choices (task_id, mode, chosen_by_user_id) values (${taskId}, ${worktree}, ${operator.id})`;
     await sql`insert into task_images (id, task_id, project_id, uploaded_by_user_id, content_type, byte_size, sha256, content) values (${imageId}, ${taskId}, ${project.id}, ${operator.id}, 'image/png', 11, ${"c".repeat(64)}, ${Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])})`;
     this.taskIds.push(taskId);
     return { taskId, issueNumber: 42, imageId };

@@ -45,6 +45,9 @@ export const ROUTE_SWITCH_SCRIPT: SessionScriptStep[] = [
   { kind: "end_turn" },
 ];
 
+export const WORKTREE_SESSION_TEXT = "Trabalhando no worktree da Issue.";
+export const WORKTREE_SCRIPT: SessionScriptStep[] = [{ kind: "text", text: WORKTREE_SESSION_TEXT }, { kind: "end_turn" }];
+
 export async function writeSessionScript(clonePath: string, steps: SessionScriptStep[]) {
   await mkdir(sessionScriptDirectory, { recursive: true });
   const file = join(sessionScriptDirectory, `${createHash("sha256").update(clonePath).digest("hex")}.json`);

@@ -10,7 +10,7 @@ const TRPC_PATH = "/api/trpc/projects.connectionStates?batch=1&input=%7B%7D";
 function privatePaths(projectId: string) {
   const project = `/projects/${projectId}`;
   const taskId = randomUUID();
-  return ["/projects", "/projects/new", project, `${project}/work`, `${project}/work/${taskId}`, `${project}/issues`, `${project}/issues/${taskId}`, `${project}/settings`];
+  return ["/projects", "/projects/new", project, `${project}/work`, `${project}/work/${taskId}`, `${project}/issues`, `${project}/issues/${taskId}`, `${project}/settings`, "/settings/ai-accounts"];
 }
 
 async function visit(baseURL: string, paths: string[], cookie?: string) {

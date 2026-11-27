@@ -1,4 +1,5 @@
 import { randomInt, randomUUID } from "node:crypto";
+import { hostname, userInfo } from "node:os";
 import type { Sql } from "postgres";
 import { grantRepositoryAccess } from "./repositoryCredential";
 
@@ -43,6 +44,12 @@ export class ProjectSeed {
     return this.user({ ...options, repositoryAccess: true });
   }
 
+  async agentAccount(owner: SeededUser, input: { provider: "claude" | "codex"; label: string }) {
+    const hostId = `${hostname()}:${userInfo().username}`;
+    const [row] = await this.sql`insert into agent_accounts (owner_user_id, host_id, provider, label, status, checked_at) values (${owner.id}, ${hostId}, ${input.provider}, ${input.label}, 'logged_in', now()) returning id`;
+    return { id: row.id as string, label: input.label };
+  }
+
   async project(options: ProjectOptions = {}): Promise<SeededProject> {
     const key = suffix();
     const name = `${options.label ?? "Projeto"} ${key}`;
@@ -70,8 +77,16 @@ export class ProjectSeed {
 
   async cleanup() {
     if (this.projectIds.length) await this.sql`delete from projects where id in ${this.sql(this.projectIds)}`;
+    if (this.userIds.length) await this.deleteAgentAccounts();
     if (this.userIds.length) await this.sql`delete from users where id in ${this.sql(this.userIds)}`;
     if (this.adminGithubIds.length) await this.sql`delete from admin_designations where github_user_id in ${this.sql(this.adminGithubIds)}`;
+  }
+
+  private async deleteAgentAccounts() {
+    const owned = this.sql`select id from agent_accounts where owner_user_id in ${this.sql(this.userIds)}`;
+    await this.sql`update task_terminal_sessions set agent_account_id = null where agent_account_id in (${owned})`;
+    await this.sql`delete from task_agent_accounts where account_id in (${owned})`;
+    await this.sql`delete from agent_accounts where owner_user_id in ${this.sql(this.userIds)}`;
   }
 
   private async designateAdmin(account: string, login: string) {
