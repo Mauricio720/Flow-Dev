@@ -18,7 +18,7 @@ afterAll(() => rmSync(home, { recursive: true, force: true }));
 
 function request(provider: "claude" | "codex", scenario: object, signal = new AbortController().signal): AgentRun {
   const model = provider === "claude" ? "sonnet" : "gpt-6.1-sol";
-  return { choice: { provider, model, effort: "low" }, instructions: "i", prompt: JSON.stringify(scenario), outputSchema: { type: "object" }, context: { url: "http://127.0.0.1:1/mcp/e", capability: "c".repeat(40) }, timeoutMs: 20000, signal };
+  return { choice: { provider, model, effort: "low" }, instructions: "i", prompt: JSON.stringify(scenario), images: [], outputSchema: { type: "object" }, context: { url: "http://127.0.0.1:1/mcp/e", capability: "c".repeat(40) }, timeoutMs: 20000, signal };
 }
 
 function build(log: string[] = []) {

@@ -4,11 +4,12 @@ export const CODEX_TOKEN_VARIABLE = "FLOW_CONTEXT_TOKEN";
 
 const DISABLED_FEATURES = ["shell_tool", "unified_exec", "multi_agent", "multi_agent_v2", "apps", "browser_use", "browser_use_external", "computer_use", "image_generation", "view_image", "skill_search", "plugins", "hooks", "goals", "memories", "tool_suggest", "sleep_tool", "shell_snapshot"];
 
-type CodexArgumentInput = { choice: AgentChoice; workDirectory: string; schemaPath: string; contextUrl: string };
+type CodexArgumentInput = { choice: AgentChoice; workDirectory: string; schemaPath: string; contextUrl: string; imagePaths: string[] };
 
 export function codexArguments(input: CodexArgumentInput) {
   return [
     "exec",
+    ...input.imagePaths.flatMap((imagePath) => ["--image", imagePath]),
     "--ephemeral",
     "--skip-git-repo-check",
     "--ignore-user-config",

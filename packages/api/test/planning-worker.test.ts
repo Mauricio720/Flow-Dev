@@ -27,7 +27,7 @@ describe("planning worker", () => {
     expect(await decisions(setup)).toHaveLength(1);
     const [input] = gateway.calls;
     expect(input).toMatchObject({ operationId: receipt.operationId, issueUrl: "https://github.com/acme/private/issues/41", publication: { issueNumber: 41 } });
-    expect(Object.keys(input!).sort()).toEqual(["contextCapability", "executionId", "inputHash", "issueUrl", "operationId", "protocolVersion", "publication", "taskId"]);
+    expect(Object.keys(input!).sort()).toEqual(["contextCapability", "executionId", "images", "inputHash", "issueUrl", "omittedImages", "operationId", "protocolVersion", "publication", "taskId"]);
     expect(input!.contextCapability.length).toBeGreaterThanOrEqual(32);
     expect(JSON.stringify(input!.publication)).not.toMatch(/session|token|capability/i);
   });

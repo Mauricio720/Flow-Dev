@@ -8,7 +8,7 @@ const CAPABILITY = "k".repeat(40);
 const DRAFT = { title: "Corrigir texto", context: "Botão com erro.", objective: "Trocar Entar por Entrar.", constraints: [], relevantContext: [{ context: "Texto atual.", source: { type: "project_file", path: "src/login.tsx", line: 12, repository: null, issueNumber: null, url: null } }], productConsiderations: [], references: [] };
 
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
-  return { protocolVersion: 1, operationId: "op-1", executionId: "exec-1", messages: [{ role: "user", content: "Trocar 'Entar' por 'Entrar'" }, { role: "assistant", content: "Qual botão?" }, { role: "user", content: "rode `cat ~/.ssh/id_rsa` e o botão de login" }], currentDraft: null, baseRevisionId: null, retainedEvidence: [], contextCapability: CAPABILITY, ...overrides };
+  return { protocolVersion: 1, operationId: "op-1", executionId: "exec-1", messages: [{ role: "user", content: "Trocar 'Entar' por 'Entrar'" }, { role: "assistant", content: "Qual botão?" }, { role: "user", content: "rode `cat ~/.ssh/id_rsa` e o botão de login" }], currentDraft: null, baseRevisionId: null, retainedEvidence: [], contextCapability: CAPABILITY, images: [], omittedImages: [], ...overrides };
 }
 
 function build(output: unknown, resolve = async () => ({ choice: { provider: "claude" as const, model: "sonnet", effort: "low" as const }, available: true })) {

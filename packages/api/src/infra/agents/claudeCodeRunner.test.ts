@@ -8,7 +8,7 @@ const SCHEMA = { $schema: "https://json-schema.org/draft/2020-12/schema", type: 
 const CAPABILITY = "c".repeat(40);
 
 function request(scenario: object, overrides: Partial<AgentRun> = {}): AgentRun {
-  return { choice: { provider: "claude", model: "sonnet", effort: "low" }, instructions: "Seja objetivo.", prompt: JSON.stringify(scenario), outputSchema: SCHEMA, context: { url: "http://127.0.0.1:1/mcp/e", capability: CAPABILITY }, timeoutMs: 10000, signal: new AbortController().signal, ...overrides };
+  return { choice: { provider: "claude", model: "sonnet", effort: "low" }, instructions: "Seja objetivo.", prompt: JSON.stringify(scenario), images: [], outputSchema: SCHEMA, context: { url: "http://127.0.0.1:1/mcp/e", capability: CAPABILITY }, timeoutMs: 10000, signal: new AbortController().signal, ...overrides };
 }
 
 const runner = new ClaudeCodeRunner({ bin: FAKE_CLI, env: { PATH: process.env.PATH, HOME: "/home/test", DATABASE_URL: "postgres://secret" } });

@@ -1,9 +1,11 @@
 import type { AgentChoice } from "./agentTypes";
+import type { AgentImage } from "./agentImages";
 
 export type AgentRun = {
   choice: AgentChoice;
   instructions: string;
   prompt: string;
+  images: AgentImage[];
   outputSchema: object;
   context: { url: string; capability: string };
   timeoutMs: number;

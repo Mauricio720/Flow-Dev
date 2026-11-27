@@ -3,11 +3,12 @@ import type { PlanningClaim } from "../../../../application/database/dao/taskPla
 import { PLANNING_LEASE_MS } from "../../../../application/services/tasks/planningWorkerRules";
 import { buildPlanningInput } from "../../../../application/services/tasks/planningRules";
 import { TaskError } from "../../../../application/services/tasks/taskErrors";
-import type { PlanningDispatch } from "../../../../application/services/tasks/planningContracts";
+import type { PlanningDispatch, PlanningInput } from "../../../../application/services/tasks/planningContracts";
 import { sessions, taskContextCapabilities, taskIssueSnapshots, taskIssueSources, taskOperations, taskPublicationAttempts, tasks } from "../../schema";
 import { PLANNING_SOURCE_FORMAT_VERSION, buildSourcePlanningInput } from "../../../../application/services/tasks/planningSourceInput";
 import { loadSource } from "../assigned-issues/sourceRecords";
 import type { Database } from "../../client";
+import { loadPlanningImages } from "./planningImages";
 
 export async function heartbeatPlanning(database: Database, claim: PlanningClaim, now: Date) {
   const updated = await database.update(taskOperations).set({ heartbeatAt: now, leaseUntil: new Date(now.getTime() + PLANNING_LEASE_MS) }).where(and(eq(taskOperations.id, claim.operationId), eq(taskOperations.state, "running"), eq(taskOperations.executionId, claim.executionId), eq(taskOperations.fence, claim.fence), eq(taskOperations.leaseOwner, claim.workerId))).returning({ id: taskOperations.id });
@@ -23,11 +24,14 @@ export async function planningSessionActive(database: Database, claim: PlanningC
 export async function readPlanningInput(database: Database, claim: PlanningClaim): Promise<PlanningDispatch> {
   const [operation] = await database.select().from(taskOperations).where(eq(taskOperations.id, claim.operationId)).limit(1);
   if (!operation) throw new TaskError("invalid_stored_content");
-  if (operation.sourceFormatVersion === PLANNING_SOURCE_FORMAT_VERSION) return readSourceInput(database, { claim, operation });
-  return readLegacyInput(database, { claim, operation });
+  const dispatch = operation.sourceFormatVersion === PLANNING_SOURCE_FORMAT_VERSION
+    ? await readSourceInput(database, { claim, operation })
+    : await readLegacyInput(database, { claim, operation });
+  const images = await loadPlanningImages(database, { taskId: claim.taskId, bodyMarkdown: dispatch.publication.bodyMarkdown });
+  return { ...dispatch, ...images };
 }
 
-async function readSourceInput(database: Database, input: { claim: PlanningClaim; operation: typeof taskOperations.$inferSelect }): Promise<PlanningDispatch> {
+async function readSourceInput(database: Database, input: { claim: PlanningClaim; operation: typeof taskOperations.$inferSelect }): Promise<PlanningInput & { issueUrl: string; contextCapability: string }> {
   const { claim, operation } = input;
   const source = await loadSource(database, eq(taskIssueSources.taskId, claim.taskId));
   const [snapshot] = await database.select().from(taskIssueSnapshots).where(eq(taskIssueSnapshots.id, operation.sourceSnapshotId ?? "")).limit(1);
@@ -37,7 +41,7 @@ async function readSourceInput(database: Database, input: { claim: PlanningClaim
   return { ...planning, issueUrl: source.issueUrl, contextCapability: claim.contextCapability };
 }
 
-async function readLegacyInput(database: Database, target: { claim: PlanningClaim; operation: typeof taskOperations.$inferSelect }): Promise<PlanningDispatch> {
+async function readLegacyInput(database: Database, target: { claim: PlanningClaim; operation: typeof taskOperations.$inferSelect }): Promise<PlanningInput & { issueUrl: string; contextCapability: string }> {
   const { claim, operation } = target;
   const [task] = await database.select().from(tasks).where(eq(tasks.id, claim.taskId)).limit(1);
   const [publication] = await database.select().from(taskPublicationAttempts).where(eq(taskPublicationAttempts.id, operation.publicationAttemptId ?? "")).limit(1);

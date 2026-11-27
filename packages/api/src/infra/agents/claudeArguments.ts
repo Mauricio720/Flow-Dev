@@ -3,12 +3,16 @@ import type { AgentChoice } from "../../application/agents/agentTypes";
 export const CLAUDE_TOOL_PATTERN = "mcp__flow__*";
 export const CLAUDE_MCP_SERVER = "flow";
 
-type ClaudeArgumentInput = { choice: AgentChoice; instructions: string; schema: object; mcpConfigPath: string };
+type ClaudeArgumentInput = { choice: AgentChoice; instructions: string; schema: object; mcpConfigPath: string; withImages: boolean };
+
+function outputArguments(withImages: boolean) {
+  return withImages ? ["--input-format", "stream-json", "--output-format", "stream-json", "--verbose"] : ["--output-format", "json"];
+}
 
 export function claudeArguments(input: ClaudeArgumentInput) {
   return [
     "-p",
-    "--output-format", "json",
+    ...outputArguments(input.withImages),
     "--json-schema", JSON.stringify(input.schema),
     "--tools", "",
     "--strict-mcp-config",

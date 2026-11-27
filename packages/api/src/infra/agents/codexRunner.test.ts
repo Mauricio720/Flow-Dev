@@ -16,7 +16,7 @@ beforeAll(() => {
 afterAll(() => rmSync(home, { recursive: true, force: true }));
 
 function request(scenario: object): AgentRun {
-  return { choice: { provider: "codex", model: "gpt-6.1-sol", effort: "medium" }, instructions: "Seja objetivo.", prompt: JSON.stringify(scenario), outputSchema: { $schema: "x", type: "object" }, context: { url: "http://127.0.0.1:1/mcp/e", capability: CAPABILITY }, timeoutMs: 10000, signal: new AbortController().signal };
+  return { choice: { provider: "codex", model: "gpt-6.1-sol", effort: "medium" }, instructions: "Seja objetivo.", prompt: JSON.stringify(scenario), images: [], outputSchema: { $schema: "x", type: "object" }, context: { url: "http://127.0.0.1:1/mcp/e", capability: CAPABILITY }, timeoutMs: 10000, signal: new AbortController().signal };
 }
 
 const runner = () => new CodexRunner({ bin: FAKE_CLI, env: { PATH: process.env.PATH, HOME: home, DATABASE_URL: "postgres://secret" } });

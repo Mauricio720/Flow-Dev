@@ -28,6 +28,8 @@ export class LocalPlanningGateway implements PlanningGateway {
       capability: input.contextCapability,
       instructions: this.instructions,
       prompt: buildPlanningPrompt(input),
+      images: input.images,
+      omittedImages: input.omittedImages,
       outputSchema: this.outputSchema,
       timeoutMs: PLANNING_REQUEST_DEADLINE_MS,
       signal,
