@@ -7,6 +7,7 @@ import { AssignedIssueError } from "../application/services/assigned-issues/assi
 import { sessionErrorCode, sessionMessage } from "../application/services/terminal/sessionErrorCatalog";
 import { terminalErrorCode, terminalMessage } from "../application/services/terminal/terminalErrorCatalog";
 import { planErrorCode, planMessage } from "../application/services/tasks-set/planErrorCatalog";
+import { worktreeErrorCode, worktreeMessage } from "../application/services/worktrees/worktreeErrorCatalog";
 
 export function mapTaskError(error: unknown): never {
   if (error instanceof TRPCError) throw error;
@@ -30,7 +31,7 @@ export function normalizeTaskError(error: unknown) {
 
 function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" | "FORBIDDEN" | "NOT_FOUND" | "PRECONDITION_FAILED" | "INTERNAL_SERVER_ERROR" | "UNAUTHORIZED" | "TOO_MANY_REQUESTS" {
   if (reason === "session_required") return "UNAUTHORIZED";
-  const terminalCode = terminalErrorCode(reason) ?? sessionErrorCode(reason) ?? planErrorCode(reason);
+  const terminalCode = terminalErrorCode(reason) ?? sessionErrorCode(reason) ?? planErrorCode(reason) ?? worktreeErrorCode(reason);
   if (terminalCode) return terminalCode;
   if (reason === "review_cycle_active" || reason === "review_cycle_changed") return "CONFLICT";
   if (reason === "review_tasks_incomplete" || reason === "review_sessions_open") return "PRECONDITION_FAILED";
@@ -46,7 +47,7 @@ function taskErrorCode(reason: TaskError["reason"]): "BAD_REQUEST" | "CONFLICT" 
 }
 
 function taskErrorMessage(reason: TaskError["reason"], fieldErrors?: Record<string, string>) {
-  const terminal = terminalMessage(reason, fieldErrors) ?? sessionMessage(reason) ?? planMessage(reason, fieldErrors);
+  const terminal = terminalMessage(reason, fieldErrors) ?? sessionMessage(reason) ?? planMessage(reason, fieldErrors) ?? worktreeMessage(reason, fieldErrors);
   if (terminal) return terminal;
   if (reason === "review_cycle_active") return "Já existe uma revisão em andamento neste trabalho.";
   if (reason === "review_cycle_changed") return "A revisão mudou. Veja o estado atual.";

@@ -13,6 +13,7 @@ import { createTaskSetController } from "../src/infra/taskSetComposition";
 import { createSessionControllers } from "../src/infra/sessionInteractionComposition";
 import { createTerminalAttachmentService } from "../src/infra/terminalAttachmentComposition";
 import { createTerminalController } from "../src/infra/terminalComposition";
+import { createWorktreeController } from "../src/infra/worktreeComposition";
 import { machineIdentity } from "../src/infra/terminal/machineIdentity";
 import type { SecretAnswerSender } from "../src/application/terminal/secretAnswerTransport";
 import { createTasksRouter } from "../src/routers/tasks";
@@ -47,7 +48,7 @@ export async function terminalHarness(setup: PlanningSetup, options: HarnessOpti
   if (options.serviceRunning !== false) await hosts.beat({ hostId: machineIdentity(), workerId: "worker-test", heartbeatAt: new Date(HARNESS_NOW.getTime() - SERVICE_BEAT_AGE_MS) });
   const controller = createTerminalController(setup.database, { tools, env, context, now: () => HARNESS_NOW, workAuthorization, codexProbe: options.codexProbe });
   const secretAnswers = options.secretAnswersFactory?.(setup) ?? options.secretAnswers;
-  const router = createTasksRouter(new TasksController(setup.taskDao, setup.repositoryAccess), undefined, { terminal: controller, artifacts: createArtifactController(setup.database, setup.repositoryAccess), taskSet: createTaskSetController(setup.database, setup.repositoryAccess), plan: createPlanController(setup.database, { repositories: setup.repositoryAccess, workAuthorization }), session: createSessionControllers(setup.database, { workAuthorization, repositories: setup.repositoryAccess, secretAnswers, now: () => HARNESS_NOW }) });
+  const router = createTasksRouter(new TasksController(setup.taskDao, setup.repositoryAccess), undefined, { terminal: controller, artifacts: createArtifactController(setup.database, setup.repositoryAccess), taskSet: createTaskSetController(setup.database, setup.repositoryAccess), plan: createPlanController(setup.database, { repositories: setup.repositoryAccess, workAuthorization }), session: createSessionControllers(setup.database, { workAuthorization, repositories: setup.repositoryAccess, secretAnswers, now: () => HARNESS_NOW }), worktree: createWorktreeController(setup.database, { workAuthorization, now: () => HARNESS_NOW }) });
   const callerFor = (userId: string) => router.createCaller({ principal: { userId, sessionId: setup.sessionId }, requestId: "terminal-test" });
   const attachments = createTerminalAttachmentService(setup.database, { env, workAuthorization });
   return { context, hosts, state, home, skills, env, githubWrites, attachments, caller: callerFor(setup.ownerId), callerFor };

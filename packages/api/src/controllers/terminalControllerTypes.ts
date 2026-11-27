@@ -9,6 +9,7 @@ import type { SessionPurposeResolver } from "../application/services/terminal/se
 import type { TerminalAttachmentService } from "../application/services/terminal/terminalAttachmentService";
 import type { TerminalOpenGuard } from "../application/services/terminal/terminalOpenGuard";
 import type { SessionLauncher } from "../application/services/terminal/sessionLauncher";
+import type { SessionFolderService } from "../application/services/worktrees/sessionFolderService";
 import type { PermissionMode } from "../application/terminal/sessionInteraction";
 import type { OpenPurpose, PreviewPurpose, ResolvedPurpose } from "../application/terminal/sessionPurposeInput";
 import type { SessionPrincipal } from "../context";
@@ -28,4 +29,5 @@ export type TerminalControllerDeps = {
   cleanup: Pick<TerminalAttachmentService, "cleanup">;
   purposes: Pick<SessionPurposeResolver, "preview" | "resolve" | "confirm">;
   launcher: Pick<SessionLauncher, "startManual">;
+  folders: Pick<SessionFolderService, "resolve" | "preview">;
 };

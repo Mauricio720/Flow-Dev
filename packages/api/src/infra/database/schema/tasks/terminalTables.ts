@@ -4,3 +4,4 @@ export { taskTerminalMessages, taskTerminalRequests, terminalSessionHosts } from
 export { taskArtifactVersions, taskArtifacts } from "./artifacts";
 export { taskSessionPlanItems, taskSessionPlans } from "./sessionPlans";
 export { taskRouteSwitches } from "./routeSwitches";
+export { taskWorktreeChoices } from "./worktreeChoices";

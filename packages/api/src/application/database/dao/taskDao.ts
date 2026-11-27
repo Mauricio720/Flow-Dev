@@ -1,5 +1,6 @@
 import type { PlanningProjectionRecord } from "./taskPlanningDao";
 import type { LastTerminalOpening } from "./terminalSessionDao";
+import type { WorktreeChoiceState } from "./worktreeChoiceDao";
 import type { TerminalExecutionView } from "../../services/terminal/terminalExecutionReader";
 import type { TaskLabel } from "../../../schemas/taskLabels";
 import type { IssueDraft, TaskMessage, TaskPublication, TaskSummary, TaskToolActivity } from "../../services/tasks/taskContracts";
@@ -24,7 +25,8 @@ export interface TaskDao {
   authorNames(userIds: string[]): Promise<Map<string, string>>;
   planning(taskId: string): Promise<PlanningProjectionRecord>;
   terminalLastOpened(taskId: string): Promise<LastTerminalOpening | null>;
-  terminalExecution(taskId: string, now: Date): Promise<TerminalExecutionView>;
+  terminalExecution(taskId: string, viewerUserId: string, now: Date): Promise<TerminalExecutionView>;
+  worktreeChoice(taskId: string): Promise<WorktreeChoiceState>;
   expireUnconfirmedTerminals(scope: { projectId: string; taskId: string }, now: Date): Promise<void>;
   snapshot<T>(read: (dao: TaskDao) => Promise<T>): Promise<T>;
   messages(taskId: string, cursor: string | undefined, limit: number): Promise<{ items: TaskMessage[]; nextCursor: string | null }>;

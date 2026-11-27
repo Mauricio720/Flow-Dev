@@ -18,11 +18,12 @@ export class TerminalSessionController {
     const repository = await this.repositoryOf(scope.projectId);
     const found = await this.deps.guard.readCheckout({ userId: actor.userId, projectId: scope.projectId, repository });
     const checkout = found && { path: found.path, branch: found.branch, detachedSha: found.detachedSha, dirty: found.dirty };
+    const worktree = await this.deps.folders.preview({ taskId: scope.taskId, issueNumber: planning.issue.number, checkout: found });
     const issueImages = await this.deps.issueImages.select(scope.taskId, planning.issue.body);
     const sessionService = { running: await this.deps.guard.serviceRunning() };
     const defaultPrompt = buildDefaultPrompt(promptSource(planning));
     const view = await this.deps.purposes.preview(scope.taskId, input.purpose);
-    return { checkout, defaultPrompt, maxPromptLength: MAX_PROMPT_LENGTH, issueImages, sessionService, prompt: view.prompt ?? defaultPrompt, choice: view.choice, agents: view.agents };
+    return { checkout, worktree, defaultPrompt, maxPromptLength: MAX_PROMPT_LENGTH, issueImages, sessionService, prompt: view.prompt ?? defaultPrompt, choice: view.choice, agents: view.agents };
   }
 
   async open(actor: SessionPrincipal, input: OpenInput) {
@@ -38,10 +39,11 @@ export class TerminalSessionController {
     this.deps.guard.assertPrompt(input.prompt);
     const repository = await this.repositoryOf(input.projectId);
     const checkout = await this.deps.guard.requireCheckout({ userId: actor.userId, projectId: input.projectId, repository });
-    await this.deps.guard.assertTools({ agent: resolved.columns.agent ?? "claude", model: resolved.columns.model ?? "opus", effort: resolved.columns.effort ?? "max" });
+    await this.deps.guard.assertTools({ agent: resolved.columns.agent ?? "claude", model: resolved.columns.model ?? "opus", effort: resolved.columns.effort ?? "max" }, input.taskId);
     await this.deps.guard.assertSkills();
     const plan = await this.deps.delivery.plan({ userId: actor.userId, taskId: input.taskId, issueBody: planning.issue.body, attachmentIds: input.attachmentIds, issueImageIds: input.issueImageIds });
-    return this.start({ actor, input, planning, checkout, plan, resolved });
+    const folder = await this.deps.folders.resolve({ taskId: input.taskId, issueNumber: planning.issue.number, checkout });
+    return this.start({ actor, input, planning, checkout: folder, plan, resolved });
   }
 
   private async start({ actor, input, planning, checkout, plan, resolved }: OpenRequest) {

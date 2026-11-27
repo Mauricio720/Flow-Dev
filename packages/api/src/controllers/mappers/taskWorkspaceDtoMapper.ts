@@ -4,6 +4,7 @@ import { splitFailureCode } from "../../application/services/tasks/failureCode";
 import { planningDto } from "./planningDtoMapper";
 import { publicationDto, revisionDto, summaryDto } from "./taskDtoMapper";
 import { readyAssignmentView } from "../../application/services/tasks/readyAssignmentView";
+import { worktreeChoiceView } from "../../application/services/worktrees/worktreeChoiceView";
 
 type Resolved<Method extends keyof TaskDao> = Awaited<ReturnType<TaskDao[Method]>>;
 
@@ -17,12 +18,17 @@ export type TaskWorkspaceParts = {
   planning: Resolved<"planning">;
   lastOpened: Resolved<"terminalLastOpened">;
   execution: Resolved<"terminalExecution">;
+  worktree: Resolved<"worktreeChoice">;
   canAuthor: boolean;
   now: Date;
 };
 
+function issueNumberOf(parts: TaskWorkspaceParts) {
+  return parts.planning.source?.issueNumber ?? parts.publication?.issueNumber ?? null;
+}
+
 export function workspaceDto(parts: TaskWorkspaceParts) {
   const { task, revision, canAuthor } = parts;
   const summary = mapTaskSummary(task, revision ? storedDraftLabels(revision.canonicalDraft) : []);
-  return { task: summaryDto(summary, parts.authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal: parts.pendingProposal, publication: publicationDto(parts.publication, parts.publication ? readyAssignmentView(parts.publication, parts.now) : null), activity: parts.activity, planning: planningDto(parts.planning, { canOperate: false }), terminal: { lastOpened: parts.lastOpened }, execution: parts.execution, permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? splitFailureCode(task.lastError) : null };
+  return { task: summaryDto(summary, parts.authorNames), currentRevision: revision ? revisionDto(revision) : null, pendingProposal: parts.pendingProposal, publication: publicationDto(parts.publication, parts.publication ? readyAssignmentView(parts.publication, parts.now) : null), activity: parts.activity, planning: planningDto(parts.planning, { canOperate: false }), terminal: { lastOpened: parts.lastOpened }, execution: parts.execution, worktree: worktreeChoiceView(parts.worktree, issueNumberOf(parts)), permissions: { canEdit: canAuthor }, viewerCanAuthor: canAuthor, lastError: task.lastError ? splitFailureCode(task.lastError) : null };
 }

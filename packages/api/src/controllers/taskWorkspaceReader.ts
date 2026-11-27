@@ -8,7 +8,7 @@ export async function readWorkspace(input: WorkspaceRead) {
   const { dao, viewer, scope, now } = input;
   const task = await dao.findScoped(scope.projectId, scope.taskId);
   if (!task) throw new TaskError("task_unavailable");
-  const [revision, pendingProposal, publication, activity, authorNames, planning, lastOpened, execution] = await Promise.all([dao.currentRevision(task.id), dao.pendingProposal(task.id), dao.publication(task.id), dao.activity(task.id), dao.authorNames([task.authorUserId]), dao.planning(task.id), dao.terminalLastOpened(task.id), dao.terminalExecution(task.id, now)]);
+  const [revision, pendingProposal, publication, activity, authorNames, planning, lastOpened, execution, worktree] = await Promise.all([dao.currentRevision(task.id), dao.pendingProposal(task.id), dao.publication(task.id), dao.activity(task.id), dao.authorNames([task.authorUserId]), dao.planning(task.id), dao.terminalLastOpened(task.id), dao.terminalExecution(task.id, viewer.userId, now), dao.worktreeChoice(task.id)]);
   const canAuthor = viewer.isAdmin && task.authorUserId === viewer.userId;
-  return workspaceDto({ task, revision, pendingProposal, publication, activity, authorNames, planning, lastOpened, execution, canAuthor, now });
+  return workspaceDto({ task, revision, pendingProposal, publication, activity, authorNames, planning, lastOpened, execution, worktree, canAuthor, now });
 }

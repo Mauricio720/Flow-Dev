@@ -6,10 +6,10 @@ const GIT_FIXED_ARGUMENTS = ["-c", "core.fsmonitor=false"];
 
 export type GitResult = { ok: true; stdout: string } | { ok: false };
 
-export function runGit(directory: string, args: string[]): Promise<GitResult> {
+export function runGit(directory: string, args: string[], timeoutMs = GIT_TIMEOUT_MS): Promise<GitResult> {
   const env: NodeJS.ProcessEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_OPTIONAL_LOCKS: "0" };
   delete env.LD_PRELOAD;
-  const options = { timeout: GIT_TIMEOUT_MS, maxBuffer: GIT_MAX_BUFFER_BYTES, shell: false, env };
+  const options = { timeout: timeoutMs, maxBuffer: GIT_MAX_BUFFER_BYTES, shell: false, env };
   return new Promise((resolve) => {
     execFile("git", [...GIT_FIXED_ARGUMENTS, "-C", directory, ...args], options, (error, stdout) => {
       resolve(error ? { ok: false } : { ok: true, stdout: String(stdout) });

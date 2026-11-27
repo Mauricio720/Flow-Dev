@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
-import { projectLocalCheckouts, taskIssueSnapshots, taskOperations, taskPlanningDecisions, tasks } from "../src/infra/database/schema";
+import { projectLocalCheckouts, taskIssueSnapshots, taskOperations, taskPlanningDecisions, taskWorktreeChoices, tasks } from "../src/infra/database/schema";
 import { FLOW_DEV_SKILLS } from "../src/application/terminal/sessionContext";
 import { FileSessionContextBuilder } from "../src/infra/terminal/fileSessionContextBuilder";
 import type { SessionContextPaths } from "../src/application/terminal/sessionContext";
@@ -78,6 +78,7 @@ export async function approvedWork(body = "Corpo", sourceFormatVersion: 1 | 2 = 
   const approval = { status: "approved", approvedByUserId: setup.ownerId, approvedAt: new Date() };
   await setup.database.update(taskPlanningDecisions).set(approval).where(eq(taskPlanningDecisions.id, decision!.id));
   await setup.database.update(tasks).set({ planningStatus: "approved", planningDecisionId: decision!.id }).where(eq(tasks.id, setup.taskId));
+  await setup.database.insert(taskWorktreeChoices).values({ taskId: setup.taskId, mode: "checkout", chosenByUserId: setup.ownerId });
   return setup;
 }
 
