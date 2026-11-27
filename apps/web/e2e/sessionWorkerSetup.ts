@@ -7,6 +7,7 @@ import { e2eServerEnvironment } from "./fixtures/serverEnvironment";
 const READY_TIMEOUT_MS = 60_000;
 const READY_POLL_MS = 500;
 const API_PACKAGE = "../../packages/api";
+const E2E_REPOSITORY_OAUTH = { GITHUB_REPOSITORY_CLIENT_ID: "e2e-repository-client-id", GITHUB_REPOSITORY_CLIENT_SECRET: "e2e-repository-client-secret" };
 
 async function waitForHeartbeat(hostId: string) {
   const sql = postgres(e2eDatabaseUrl ?? "", { max: 1 });
@@ -25,7 +26,7 @@ async function waitForHeartbeat(hostId: string) {
 
 export async function startSessionWorker(baseURL: string) {
   if (!e2eConfigured) return undefined;
-  const environment = { ...process.env, ...e2eServerEnvironment(baseURL), NODE_ENV: "test" };
+  const environment = { ...E2E_REPOSITORY_OAUTH, ...process.env, ...e2eServerEnvironment(baseURL), NODE_ENV: "test" };
   const worker = spawn("pnpm", ["--dir", API_PACKAGE, "exec", "tsx", "src/cli/terminalSessionsWorker.ts"], { env: environment as NodeJS.ProcessEnv, stdio: "inherit", detached: true });
   await waitForHeartbeat(`${hostname()}:${userInfo().username}`);
   return async () => {

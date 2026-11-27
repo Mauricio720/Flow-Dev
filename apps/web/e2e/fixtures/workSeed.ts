@@ -3,6 +3,7 @@ import type { Sql } from "postgres";
 import type { SeededProject, SeededUser } from "./seed";
 import { FAKE_BOARD, IN_PROGRESS_OPTION_ID, boardItemIdFor } from "../fakeGithub/fakeBoard";
 import { issueContentHash } from "./repositoryCredential";
+import { seedTaskSetFiles, type SeededFile } from "./taskSetSeed";
 
 const ISSUE_TITLE = "Trocar Entar por Entrar";
 const DEFAULT_BODY = "Trocar 'Entar' por 'Entrar'";
@@ -52,6 +53,10 @@ export class WorkSeed {
     const sql = this.sql;
     const [artifact] = await sql`insert into task_artifacts (task_id, project_id, relative_path, latest_version) values (${taskId}, ${projectId}, ${path}, 1) returning id`;
     await sql`insert into task_artifact_versions (artifact_id, version, skill, content, sha256, byte_size, trigger) values (${artifact!.id}, 1, 'spec-writer', '# Spec do login', ${"d".repeat(64)}, 15, 'stop')`;
+  }
+
+  taskSet(work: { taskId: string; projectId: string }, files: SeededFile[]) {
+    return seedTaskSetFiles(this.sql, { ...work, files });
   }
 
   async cleanup() {
