@@ -33,7 +33,7 @@ function dropRemovedTasks(item: StoredPlanItem, existing: ReadonlySet<string>): 
 
 export function reconcilePlan(plan: StoredPlan, set: TaskSet): ReconciledPlan {
   const existing = new Set(set.tasks.map((task) => task.id));
-  const items = plan.items.map((item) => dropRemovedTasks(item, existing)).filter((item) => item.taskIds.length > 0);
+  const items = plan.items.map((item) => dropRemovedTasks(item, existing));
   const assigned = new Set(items.flatMap((item) => item.taskIds));
   const unassigned = set.tasks.map((task) => task.id).filter((taskId) => !assigned.has(taskId));
   return { items, unassigned, stale: isStale(plan, set) };

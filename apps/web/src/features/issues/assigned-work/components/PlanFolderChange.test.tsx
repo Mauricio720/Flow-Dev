@@ -2,7 +2,7 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { trpc } from "@/lib/trpc/client";
-import { OPUS_MAX_INPUT, SCOPE, mountEditor, pickSession } from "@/test/planEditor";
+import { OPUS_MAX_INPUT, SCOPE, dragOnto, mountEditor, sessionCard, taskRow } from "@/test/planEditor";
 import { planItemOf, planOf } from "@/test/plan";
 
 const save = vi.mocked(trpc.tasks.plan.save.mutate);
@@ -23,9 +23,10 @@ describe("plan of another task folder", () => {
   it("saves what the person already arranged instead of discarding it when adopting the new folder", async () => {
     save.mockResolvedValue({ version: 4 });
     await mountEditor(changedPlan());
-    await pickSession("01", "Nova sessão");
+    await userEvent.click(screen.getByRole("button", { name: "Nova sessão" }));
+    dragOnto(taskRow(screen.getByRole("region", { name: "Sem sessão" }), "Esquema"), sessionCard(1));
     await userEvent.click(screen.getByRole("button", { name: "Usar as tarefas de docs/specs/other" }));
-    expect(save).toHaveBeenCalledWith({ ...SCOPE, version: 3, items: [{ taskIds: ["task_01"], choice: OPUS_MAX_INPUT }] });
+    expect(save).toHaveBeenCalledWith({ ...SCOPE, version: 3, items: [{ taskIds: ["task_01"], choice: OPUS_MAX_INPUT, after: [] }] });
   });
 
   it("shows the notice to a person who only reads, without the adopt button", async () => {

@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { ExecutionPlanEditor } from "@/features/issues/assigned-work/components/ExecutionPlanEditor";
@@ -20,13 +20,27 @@ export async function mountEditor(view = twoSessions(), reader = false, set = SE
   await act(async () => undefined);
 }
 
-export const pickSession = (task: string, session: string) => userEvent.selectOptions(screen.getByLabelText(`Sessão da tarefa ${task}`), session);
 
 export function sessionCard(position: number) {
   const list = screen.getByRole("list", { name: "Sessões do plano" });
   return within(list).getByRole("heading", { level: 3, name: new RegExp(`^Sessão ${position}`) }).closest("li")!;
 }
 
-export const openSessionTasks = (position: number) => userEvent.click(within(sessionCard(position)).getByRole("button", { name: "Escolher tarefas" }));
+export const openSessionTasks = (position: number) => userEvent.click(within(sessionCard(position)).getByRole("button", { name: "Adicionar tarefas" }));
 export const taskChoice = (number: string) => within(screen.getByRole("dialog")).getByRole("checkbox", { name: new RegExp(`^${number} — `) });
 export const applyChoice = () => userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Aplicar" }));
+
+export function taskRow(container: HTMLElement, title: string) {
+  return within(container).getByText(title).closest("li")!;
+}
+
+export function dragOnto(source: HTMLElement, target: HTMLElement) {
+  const store = new Map<string, string>();
+  const dataTransfer = { setData: (type: string, value: string) => store.set(type, value), getData: (type: string) => store.get(type) ?? "", effectAllowed: "" };
+  fireEvent.dragStart(source, { dataTransfer });
+  fireEvent.dragOver(target, { dataTransfer });
+  fireEvent.drop(target, { dataTransfer });
+}
+
+export const removeFromSession = (position: number, title: string) => userEvent.click(within(taskRow(sessionCard(position), title)).getByRole("button", { name: "Remover da sessão" }));
+

@@ -3,7 +3,7 @@ import type { SessionScriptStep } from "./sessionScript";
 export const TASKS_FOLDER = "docs/specs/login";
 export const SPEC_PATH = `${TASKS_FOLDER}/spec.md`;
 
-const MANIFEST = [
+export const MANIFEST = [
   "---",
   'schema_version: "compozy.tasks/v2"',
   "workflow: login",
@@ -22,7 +22,7 @@ const MANIFEST = [
   "",
 ].join("\n");
 
-function taskFile(number: string, status: string, checked: boolean) {
+export function taskFile(number: string, status: string, checked: boolean) {
   const box = checked ? "x" : " ";
   return `---\nstatus: ${status}\ntitle: Tarefa ${number}\ntype: backend\ncomplexity: medium\n---\n\n# Task ${number}\n\n## Mini-tarefas\n- [${box}] **${number}.1 — Primeira**\n- [${box}] **${number}.2 — Segunda**\n`;
 }

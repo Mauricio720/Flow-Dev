@@ -25,9 +25,9 @@ export function taskSetOf(input: SetInput): TaskSet {
 }
 
 export function draftOf(taskIds: string[], overrides: Partial<PlanItemDraft> = {}): PlanItemDraft {
-  return { taskIds, choice: OPUS_MAX, ...overrides };
+  return { taskIds, choice: OPUS_MAX, after: [], ...overrides };
 }
 
 export function storedItem(overrides: Partial<StoredPlanItem> & { id: string; taskIds: string[] }): StoredPlanItem {
-  return { position: 1, choice: OPUS_MAX, forced: null, started: false, latestSession: null, ...overrides };
+  return { position: 1, choice: OPUS_MAX, after: [], forced: null, started: false, latestSession: null, ...overrides };
 }

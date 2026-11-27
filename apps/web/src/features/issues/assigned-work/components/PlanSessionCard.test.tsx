@@ -32,7 +32,7 @@ describe("PlanSessionCard states and start", () => {
     await mount(planOf([planItemOf(ITEM, ["task_02"], { state: "blocked", blockedBy: [{ taskId: "task_01", status: "in_progress" }] })]));
     expect(screen.getByRole("status").textContent).toBe("Bloqueada: aguardando 01 (Em andamento)");
     await userEvent.click(screen.getByRole("button", { name: "Iniciar mesmo assim" }));
-    expect(screen.getByRole("alert").textContent).toContain("A sessão depende de tarefas não concluídas: 01. Iniciar mesmo assim?");
+    expect(screen.getByRole("alert").textContent).toContain("A sessão depende de tarefas ou sessões não concluídas: 01. Iniciar mesmo assim?");
     await userEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Iniciar mesmo assim" }));
     const dialog = await screen.findByRole("dialog", { name: "Iniciar a sessão do plano" });
     await within(dialog).findByLabelText("Prompt");

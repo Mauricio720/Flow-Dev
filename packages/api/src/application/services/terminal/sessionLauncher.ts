@@ -1,9 +1,6 @@
 import type { ApprovedPlanning, CreateTerminalSessionInput, CreatedTerminalSession, TerminalSessionRecord } from "../../database/dao/terminalSessionDao";
 import type { ProjectRecord } from "../../database/dao/projectDao";
 import type { SessionPrincipal } from "../../../context";
-import { DEFAULT_PERMISSION_MODE } from "../../terminal/sessionInteraction";
-import type { AgentChoice } from "../../terminal/sessionAgentCatalog";
-import type { SessionPurposeKind } from "../../terminal/sessionPurposeKind";
 import type { SessionAttachmentDelivery, AttachmentPlan } from "./sessionAttachmentDelivery";
 import { EMPTY_PLAN } from "./sessionAttachmentDelivery";
 import { SessionPrepareStep, openedResult } from "./terminalOpenSteps";
@@ -18,8 +15,10 @@ import type { ResolvedPurpose } from "../../terminal/sessionPurposeInput";
 import type { PermissionMode } from "../../terminal/sessionInteraction";
 import type { SessionFolderService } from "../worktrees/sessionFolderService";
 
-export type ReviewPurpose = Extract<SessionPurposeKind, "review" | "review_execute">;
-export type LaunchInput = { actorId: string; taskId: string; projectId: string; requestKey: string; purpose: ReviewPurpose; reviewCycleId: string; choice: AgentChoice; prompt: string };
+import { launchSessionInput, launchedPurpose } from "./launchSessionInput";
+import type { LaunchInput } from "./launchSessionInput";
+
+export type { LaunchInput, ReviewPurpose } from "./launchSessionInput";
 type LaunchDeps = { sessions: TerminalSessionDao; projects: { findById(projectId: string): Promise<ProjectRecord | null> }; guard: Pick<TerminalOpenGuard, "assertServiceRunning" | "assertPrompt" | "requireCheckout" | "assertTools" | "assertSkills">; delivery: SessionAttachmentDelivery; context: SessionContextBuilder; log: TerminalLog; hostId: string; purposes: { confirm(input: { resolved: ResolvedPurpose; actorId: string; sessionId: string }): Promise<void> }; folders: Pick<SessionFolderService, "resolve">; resolveAccount?: (input: { taskId: string; agent: "claude" | "codex"; actorId: string }) => Promise<string | null> };
 type ManualLaunch = { actor: SessionPrincipal; input: { taskId: string; projectId: string; requestKey: string; prompt: string; permissionMode: PermissionMode }; planning: ApprovedPlanning; checkout: VerifiedCheckout; plan: AttachmentPlan; resolved: ResolvedPurpose };
 type ManualSessionInput = Pick<ManualLaunch, "actor" | "input" | "planning" | "checkout"> & { choice: ResolvedPurpose["columns"] };
@@ -35,8 +34,10 @@ export class SessionLauncher {
     if (existing && !existing.launchFailedAt) return { session: existing, created: false };
     const { planning, checkout } = await this.preconditions(input);
     const agentAccountId = await this.resolveAccount(input.taskId, input.choice.agent, input.actorId);
-    const created = await this.create(this.reviewSessionInput(input, planning, checkout, agentAccountId), EMPTY_PLAN);
+    const created = await this.create(launchSessionInput(input, { planning, checkout, hostId: this.deps.hostId, agentAccountId }), EMPTY_PLAN);
     if (!created.created) return created;
+    const resolved = launchedPurpose(input);
+    if (resolved) await this.deps.purposes.confirm({ resolved, actorId: input.actorId, sessionId: created.session.id });
     await this.prepare({ session: created.session, prompt: input.prompt, plan: EMPTY_PLAN, route: planning.route, taskId: input.taskId });
     return created;
   }
@@ -66,10 +67,6 @@ export class SessionLauncher {
 
   private async create(input: CreateTerminalSessionInput, plan: AttachmentPlan) {
     return this.deps.sessions.create(input, this.deps.delivery.links(plan));
-  }
-
-  private reviewSessionInput(input: LaunchInput, planning: ApprovedPlanning, checkout: VerifiedCheckout, agentAccountId: string | null): CreateTerminalSessionInput {
-    return { taskId: input.taskId, projectId: input.projectId, userId: input.actorId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty, runtime: "flow_dev", permissionMode: DEFAULT_PERMISSION_MODE, hostId: this.deps.hostId, purpose: input.purpose, agent: input.choice.agent, model: input.choice.model, effort: input.choice.effort, reviewCycleId: input.reviewCycleId, agentAccountId };
   }
 
   private manualSessionInput({ actor, input, planning, checkout, choice }: ManualSessionInput, agentAccountId: string | null): CreateTerminalSessionInput {

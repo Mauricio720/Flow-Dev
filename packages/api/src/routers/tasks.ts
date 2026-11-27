@@ -13,6 +13,8 @@ import { createTaskSetRouter } from "./taskSet";
 import { createPlanRouter } from "./plan";
 import type { ExecutionPlanController } from "../controllers/executionPlanController";
 import { createProductionPlanController } from "../infra/planComposition";
+import { createProductionPlanRunController } from "../infra/planRunComposition";
+import type { PlanRunController } from "../controllers/planRunController";
 import type { TaskSetController } from "../controllers/taskSetController";
 import { createProductionTaskSetController } from "../infra/taskSetComposition";
 import type { TaskArtifactController } from "../controllers/taskArtifactController";
@@ -33,7 +35,7 @@ import { createWorkAccountsRouter } from "./workAccounts";
 import type { WorkAccountController } from "../controllers/workAccountController";
 import { createProductionWorkAccountController } from "../infra/agentAccountComposition";
 
-export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController; review?: ReviewCycleController; worktree?: WorktreeChoiceController; workAccounts?: WorkAccountController };
+export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController; planRun?: PlanRunController; review?: ReviewCycleController; worktree?: WorktreeChoiceController; workAccounts?: WorkAccountController };
 
 export function createTasksRouter(controller?: TasksController, publicationController?: TaskPublicationController, extras: TasksRouterExtras = {}) {
   const getController = lazyController(controller, createProductionTasksController);
@@ -44,6 +46,7 @@ export function createTasksRouter(controller?: TasksController, publicationContr
   const getArtifactController = lazyController(extras.artifacts, createProductionArtifactController);
   const getTaskSetController = lazyController(extras.taskSet, createProductionTaskSetController);
   const getPlanController = lazyController(extras.plan, createProductionPlanController);
+  const getPlanRunController = lazyController(extras.planRun, createProductionPlanRunController);
   const getReviewController = lazyController(extras.review, createProductionReviewController);
   const getWorktreeController = lazyController(extras.worktree, createProductionWorktreeController);
   const getWorkAccountController = lazyController(extras.workAccounts, createProductionWorkAccountController);
@@ -65,7 +68,7 @@ export function createTasksRouter(controller?: TasksController, publicationContr
     terminal: createTerminalRouter(getTerminalController),
     artifacts: createArtifactsRouter(getArtifactController),
     taskSet: createTaskSetRouter(getTaskSetController),
-    plan: createPlanRouter(getPlanController),
+    plan: createPlanRouter(getPlanController, getPlanRunController),
     review: createReviewRouter(getReviewController),
     session: createSessionRouter(getSessionController),
     worktree: createWorktreeRouter(getWorktreeController),

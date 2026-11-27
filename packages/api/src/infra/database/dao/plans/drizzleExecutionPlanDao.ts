@@ -5,6 +5,7 @@ import type { SessionAgent } from "../../../../application/terminal/sessionAgent
 import type { Database } from "../../client";
 import { taskSessionPlanItems, taskSessionPlans, users } from "../../schema";
 import { latestItemSessions } from "./planItemSessions";
+import { dependenciesOf } from "./planItemDependencies";
 import { savePlan } from "./drizzlePlanSave";
 import { savedManifestGraph } from "./savedManifestGraph";
 
@@ -28,11 +29,12 @@ export class DrizzleExecutionPlanDao implements ExecutionPlanDao {
 
   private async items(planId: string): Promise<StoredPlanItem[]> {
     const rows = await this.database.select({ item: taskSessionPlanItems, forcedName: users.name }).from(taskSessionPlanItems).leftJoin(users, eq(users.id, taskSessionPlanItems.forcedBy)).where(eq(taskSessionPlanItems.planId, planId)).orderBy(asc(taskSessionPlanItems.position));
-    const sessions = await latestItemSessions(this.database, rows.map((row) => row.item.id));
+    const ids = rows.map((row) => row.item.id);
+    const [sessions, after] = await Promise.all([latestItemSessions(this.database, ids), dependenciesOf(this.database, ids)]);
     return rows.map(({ item, forcedName }) => {
       const session = sessions.get(item.id);
       const forced = item.forcedAt ? { by: forcedName ?? "", at: item.forcedAt } : null;
-      return { id: item.id, position: item.position, taskIds: item.taskIds, choice: { agent: item.agent as SessionAgent, model: item.model, effort: item.effort }, forced, started: session?.started ?? false, latestSession: session ? { id: session.id, status: session.status } : null };
+      return { id: item.id, position: item.position, taskIds: item.taskIds, choice: { agent: item.agent as SessionAgent, model: item.model, effort: item.effort }, after: after.get(item.id) ?? [], forced, started: session?.started ?? false, latestSession: session ? { id: session.id, status: session.status } : null };
     });
   }
 }

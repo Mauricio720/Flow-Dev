@@ -43,7 +43,7 @@ vi.mock("@/lib/trpc/client", () => ({
       session: { timeline: { query: vi.fn() }, send: { mutate: vi.fn() }, answerQuestion: { mutate: vi.fn() }, decidePermission: { mutate: vi.fn() }, decideRouteSwitch: { mutate: vi.fn() }, interrupt: { mutate: vi.fn() }, end: { mutate: vi.fn() } },
       artifacts: { list: { query: vi.fn() }, get: { query: vi.fn() } },
       taskSet: { get: { query: vi.fn() } },
-      plan: { get: { query: vi.fn() }, save: { mutate: vi.fn() } },
+      plan: { get: { query: vi.fn() }, save: { mutate: vi.fn() }, run: { start: { mutate: vi.fn() }, pause: { mutate: vi.fn() }, resume: { mutate: vi.fn() } } },
       review: { get: { query: vi.fn() }, start: { mutate: vi.fn() }, request: { mutate: vi.fn() } },
       worktree: { choose: { mutate: vi.fn() } },
       workAccounts: { get: { query: vi.fn() }, set: { mutate: vi.fn() } },

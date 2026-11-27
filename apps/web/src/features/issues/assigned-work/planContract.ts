@@ -6,7 +6,8 @@ export type PlanItemView = PlanView["items"][number];
 export type PlanSaveInput = RouterInputs["tasks"]["plan"]["save"];
 export type PlanState = PlanItemView["state"];
 
-export type EditableItem = { key: string; id?: string; taskIds: string[]; choice: AgentChoice; started: boolean };
+export type EditableItem = { key: string; id?: string; taskIds: string[]; choice: AgentChoice; started: boolean; after: string[] };
 export type EditablePlan = { version: number; items: EditableItem[] };
-export type SelectionTarget = { kind: "item"; key: string; position: number } | { kind: "new" };
-export type MoveTarget = { kind: "none" } | { kind: "new" } | { kind: "item"; key: string };
+export type SelectionTarget = { kind: "item"; key: string; position: number };
+export type MoveTarget = { kind: "none" } | { kind: "item"; key: string };
+export type PlanRunView = PlanView["run"];

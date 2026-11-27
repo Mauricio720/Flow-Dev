@@ -10,11 +10,11 @@ function planOf(items: StoredPlanItem[], overrides: Partial<StoredPlan> = {}): S
 }
 
 describe("reconcilePlan", () => {
-  it("V-35k shows a new task as unassigned, drops a removed one, removes the empty session and marks the plan stale", () => {
+  it("V-35k and V-02e show a new task as unassigned, drop a removed one, keep the emptied session and mark the plan stale", () => {
     const plan = planOf([storedItem({ id: "a", taskIds: ["task_01", "task_02"] }), storedItem({ id: "b", taskIds: ["task_03"], position: 2 })]);
     const set = { ...taskSetOf({ ids: ["task_01", "task_02", "task_04"], edges: [["task_01", "task_02"]] }), manifestVersion: 2 };
     const result = reconcilePlan(plan, set);
-    expect(result.items.map((item) => [item.id, item.taskIds])).toEqual([["a", ["task_01", "task_02"]]]);
+    expect(result.items.map((item) => [item.id, item.taskIds])).toEqual([["a", ["task_01", "task_02"]], ["b", []]]);
     expect(result).toMatchObject({ unassigned: ["task_04"], stale: true });
   });
 

@@ -1,3 +1,4 @@
+import { findAfterProblem, normalizeAfter, startedAfterChanged } from "./planAfterRules";
 import { findOrderProblem, indexTasks, normalizeOrder } from "./planOrder";
 import type { PlanItemDraft, PlanValidation, PlanValidationInput, StoredPlanItem } from "./planTypes";
 
@@ -22,7 +23,7 @@ function startedItemChanged(stored: StoredPlanItem[], drafts: PlanItemDraft[]) {
 }
 
 function exceedsLimits(drafts: PlanItemDraft[]) {
-  return drafts.length > MAX_PLAN_SESSIONS || drafts.some((draft) => draft.taskIds.length < 1 || draft.taskIds.length > MAX_TASKS_PER_SESSION);
+  return drafts.length > MAX_PLAN_SESSIONS || drafts.some((draft) => draft.taskIds.length > MAX_TASKS_PER_SESSION);
 }
 
 function hasDuplicate(drafts: PlanItemDraft[]) {
@@ -37,12 +38,14 @@ function hasUnknown({ set, stored, drafts }: PlanValidationInput) {
 
 export function validatePlan(input: PlanValidationInput): PlanValidation {
   const { set, stored, drafts } = input;
-  if (startedItemChanged(stored, drafts)) return { error: "plan_item_started" };
+  if (startedItemChanged(stored, drafts) || startedAfterChanged(stored, drafts)) return { error: "plan_item_started" };
   if (exceedsLimits(drafts)) return { error: "plan_limits" };
   if (hasDuplicate(drafts)) return { error: "plan_task_duplicated" };
   if (hasUnknown(input)) return { error: "plan_task_unknown" };
   const index = indexTasks(set.tasks);
-  const ordered = drafts.map((draft) => ({ ...draft, id: stored.some((item) => item.id === draft.id) ? draft.id : undefined, taskIds: normalizeOrder(draft.taskIds, index) }));
+  const ordered = drafts.map((draft) => ({ ...draft, id: stored.some((item) => item.id === draft.id) ? draft.id : undefined, taskIds: normalizeOrder(draft.taskIds, index), after: normalizeAfter(draft.after) }));
   const message = findOrderProblem(ordered, index);
-  return message ? { error: "plan_invalid_order", message } : { items: ordered };
+  if (message) return { error: "plan_invalid_order", message };
+  const afterMessage = findAfterProblem(ordered);
+  return afterMessage ? { error: "plan_after_order", message: afterMessage } : { items: ordered };
 }

@@ -65,7 +65,7 @@ export class SessionPurposeResolver {
     const loaded = await loadItem(this.deps, { taskId, planItemId: purpose.planItemId });
     requireStartable(loaded);
     await this.validateChoice(taskId, loaded.item.choice);
-    const blocked = loaded.readiness.blockedBy.length > 0;
+    const blocked = loaded.readiness.blockedBy.length > 0 || loaded.readiness.waitingSessions.length > 0;
     if (blocked && !purpose.force) throw new TaskError("plan_item_blocked");
     return { columns: { purpose: "plan_item", planItemId: loaded.item.id, ...loaded.item.choice }, itemStart: { itemId: loaded.item.id, force: blocked } };
   }

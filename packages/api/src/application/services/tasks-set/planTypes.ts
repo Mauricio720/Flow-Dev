@@ -2,16 +2,17 @@ import type { AgentChoice } from "../../terminal/sessionAgentCatalog";
 import type { TerminalSessionStatus } from "../../terminal/terminalSessionStatus";
 import type { ManifestEdge, TaskSet } from "./taskSetTypes";
 
-export type PlanItemState = "ready" | "blocked" | "running" | "ended" | "done";
-export type PlanError = "plan_invalid_order" | "plan_task_unknown" | "plan_task_duplicated" | "plan_item_started" | "plan_limits";
+export type PlanItemState = "ready" | "blocked" | "running" | "ended" | "done" | "empty";
+export type PlanError = "plan_invalid_order" | "plan_task_unknown" | "plan_task_duplicated" | "plan_item_started" | "plan_limits" | "plan_after_order";
 
-export type PlanItemDraft = { id?: string; taskIds: string[]; choice: AgentChoice };
+export type PlanItemDraft = { id?: string; taskIds: string[]; choice: AgentChoice; after: number[] };
 
 export type StoredPlanItem = {
   id: string;
   position: number;
   taskIds: string[];
   choice: AgentChoice;
+  after: string[];
   forced: { by: string; at: Date } | null;
   started: boolean;
   latestSession: { id: string; status: TerminalSessionStatus } | null;

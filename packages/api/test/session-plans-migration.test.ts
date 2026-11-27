@@ -9,6 +9,7 @@ afterEach(closeTaskFixture);
 
 const MIGRATION = "0050_session_plans";
 const ROLLBACK = `${MIGRATION}_rollback`;
+const LATER_ROLLBACK = "0058_session_plan_runs_rollback";
 const MAX_TASKS_PER_ITEM = 30;
 const MAX_TEXT_LENGTH = 64;
 
@@ -32,6 +33,7 @@ async function seedPlan({ setup }: Pick<World, "setup">, itemOverrides: Record<s
 describe("0050 session plans migration", () => {
   it("V-43a keeps an existing session as route, claude and without a model after rollback and reapplication", async () => {
     const { setup, decisionId } = await world();
+    await applyMigration(setup.client, LATER_ROLLBACK);
     await applyMigration(setup.client, ROLLBACK);
     const id = crypto.randomUUID();
     await setup.client`insert into task_terminal_sessions (id, task_id, project_id, user_id, planning_decision_id, route, request_key, checkout_path, dirty, status) values (${id}, ${setup.taskId}, ${setup.project.id}, ${setup.ownerId}, ${decisionId}, 'tech_spec', ${crypto.randomUUID()}, '/work/shop', false, 'running')`;
@@ -45,6 +47,7 @@ describe("0050 session plans migration", () => {
     await setup.database.insert(taskArtifactVersions).values({ artifactId: artifact.id, version: 1, skill: "spec-writer", content: "a", sha256: "a".repeat(64), byteSize: 1, trigger: "stop" });
     const { item } = await seedPlan({ setup });
     await setup.database.insert(taskSessionPlanItems).values(item);
+    await applyMigration(setup.client, LATER_ROLLBACK);
     await applyMigration(setup.client, ROLLBACK);
     const [tables] = await setup.client`select to_regclass('task_session_plans') as plans, to_regclass('task_session_plan_items') as items`;
     const columns = await setup.client`select column_name from information_schema.columns where table_name = 'task_terminal_sessions' and column_name in ('purpose','plan_item_id','agent','model','effort')`;
@@ -60,7 +63,6 @@ describe("0050 session plans migration", () => {
     const insert = (overrides: Record<string, unknown>) => setup.database.insert(taskSessionPlanItems).values({ ...item, position: 2, ...overrides });
     const manyTasks = Array.from({ length: MAX_TASKS_PER_ITEM + 1 }, (_, index) => `task_${String(index + 1).padStart(2, "0")}`);
     expect(await violated(insert({ agent: "gemini" }))).toBe("task_session_plan_items_agent_check");
-    expect(await violated(insert({ taskIds: [] }))).toBe("task_session_plan_items_task_ids_check");
     expect(await violated(insert({ taskIds: manyTasks }))).toBe("task_session_plan_items_task_ids_check");
     expect(await violated(insert({ taskIds: ["tarefa-1"] }))).toBe("task_session_plan_items_task_ids_check");
     expect(await violated(insert({ model: "m".repeat(MAX_TEXT_LENGTH + 1) }))).toBe("task_session_plan_items_model_check");

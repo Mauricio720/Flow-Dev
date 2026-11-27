@@ -26,10 +26,9 @@ describe("validatePlan", () => {
     expect(validatePlan({ set: CHAIN, stored: [], drafts: [draftOf(["task_01", "task_09"])] })).toEqual({ error: "plan_task_unknown" });
   });
 
-  it("V-35d refuses an empty session, 31 tasks in a session and 31 sessions, and accepts 30 sessions of one task", () => {
+  it("V-35d refuses 31 tasks in a session and 31 sessions, and accepts 30 sessions of one task", () => {
     const set = taskSetOf({ ids: THIRTY_IDS });
     const thirtyOne = [...THIRTY_IDS, "task_31"];
-    expect(validatePlan({ set, stored: [], drafts: [draftOf([])] })).toEqual({ error: "plan_limits" });
     expect(validatePlan({ set, stored: [], drafts: [draftOf(thirtyOne)] })).toEqual({ error: "plan_limits" });
     expect(validatePlan({ set, stored: [], drafts: thirtyOne.map((taskId) => draftOf([taskId])) })).toEqual({ error: "plan_limits" });
     const accepted = validatePlan({ set, stored: [], drafts: THIRTY_IDS.map((taskId) => draftOf([taskId])) });
@@ -49,7 +48,7 @@ describe("validatePlan", () => {
     const stored = [storedItem({ id: "a", taskIds: ["task_01"] }), storedItem({ id: "b", taskIds: ["task_02"], position: 2 })];
     const drafts = [draftOf(["task_02", "task_03"], { id: "b", choice: SONNET_HIGH }), draftOf(["task_01"], { id: "a" })];
     const result = validatePlan({ set: FLAT, stored, drafts });
-    expect(result).toEqual({ items: [{ id: "b", taskIds: ["task_02", "task_03"], choice: SONNET_HIGH }, { id: "a", taskIds: ["task_01"], choice: OPUS_MAX }] });
+    expect(result).toEqual({ items: [{ id: "b", taskIds: ["task_02", "task_03"], choice: SONNET_HIGH, after: [] }, { id: "a", taskIds: ["task_01"], choice: OPUS_MAX, after: [] }] });
   });
 
   it("keeps a task that left the manifest inside a started item, and drops ids that match no stored item", () => {
