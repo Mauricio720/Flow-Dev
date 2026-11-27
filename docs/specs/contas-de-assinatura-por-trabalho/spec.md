@@ -7,7 +7,7 @@
 
 - **O que muda:**
   - Cada pessoa cadastra na nova página pessoal "Contas de IA" quantas contas de assinatura quiser, do Claude Code e do Codex, e faz login em cada uma pelo CLI, com um comando que o Flow Dev mostra.
-  - Na tela do trabalho, a pessoa operadora escolhe uma conta do Claude e uma do Codex. Toda sessão aberta no trabalho (rota, Gerar tarefas, itens do plano) roda na conta escolhida para o agente dela.
+  - Na tela do trabalho, a pessoa operadora escolhe uma conta do Claude e uma do Codex. Toda sessão aberta no trabalho (rota, Gerar tarefas, itens do plano e revisão automática) roda na conta escolhida para o agente dela.
   - Trocar a conta só afeta as sessões abertas depois da troca. Uma sessão já aberta é sempre retomada na conta em que nasceu.
   - Se a conta estiver deslogada, a sessão não abre. Se ela bater o limite de uso, a sessão termina com esse motivo. O Flow Dev nunca troca de conta sozinho.
 - **Por quê:** hoje cada provedor tem um único login na máquina. Quem tem várias assinaturas não consegue distribuir o trabalho entre elas.
@@ -119,7 +119,7 @@ Como dona de uma conta, quero renomeá-la e removê-la, para manter a lista orga
 **Escolha no trabalho (US-02, US-04)**
 - **REQ-012** (US-02): ENQUANTO a pessoa for a operadora do trabalho, o sistema DEVE permitir que ela escolha, para cada provedor, uma das próprias contas não removidas ou o "Login padrão desta máquina".
 - **REQ-013** (US-02): ENQUANTO um trabalho não tiver escolha para um provedor, o sistema DEVE abrir as sessões desse provedor no login padrão.
-- **REQ-014** (US-02): QUANDO uma sessão do trabalho for aberta (rota, Gerar tarefas ou item do plano), o sistema DEVE registrar nela a conta escolhida no trabalho para o agente da sessão e executar o agente com as credenciais dessa conta.
+- **REQ-014** (US-02): QUANDO uma sessão do trabalho for aberta (rota, Gerar tarefas, item do plano ou revisão automática, `review` e `review_execute`), o sistema DEVE registrar nela a conta escolhida no trabalho para o agente da sessão e executar o agente com as credenciais dessa conta.
 - **REQ-015** (US-02): O sistema DEVE mostrar a conta que será usada no diálogo de abertura da sessão e no cartão de cada sessão do plano, com um atalho para trocá-la na tela do trabalho.
 - **REQ-016** (US-04): QUANDO a pessoa operadora trocar a conta de um provedor, o sistema DEVE aplicar a troca só às sessões abertas depois dela.
 - **REQ-017** (US-04): QUANDO uma sessão for retomada, o sistema DEVE executá-la na conta registrada nela, seja qual for a escolha atual do trabalho.
@@ -241,7 +241,7 @@ O trabalho guarda a escolha por provedor. Ao abrir uma sessão, o serviço copia
 
 ## 14. Modelo de dados
 
-Migration `0052_agent_accounts` (com o `_rollback.sql`, como as anteriores):
+Migration `0057_agent_accounts` (a 0052 ficou vaga, e a 0056 foi ocupada pela escolha de worktree; confira se a 0057 continua livre ao criar) (com o `_rollback.sql`, como as anteriores):
 
 - **`agent_accounts`**: `id uuid pk`; `owner_user_id uuid not null → users (restrict)`; `host_id text not null`; `provider text not null check in ('claude','codex')`; `label text not null check 1–40`; `status text not null default 'pending_login' check in ('pending_login','logged_in','logged_out','check_failed')`; `identity text null` (e-mail do Claude); `plan text null`; `codex_catalog jsonb null` (o mesmo formato de `CodexStatus`); `checked_at timestamptz null`; `removed_at timestamptz null`; `version int not null default 1`; `created_at`.
   - Índice único `(owner_user_id, host_id, provider, lower(label)) where removed_at is null` (REQ-004).
@@ -276,7 +276,10 @@ type RuntimeStartInput = /* atual */ & { credentialHome?: string }   // idem Run
 
 - `NOT_FOUND` vale também para a conta de outra pessoa (REQ-011).
 - Os erros de abertura (REQ-019, REQ-020) seguem o catálogo atual de erros de sessão (`terminalErrorCatalog.ts`).
-- A saída de `session.get` ganha `account: { kind: "default" | "own" | "other"; label: string | null; removed: boolean }`. O `label` só vem quando a conta é de quem lê (Q-02).
+- A visão de cada sessão no histórico ganha `account: { kind: "default" | "own" | "other"; label: string | null; removed: boolean }`. O `label` só vem quando a conta é de quem lê (Q-02). Como `session.get` não existe, o campo entra em `TerminalExecutionReader.read(taskId, viewerUserId, now)`, que alimenta o histórico do trabalho.
+- Mensagens de nome (REQ-004): vazio → "Informe um nome para a conta."; mais de 40 → "O nome da conta pode ter até 40 caracteres." (`BAD_REQUEST label_invalid`).
+- Recusa no worker por conta de outra máquina, de outra dona ou removida (NFR-02, DEC-05): falha de abertura com "A conta desta sessão não está disponível nesta máquina." (Q-06).
+- Limite de uso no Codex (REQ-024): o app-server não tem uma notificação própria de falha de turno. O limite é lido em `error` com `willRetry: false` ou em `turn/completed` com `turn.status: "failed"`, pelo `codexErrorInfo: "usageLimitExceeded"` (com a regex de `agentFailure.ts` como reserva). Um turno com falha que não é de limite segue como hoje.
 
 ## 16. Fluxos principais
 
@@ -339,7 +342,7 @@ type RuntimeStartInput = /* atual */ & { credentialHome?: string }   // idem Run
   - Claude: `claude auth status --json`, lendo `loggedIn`, `authMethod`, `email` e `subscriptionType`. Conta como logada só se `authMethod` for de assinatura (`claude.ai`).
   - Codex: `codex login status`, a mesma leitura de `codexCatalogTransport.ts`, mais o catálogo de modelos por conta, gravado em `agent_accounts.codex_catalog`.
 - **Alternativas consideradas:** ler os arquivos de credencial (viola NFR-01); a RPC de conta do app-server do Codex (não existe no protocolo gerado do repositório).
-- **Consequências:** o e-mail só existe para o Claude. Uma conta do Codex é identificada pelo nome.
+- **Consequências:** o e-mail só existe para o Claude. Uma conta do Codex é identificada pelo nome. Quando a verificação encontra uma conta do Codex logada pela primeira vez, ou sem catálogo, ela lê o catálogo daquela conta (com o `CODEX_HOME` dela) e o grava; as verificações seguintes não abrem o app-server de novo, e o publicador do worker mantém o catálogo atualizado.
 
 ### DEC-07 — Página pessoal nova
 - **Decisão:** `/settings/ai-accounts`, com um link no cabeçalho do shell. Hoje não existe área de configurações pessoais, e as Configurações são do projeto.
@@ -356,7 +359,7 @@ Logs `[accounts]` (`created`, `verified status=…`, `removed logout=ok|failed`)
 
 ## 20. Migração, rollout e reversão
 
-- **Ordem:** a migration 0052 entra antes do código, e as colunas novas são todas opcionais.
+- **Ordem:** a migration 0057 entra antes do código, e as colunas novas são todas opcionais.
 - **Sem flag:** sem contas cadastradas, o comportamento é o de hoje.
 - **Reversão:** o rollback da migration apaga as tabelas e a coluna, e as sessões voltam a rodar no login padrão. As sessões abertas numa conta cadastrada não podem mais ser retomadas, porque o histórico delas fica no diretório da conta. Os diretórios em `agent-accounts/` ficam na máquina e podem ser apagados à mão.
 
@@ -384,13 +387,13 @@ Segue a skill `software-testing`, com uma ficha de risco por linha da matriz.
   - O sistema de arquivos temporário para o diretório da conta.
   - Os CLIs reais, só no inspetor contra um diretório vazio (estado deslogado, sem custo).
 - **Dublês:**
-  - O `AgentLoginInspector` falso nos testes de serviço e do worker, porque logar de verdade é lento e gasta assinatura.
+  - O `AgentLoginInspector` falso nos testes de serviço e do worker, porque logar de verdade é lento e gasta assinatura. No e2e, o inspetor real aceita o dublê `FLOW_DEV_AGENT_LOGIN_FAKE` (`logged_in` | `logged_out`), recusado só com `NODE_ENV=production`, porque o servidor do e2e é um `next dev` (decisão do usuário em 2026-11-26).
   - Um runtime falso que registra o `credentialHome` e o ambiente recebidos.
   - O inspetor real ganha uma checagem de contrato separada com saídas reais gravadas (V-03).
 - **Controle:** relógio injetado (`now`), ids fixos e tempo limite curto injetado no teste do REQ-023.
 - **Jornadas ponta a ponta:**
   1. Cadastrar uma conta e vê-la "Aguardando login" com o comando (página nova, e2e real).
-  2. Escolher a conta no trabalho e abrir uma sessão roteirizada que mostra a conta. Depende da tela do trabalho, cujos e2e estão `fixme` por causa do GitHub (Spec D, tarefa 09). Até lá, a prova automática é um teste de jornada no `packages/api`.
+  2. Escolher a conta no trabalho e abrir uma sessão roteirizada que mostra a conta (Playwright ativo, com o GitHub falso do ambiente e2e), além do teste de jornada no `packages/api`.
 - **Sem prova automática:** login e limite com contas reais. Ficam para o smoke manual V-13.
 
 ## 23. Matriz de verificação
@@ -408,7 +411,7 @@ Segue a skill `software-testing`, com uma ficha de risco por linha da matriz.
 | V-09 | REQ-011, NFR-02, DEC-05 | Outra pessoa lista, verifica ou remove a conta; o worker aceita uma conta de outro host | Caller tRPC com duas pessoas + Postgres real; worker com `hostId` diferente | Bruno lista → não vê; `verify`/`remove` → NOT_FOUND; sessão com conta de outro host → falha de abertura |
 | V-10 | Seção 9, DEC-04, NFR-04 | O Issue Author ou o Planejamento passa a usar uma conta; sessões antigas mudam de ambiente; o e-mail aparece em log | Suítes atuais de `infra/agents` e de sessão + asserções novas | Ambiente do runner sem sobrescrita; sessão sem `agent_account_id` retoma igual; log com `account=default`, sem e-mail |
 | V-11 | REQ-002, 007, 015, 018, NFR-05, B-01 | Comando de login ausente; estado só por cor; diálogo não mostra a conta | Componentes com RTL; tRPC falso | Página lista estados com texto; botão copiar; seletor com rótulo; `LaunchChoiceSection` e `PlanSessionCard` mostram "Conta: …"; sem contas → link "Cadastrar contas"; quem não é dono vê "Conta pessoal" |
-| V-12 | US-01 cen. 1, US-02 cen. 1 (jornada) | As partes não se conectam na tela | Playwright, app real + banco de teste; inspetor falso via ambiente de teste | Cadastrar conta e ver o comando (ativo); escolher a conta e abrir uma sessão roteirizada (`fixme` enquanto a tela do trabalho depender do GitHub; substituto: teste de jornada em `packages/api`) |
+| V-12 | US-01 cen. 1, US-02 cen. 1 (jornada) | As partes não se conectam na tela | Playwright, app real + banco de teste; inspetor falso via ambiente de teste | Cadastrar conta e ver o comando; escolher a conta e abrir uma sessão roteirizada (ativo, com o GitHub falso) |
 | V-13 | US-02, US-03 com contas reais | Funciona no teste e falha com a assinatura real | Manual: duas contas reais do Claude e uma do Codex | Duas sessões em contas diferentes ao mesmo tempo; deslogar uma e tentar abrir; registrar em `v01-spike.md` |
 
 ## 24. Definição de pronto
@@ -417,8 +420,8 @@ Segue a skill `software-testing`, com uma ficha de risco por linha da matriz.
 - `pnpm typecheck` e `pnpm lint` passam (ler o código de saída com `rtk proxy pnpm lint`).
 - `pnpm build` passa, porque há uma rota nova.
 - O spec do Playwright da página de contas passa (`pnpm --dir apps/web test:e2e <spec>`).
-- V-01 e V-13 registrados em `docs/specs/contas-de-assinatura-por-trabalho/v01-spike.md`.
-- A migration 0052 foi aplicada num banco descartável na ordem do journal, e o rollback foi testado.
+- V-01 e V-13 são verificações manuais: ficam fora das tarefas e são feitas pelo usuário no teste manual final.
+- A migration 0057 foi aplicada num banco descartável na ordem do journal, e o rollback foi testado.
 - Nenhum `[PRECISA ESCLARECER]` restante, e o `packages/api/docs/spec-codex-chatgpt.md` foi atualizado ou removido, conforme a Sugestão aceita.
 - A spec foi atualizada com o que mudou na implementação, e o `PRODUCT.md` menciona as contas por trabalho.
 
@@ -428,6 +431,11 @@ Segue a skill `software-testing`, com uma ficha de risco por linha da matriz.
 
 - **Q-01 (respondida em 2026-11-24):** as contas cadastradas carregam a configuração pessoal do login padrão? — **Resposta:** sim, por links de uma lista fixa (DEC-03, REQ-026).
 - **Q-02 (respondida em 2026-11-24):** o que quem não é dono da conta vê no histórico? — **Resposta:** só "Conta pessoal da pessoa operadora" ou "Login padrão" (REQ-018).
+- **Q-03 (respondida em 2026-11-26, review-001 S-1):** a falha de abertura de REQ-022 traz o nome da conta e o comando de login com o caminho do diretório, e a prévia do Codex mostra o mesmo comando. Quem não é a dona pode ver isso? — **Resposta:** não. Só a dona da conta vê o nome e o caminho; as demais pessoas veem a falha sem eles, como em Q-02 e NFR-01.
+- **Q-04 (aberta, review-001 S-2):** sem conta escolhida, o motivo de limite fica "Limite de uso da conta login padrão atingido". Qual texto usar para o login padrão?
+- **Q-05 (aberta, review-001 S-3):** quando o limite chega com a sessão já iniciada, ela vai para `interrupted` (a mesma transição de hoje, seção 9) e o motivo entra como mensagem de sistema, não como motivo de término. Basta assim para REQ-024?
+- **Q-06 (aberta, review-001 S-4):** confirmar o texto "A conta desta sessão não está disponível nesta máquina." para a recusa no worker.
+- **Q-07 (registrada, review-001 S-5):** o dublê `FLOW_DEV_AGENT_LOGIN_FAKE` é recusado só em produção (decisão do usuário em 2026-11-26, registrada na seção 22).
 
 ## Sugestões fora do escopo
 
@@ -441,3 +449,6 @@ Segue a skill `software-testing`, com uma ficha de risco por linha da matriz.
 
 - 2026-11-24 — Criação da spec a partir da Issue #6. Decisões do usuário: qualquer quantidade de contas por provedor; feature = trabalho atribuído; só as sessões do trabalho; cadastro pela tela com login pelo CLI; uma conta por provedor no trabalho; a troca vale para as próximas sessões; bloquear e avisar sem trocar sozinho; contas pessoais.
 - 2026-11-24 — Q-01 (configuração pessoal compartilhada por links) e Q-02 (só a dona vê o nome da conta) respondidas pelo usuário. A spec segue Em revisão.
+- 2026-11-25 — Na quebra em tarefas, o usuário decidiu: migration 0057 (próxima livre do journal), as sessões de revisão automática também seguem a conta do trabalho (REQ-014), e o e2e da jornada da tela do trabalho (V-12) roda ativo. V-01 e V-13 (manuais) ficam fora das tarefas.
+- 2026-11-26 — Implementação (tasks 01 a 08) e correções da review-001: o limite do Codex passou a ser lido nas notificações reais do app-server (`error`/`turn/completed` com `codexErrorInfo`); a verificação de uma conta do Codex grava o catálogo dela; a sessão do Codex numa conta recebe o mesmo ambiente do login padrão com só o `CODEX_HOME` trocado; a conta no histórico vem de `TerminalExecutionReader.read`; o dublê do inspetor é recusado só em produção. Q-03 a Q-06 ficam abertas para o usuário.
+- 2026-11-26 — Q-03 respondida pelo usuário: só a dona da conta vê o nome e o caminho do diretório nas mensagens de falha e na prévia.
