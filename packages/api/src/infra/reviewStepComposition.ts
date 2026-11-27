@@ -17,7 +17,7 @@ export function buildReviewStep(parts: WorkerParts) {
   const open = new ReviewStepOpen({ cycles: parts.reviewCycles, launcher: parts.reviewLauncher, failure, hostId: identity.hostId, now, log });
   const messenger = new ReviewMessenger({ messages: new SystemMessageSender({ messages: parts.messages }), now, log });
   const finisher = new ReviewCycleFinisher({ cycles: parts.reviewCycles, controls: parts.control, log });
-  const loader = new ReviewStageLoader({ cycles: parts.reviewCycles, files: new FsCheckoutFileReader(), captureStop: (sessionId) => recorder.captureStop(sessionId) });
+  const loader = new ReviewStageLoader({ cycles: parts.reviewCycles, files: new FsCheckoutFileReader(), captureStop: (sessionId, extra) => recorder.captureStop(sessionId, extra) });
   const turn = new ReviewStepTurn({ cycles: parts.reviewCycles, loader, open, messenger, finisher, now, log });
   const guards = new ReviewStepGuards({ cycles: parts.reviewCycles, claims: parts.reviewClaims, planning: parts.sessions, taskSets: parts.reviewTaskSets, finish: (cycle, at, reason) => finisher.finish(cycle, at, reason), now });
   const actions = new ReviewStepActions({ cycles: parts.reviewCycles, open, messenger, finish: (cycle, at) => finisher.finish(cycle, at), now });

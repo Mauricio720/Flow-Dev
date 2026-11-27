@@ -1,29 +1,30 @@
 import type { ArtifactCaptureDao, ArtifactCaptureStore, CaptureSession } from "../../database/dao/artifactCaptureDao";
 import type { ArtifactCaptureTrigger } from "../../terminal/artifactCaptureTrigger";
 import type { CheckoutFileReader } from "../../terminal/checkoutFileReader";
-import { folderCandidates, latestOccurrence, markdownFilesOf, needsNewVersion, sha256Of, type CaptureCandidate } from "./artifactCapturePlan";
+import { folderCandidates, latestOccurrence, markdownFilesOf, needsNewVersion, sha256Of, untouchedExtras, type CaptureCandidate } from "./artifactCapturePlan";
 import { ARTIFACT_FAILURE_MESSAGES } from "./artifactFailureCopy";
 import type { TerminalLog } from "./terminalLaunchLog";
 
 export type CaptureSummary = { files: number; created: number; failures: number };
 export type ArtifactCaptureDeps = { dao: ArtifactCaptureDao; reader: CheckoutFileReader; log: TerminalLog; now?: () => Date };
 type FileOutcome = { created: boolean; failure: string | null };
-type CaptureRun = { session: CaptureSession; store: ArtifactCaptureStore; trigger: ArtifactCaptureTrigger; capturedAt: Date };
+type CaptureRun = { session: CaptureSession; store: ArtifactCaptureStore; trigger: ArtifactCaptureTrigger; capturedAt: Date; extra: CaptureCandidate[] };
+export type CaptureInput = { sessionId: string; trigger: ArtifactCaptureTrigger; extra?: CaptureCandidate[] };
 
 const EMPTY_SUMMARY: CaptureSummary = { files: 0, created: 0, failures: 0 };
 
 export class ArtifactCaptureService {
   constructor(private readonly deps: ArtifactCaptureDeps) {}
 
-  async capture(input: { sessionId: string; trigger: ArtifactCaptureTrigger }): Promise<CaptureSummary> {
+  async capture(input: CaptureInput): Promise<CaptureSummary> {
     const capturedAt = (this.deps.now ?? (() => new Date()))();
-    const summary = await this.deps.dao.withCaptureLock(input.sessionId, (session, store) => this.captureLocked({ session, store, trigger: input.trigger, capturedAt }));
+    const summary = await this.deps.dao.withCaptureLock(input.sessionId, (session, store) => this.captureLocked({ session, store, trigger: input.trigger, capturedAt, extra: input.extra ?? [] }));
     return summary ?? EMPTY_SUMMARY;
   }
 
   private async captureLocked(run: CaptureRun): Promise<CaptureSummary> {
     const touched = markdownFilesOf(await run.store.touchedSince(run.session.id, run.session.lastCaptureAt));
-    const touchedOutcomes = await this.captureAll(run, touched);
+    const touchedOutcomes = await this.captureAll(run, [...touched, ...untouchedExtras(touched, run.extra)]);
     const folderOutcomes = await this.captureAll(run, folderCandidates(touched, await this.folderFiles(run.session)));
     const outcomes = [...touchedOutcomes, ...folderOutcomes];
     const watermark = latestOccurrence(touched);

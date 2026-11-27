@@ -4,7 +4,7 @@ import type { RuntimeHandlers } from "../../application/terminal/agentSessionRun
 import { sessionHook } from "./syntheticHooks";
 
 export type FileStepContext = { cwd: string; claudeSessionId: string; handlers: Pick<RuntimeHandlers, "onHook"> };
-type FileStep = { path: string; content: string };
+type FileStep = { path: string; content: string; shell?: boolean };
 
 const PARENT_SEGMENT = "..";
 const WRITE_TOOL = "Write";
@@ -19,6 +19,7 @@ export async function writeFileStep(step: FileStep, context: FileStepContext) {
   if (!insideClone(context.cwd, target)) throw new Error(`O roteiro tentou gravar fora do clone: ${step.path}`);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, step.content);
+  if (step.shell) return;
   const toolInput = { file_path: target, content: step.content };
   const toolResponse = { type: "create", filePath: target, content: step.content };
   context.handlers.onHook(sessionHook(context, { hook_event_name: "PostToolUse", tool_name: WRITE_TOOL, tool_input: toolInput, tool_response: toolResponse }));

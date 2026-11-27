@@ -1,6 +1,7 @@
 import type { ArtifactCaptureTrigger } from "../../terminal/artifactCaptureTrigger";
 import type { HookPayload } from "../../terminal/agentSessionRuntime";
 import type { SessionMessageDao } from "../../terminal/sessionInteractionPorts";
+import type { CaptureCandidate } from "./artifactCapturePlan";
 import type { RouteSwitchService } from "./routeSwitchService";
 import { MAX_STORED_TEXT_LENGTH, truncateWithMarker } from "./sessionInteractionLimits";
 import { errorFields, type SessionLog } from "./sessionLog";
@@ -8,7 +9,7 @@ import { parseRouteSwitchBlock } from "./routeSwitchBlock";
 
 export type RecorderEvents = {
   ingest(sessionId: string, payload: unknown): Promise<{ captureTrigger: ArtifactCaptureTrigger | null }>;
-  capture(sessionId: string, trigger: ArtifactCaptureTrigger): Promise<void>;
+  capture(sessionId: string, trigger: ArtifactCaptureTrigger, extra?: CaptureCandidate[]): Promise<void>;
 };
 
 export type RecorderDeps = { messages: Pick<SessionMessageDao, "insertAssistantMessage">; events: RecorderEvents; routeSwitches?: Pick<RouteSwitchService, "propose">; log: SessionLog };
@@ -57,9 +58,9 @@ export class SessionRecorder {
     }
   }
 
-  async captureStop(sessionId: string) {
+  async captureStop(sessionId: string, extra: CaptureCandidate[] = []) {
     try {
-      await this.deps.events.capture(sessionId, STOP_CAPTURE_TRIGGER);
+      await this.deps.events.capture(sessionId, STOP_CAPTURE_TRIGGER, extra);
     } catch (error) {
       this.deps.log.error("record_stop_capture_failed", { sessionId, ...errorFields(error) });
     }

@@ -23,6 +23,11 @@ export function latestOccurrence(touched: TouchedFile[]): Date | null {
   return new Date(Math.max(...touched.map((file) => file.occurredAt.getTime())));
 }
 
+export function untouchedExtras(touched: TouchedFile[], extra: CaptureCandidate[]): CaptureCandidate[] {
+  const touchedPaths = new Set(touched.map((file) => file.path));
+  return extra.filter((candidate) => candidate.path.endsWith(MARKDOWN_SUFFIX) && !touchedPaths.has(candidate.path));
+}
+
 export function folderCandidates(touched: TouchedFile[], folderFiles: string[]): CaptureCandidate[] {
   const touchedPaths = new Set(touched.map((file) => file.path));
   return folderFiles.filter((path) => path.endsWith(MARKDOWN_SUFFIX) && !touchedPaths.has(path)).map((path) => ({ path, skill: PLAN_EXECUTION_SKILL }));

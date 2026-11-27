@@ -31,7 +31,7 @@ async function readContent(file: string, relativePath: string): Promise<Checkout
     if (info.size > MAX_ARTIFACT_BYTES) return failed(relativePath, "too_large");
     const buffer = await readFile(file);
     if (buffer.length > MAX_ARTIFACT_BYTES) return failed(relativePath, "too_large");
-    return { kind: "content", relativePath, content: buffer.toString("utf8"), byteSize: buffer.length };
+    return { kind: "content", relativePath, content: buffer.toString("utf8"), byteSize: buffer.length, modifiedAt: info.mtime };
   } catch {
     return failed(relativePath, "unreadable");
   }

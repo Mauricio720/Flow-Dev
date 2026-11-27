@@ -14,7 +14,7 @@ export type ScriptStep =
   | { kind: "ask"; questions: Question[] }
   | { kind: "permission"; toolName: string; input: Record<string, unknown>; suggestions?: unknown[] }
   | { kind: "hook"; payload: HookPayload }
-  | { kind: "write_file"; path: string; content: string }
+  | { kind: "write_file"; path: string; content: string; shell?: boolean }
   | { kind: "wait_message" }
   | { kind: "end_turn" }
   | { kind: "fail"; detail: string }

@@ -11,6 +11,7 @@ export type StageReadInput = {
   stepStartedAt: Date;
   sessionId: string;
   edits: { sessionId: string; path: string; at: Date }[];
+  modifiedAt: Record<string, Date>;
   content: string | null;
   previousReportNumber: number | null;
 };
@@ -49,8 +50,11 @@ function isSafeFolder(folder: string) {
   return folder === "" || isSafeRelativePath(folder);
 }
 
-function wasEditedByCurrentSession(input: StageReadInput, path: string) {
-  return input.edits.some((edit) => edit.path === path && edit.sessionId === input.sessionId && edit.at.getTime() > input.stepStartedAt.getTime());
+function wasUpdatedDuringStep(input: StageReadInput, path: string) {
+  const startedAt = input.stepStartedAt.getTime();
+  const modifiedAt = input.modifiedAt[path];
+  if (modifiedAt && modifiedAt.getTime() > startedAt) return true;
+  return input.edits.some((edit) => edit.path === path && edit.sessionId === input.sessionId && edit.at.getTime() > startedAt);
 }
 
 function stageForRole(role: ReviewRole, stage: string | null): ReviewStage | null {
@@ -70,14 +74,14 @@ export function reportNumber(path: string | null, folder: string): number | null
 
 function isNewReport(input: StageReadInput, path: string | null, number: number | null) {
   if (path === null || number === null || (input.previousReportNumber !== null && number <= input.previousReportNumber)) return false;
-  return wasEditedByCurrentSession(input, path);
+  return wasUpdatedDuringStep(input, path);
 }
 
 export function readStage(input: StageReadInput): StageReadResult {
   const document = documentPath(input.folder);
   const fields = parseStageDocument(input.content);
   const stage = stageForRole(input.role, fields.etapa);
-  const validDocument = isSafeRelativePath(document) && isSafeFolder(input.folder) && wasEditedByCurrentSession(input, document);
+  const validDocument = isSafeRelativePath(document) && isSafeFolder(input.folder) && wasUpdatedDuringStep(input, document);
   if (!validDocument || stage === null) return { ok: false, reason: stageNotUpdatedReason(input.role, document) };
   if (input.role === "execute") return { ok: true, stage, reportPath: null, reportNumber: null };
   const reportPath = fields.relatorio;

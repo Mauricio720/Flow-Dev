@@ -13,7 +13,7 @@ function edit(path: string, sessionId = SESSION, at = LATER) {
 }
 
 function input(overrides: Partial<StageReadInput> = {}): StageReadInput {
-  return { role: "review", folder: FOLDER, stepStartedAt: START, sessionId: SESSION, edits: [edit(DOCUMENT), edit(REPORT)], content: `etapa: execute\nrelatorio: ${REPORT}`, previousReportNumber: 4, ...overrides };
+  return { role: "review", folder: FOLDER, stepStartedAt: START, sessionId: SESSION, edits: [edit(DOCUMENT), edit(REPORT)], modifiedAt: {}, content: `etapa: execute\nrelatorio: ${REPORT}`, previousReportNumber: 4, ...overrides };
 }
 
 describe("review stage document", () => {
@@ -50,6 +50,17 @@ describe("review stage document", () => {
     const content = `# título\n etapa : execute \n motivo: qualquer\n relatorio : ${REPORT} `;
     expect(parseStageDocument(content)).toEqual({ etapa: "execute", relatorio: REPORT });
     expect(readStage(input({ content, edits: [edit(DOCUMENT), edit(REPORT), edit(`${FOLDER}/reviews/review-006.md`)] }))).toEqual({ ok: true, stage: "execute", reportPath: REPORT, reportNumber: 5 });
+  });
+
+  it("accepts a document and report written by a shell command after the step started", () => {
+    const modifiedAt = { [DOCUMENT]: LATER, [REPORT]: LATER };
+    expect(readStage(input({ edits: [], modifiedAt, content: `etapa: ressalvas\nrelatorio: ${REPORT}` }))).toEqual({ ok: true, stage: "ressalvas", reportPath: REPORT, reportNumber: 5 });
+    expect(readStage(input({ role: "execute", content: "etapa: review", edits: [], modifiedAt: { [DOCUMENT]: LATER } }))).toEqual({ ok: true, stage: "review", reportPath: null, reportNumber: null });
+  });
+
+  it("rejects files last modified before the step started", () => {
+    expect(readStage(input({ edits: [edit(REPORT)], modifiedAt: { [DOCUMENT]: START } }))).toEqual({ ok: false, reason: `A sessão de revisão terminou sem atualizar ${DOCUMENT}.` });
+    expect(readStage(input({ edits: [edit(DOCUMENT)], modifiedAt: { [DOCUMENT]: LATER, [REPORT]: START } }))).toEqual({ ok: false, reason: `O relatório indicado em ${DOCUMENT} não é novo.` });
   });
 
   it("rejects missing content and unsafe folder paths", () => {

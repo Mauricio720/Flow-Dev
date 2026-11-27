@@ -1,6 +1,7 @@
 import type { TerminalEventDao } from "../application/database/dao/terminalEventDao";
 import { summarizeHookEvent } from "../application/services/terminal/hookEventSummarizer";
 import type { ArtifactCaptureService } from "../application/services/terminal/artifactCaptureService";
+import type { CaptureCandidate } from "../application/services/terminal/artifactCapturePlan";
 import { hashSessionToken } from "../application/services/terminal/sessionToken";
 import { planIngestion } from "../application/services/terminal/terminalEventIngestion";
 import type { TerminalLog } from "../application/services/terminal/terminalLaunchLog";
@@ -37,9 +38,9 @@ export class TerminalEventController {
     return { captureTrigger: plan?.captureTrigger ?? null };
   }
 
-  async capture(sessionId: string, trigger: ArtifactCaptureTrigger): Promise<void> {
+  async capture(sessionId: string, trigger: ArtifactCaptureTrigger, extra: CaptureCandidate[] = []): Promise<void> {
     try {
-      await this.deps.capture.capture({ sessionId, trigger });
+      await this.deps.capture.capture({ sessionId, trigger, extra });
     } catch (error) {
       this.deps.log.captureFailed({ sessionId, reason: error instanceof Error ? error.message : "unknown" });
     }
