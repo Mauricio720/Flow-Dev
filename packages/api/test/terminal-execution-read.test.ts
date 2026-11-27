@@ -15,7 +15,7 @@ afterEach(async () => {
 describe("terminal execution read", () => {
   it("V-08a returns empty lists for a task with no session", async () => {
     const { setup, reader } = await executionWorld();
-    expect(await reader.read(setup.taskId, new Date())).toEqual({ sessions: [], artifacts: [] });
+    expect(await reader.read(setup.taskId, setup.ownerId, new Date())).toEqual({ sessions: [], artifacts: [] });
   });
 
   it("V-08b lists the most recent session first with person, route and times", async () => {
@@ -23,7 +23,7 @@ describe("terminal execution read", () => {
     const older = await seedSession(world, { status: "ended", openedAt: ago(2 * DAY_MS), endedAt: ago(DAY_MS), route: "prd" });
     const newer = await seedSession(world, { status: "running", userId: world.setup.readerId, openedAt: ago(MINUTE_MS) });
     await seedEvents(world.setup, { sessionId: newer.id, count: 2, from: ago(30_000) });
-    const { sessions } = await world.reader.read(world.setup.taskId, new Date());
+    const { sessions } = await world.reader.read(world.setup.taskId, world.setup.ownerId, new Date());
     expect(sessions.map((session) => [session.id, session.userName, session.route])).toEqual([[newer.id, "Admin", "tech_spec"], [older.id, "Member", "prd"]]);
     expect(sessions[0]).toMatchObject({ endedAt: null, lastEventAt: expect.any(String) });
     expect(sessions[1]).toMatchObject({ endedAt: older.endedAt!.toISOString(), lastEventAt: null });
@@ -33,7 +33,7 @@ describe("terminal execution read", () => {
     const world = await executionWorld();
     const session = await seedSession(world);
     await seedEvents(world.setup, { sessionId: session.id, count: 205 });
-    const [view] = (await world.reader.read(world.setup.taskId, new Date())).sessions;
+    const [view] = (await world.reader.read(world.setup.taskId, world.setup.ownerId, new Date())).sessions;
     expect(view!.events).toHaveLength(200);
     expect([view!.events[0]!.summary, view!.events.at(-1)!.summary]).toEqual(["evento 6", "evento 205"]);
     expect(view!.hiddenEvents).toBe(5);
@@ -68,7 +68,7 @@ describe("terminal execution read", () => {
     const silent = await seedSession(world, { status: "waiting", lastSignalAt: ago(31 * MINUTE_MS) });
     const recent = await seedSession(world, { status: "waiting", lastSignalAt: ago(29 * MINUTE_MS) });
     const ended = await seedSession(world, { status: "ended", lastSignalAt: ago(120 * MINUTE_MS) });
-    const views = Object.fromEntries((await world.reader.read(world.setup.taskId, new Date())).sessions.map((session) => [session.id, session]));
+    const views = Object.fromEntries((await world.reader.read(world.setup.taskId, world.setup.ownerId, new Date())).sessions.map((session) => [session.id, session]));
     expect(views[silent.id]).toMatchObject({ status: "waiting", silentSince: silent.lastSignalAt.toISOString() });
     expect(views[recent.id]!.silentSince).toBeNull();
     expect(views[ended.id]!.silentSince).toBeNull();
@@ -80,7 +80,7 @@ describe("terminal execution read", () => {
     const removed = await seedSession(world, { filesRemovedAt: new Date() });
     await seedAttachment(world.setup, { sessionId: live.id, name: "nota.md", contentType: "text/markdown", byteSize: 6 });
     await seedAttachment(world.setup, { sessionId: removed.id, name: "print.png", contentType: "image/png", byteSize: 11 });
-    const views = Object.fromEntries((await world.reader.read(world.setup.taskId, new Date())).sessions.map((session) => [session.id, session]));
+    const views = Object.fromEntries((await world.reader.read(world.setup.taskId, world.setup.ownerId, new Date())).sessions.map((session) => [session.id, session]));
     const until = new Date(live.lastSignalAt.getTime() + SESSION_RETENTION_MS).toISOString();
     expect(views[live.id]!.attachments).toEqual([{ name: "nota.md", contentType: "text/markdown", byteSize: 6, availableUntil: until, removed: false }]);
     expect(views[removed.id]!.attachments).toEqual([{ name: "print.png", contentType: "image/png", byteSize: 11, availableUntil: null, removed: true }]);
@@ -89,6 +89,6 @@ describe("terminal execution read", () => {
   it("V-08g exposes the dropped events count", async () => {
     const world = await executionWorld();
     await seedSession(world, { droppedEvents: 1 });
-    expect((await world.reader.read(world.setup.taskId, new Date())).sessions[0]).toMatchObject({ droppedEvents: 1 });
+    expect((await world.reader.read(world.setup.taskId, world.setup.ownerId, new Date())).sessions[0]).toMatchObject({ droppedEvents: 1 });
   });
 });

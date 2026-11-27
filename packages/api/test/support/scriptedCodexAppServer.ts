@@ -7,6 +7,8 @@ import { fragments, framed, readRpcScript } from "./codexRpcScript";
 const scriptPath = process.argv[2];
 if (process.env.NODE_ENV !== "test" || !scriptPath) process.exit(2);
 const script = readRpcScript(await readFile(scriptPath, "utf8"));
+const recordedNames = script.envRecordNames ?? ["CODEX_HOME"];
+if (script.envRecordPath) await writeFile(script.envRecordPath, JSON.stringify(Object.fromEntries(recordedNames.map((name) => [name, process.env[name] ?? null]))));
 if (script.childPidPath) {
   const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
   await writeFile(script.childPidPath, String(child.pid));

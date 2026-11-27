@@ -54,7 +54,7 @@ describe("session purpose and choice", () => {
     const world = await executionWorld();
     const route = await seedSession(world, { status: "ended", openedAt: new Date("2026-11-23T10:00:00Z") });
     const plan = await seedSession(world, { status: "running", purpose: "plan_item", model: "sonnet", effort: "high", openedAt: new Date("2026-11-23T11:00:00Z") });
-    const { sessions } = await world.reader.read(world.setup.taskId, new Date("2026-11-23T11:01:00Z"));
+    const { sessions } = await world.reader.read(world.setup.taskId, world.setup.ownerId, new Date("2026-11-23T11:01:00Z"));
     expect(sessions.map((session) => [session.id, session.purpose, session.agent, session.model, session.effort])).toEqual([[plan.id, "plan_item", "claude", "sonnet", "high"], [route.id, "route", "claude", null, null]]);
   });
 });

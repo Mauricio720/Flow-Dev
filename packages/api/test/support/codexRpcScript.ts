@@ -1,6 +1,6 @@
 import type { RpcMessage } from "../../src/infra/terminal/codex/codexRpcFrames";
 
-export type CodexRpcScript = { methods: string[]; results: Record<string, unknown>; errors?: Record<string, { code: number; message: string }>; order?: string[]; batch?: boolean; recordPath?: string; serverResponsesPath?: string; waitForPath?: string; childPidPath?: string; notification?: RpcMessage; notificationsByMethod?: Record<string, RpcMessage[]>; serverRequest?: RpcMessage; serverRequestsByMethod?: Record<string, RpcMessage[]>; serverRequestsByMethodOnce?: Record<string, RpcMessage[]>; eofMethods?: string[]; exitAfterMethods?: string[] };
+export type CodexRpcScript = { methods: string[]; results: Record<string, unknown>; errors?: Record<string, { code: number; message: string }>; order?: string[]; batch?: boolean; recordPath?: string; envRecordPath?: string; envRecordNames?: string[]; serverResponsesPath?: string; waitForPath?: string; childPidPath?: string; notification?: RpcMessage; notificationsByMethod?: Record<string, RpcMessage[]>; serverRequest?: RpcMessage; serverRequestsByMethod?: Record<string, RpcMessage[]>; serverRequestsByMethodOnce?: Record<string, RpcMessage[]>; eofMethods?: string[]; exitAfterMethods?: string[] };
 
 export function readRpcScript(source: string): CodexRpcScript {
   const value = JSON.parse(source) as CodexRpcScript;

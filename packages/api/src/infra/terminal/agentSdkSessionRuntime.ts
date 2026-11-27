@@ -11,12 +11,12 @@ export class AgentSdkSessionRuntime implements AgentSessionRuntime {
 
   start(input: RuntimeStartInput) {
     const { sessionId, cwd, contextDir, permissionMode, handlers, model, effort } = input;
-    return new AgentSdkSession({ sessionId, cwd, contextDir, permissionMode, handlers, model, effort, firstMessage: input.prompt }, this.sessionDeps());
+    return new AgentSdkSession({ sessionId, cwd, contextDir, permissionMode, handlers, model, effort, credentialHome: input.credentialHome, firstMessage: input.prompt }, this.sessionDeps());
   }
 
   resume(input: RuntimeResumeInput) {
     const { sessionId, cwd, contextDir, permissionMode, handlers, model, effort } = input;
-    return new AgentSdkSession({ sessionId, cwd, contextDir, permissionMode, handlers, model, effort, firstMessage: input.firstMessage, resumeId: input.claudeSessionId }, this.sessionDeps());
+    return new AgentSdkSession({ sessionId, cwd, contextDir, permissionMode, handlers, model, effort, credentialHome: input.credentialHome, firstMessage: input.firstMessage, resumeId: input.claudeSessionId }, this.sessionDeps());
   }
 
   private sessionDeps() {

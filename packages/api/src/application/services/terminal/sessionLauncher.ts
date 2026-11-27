@@ -16,10 +16,11 @@ import { repositoryOf } from "../projects/localCheckoutService";
 import { TaskError } from "../tasks/taskErrors";
 import type { ResolvedPurpose } from "../../terminal/sessionPurposeInput";
 import type { PermissionMode } from "../../terminal/sessionInteraction";
+import type { SessionFolderService } from "../worktrees/sessionFolderService";
 
 export type ReviewPurpose = Extract<SessionPurposeKind, "review" | "review_execute">;
 export type LaunchInput = { actorId: string; taskId: string; projectId: string; requestKey: string; purpose: ReviewPurpose; reviewCycleId: string; choice: AgentChoice; prompt: string };
-type LaunchDeps = { sessions: TerminalSessionDao; projects: { findById(projectId: string): Promise<ProjectRecord | null> }; guard: Pick<TerminalOpenGuard, "assertServiceRunning" | "assertPrompt" | "requireCheckout" | "assertTools" | "assertSkills">; delivery: SessionAttachmentDelivery; context: SessionContextBuilder; log: TerminalLog; hostId: string; purposes: { confirm(input: { resolved: ResolvedPurpose; actorId: string; sessionId: string }): Promise<void> } };
+type LaunchDeps = { sessions: TerminalSessionDao; projects: { findById(projectId: string): Promise<ProjectRecord | null> }; guard: Pick<TerminalOpenGuard, "assertServiceRunning" | "assertPrompt" | "requireCheckout" | "assertTools" | "assertSkills">; delivery: SessionAttachmentDelivery; context: SessionContextBuilder; log: TerminalLog; hostId: string; purposes: { confirm(input: { resolved: ResolvedPurpose; actorId: string; sessionId: string }): Promise<void> }; folders: Pick<SessionFolderService, "resolve">; resolveAccount?: (input: { taskId: string; agent: "claude" | "codex"; actorId: string }) => Promise<string | null> };
 type ManualLaunch = { actor: SessionPrincipal; input: { taskId: string; projectId: string; requestKey: string; prompt: string; permissionMode: PermissionMode }; planning: ApprovedPlanning; checkout: VerifiedCheckout; plan: AttachmentPlan; resolved: ResolvedPurpose };
 type ManualSessionInput = Pick<ManualLaunch, "actor" | "input" | "planning" | "checkout"> & { choice: ResolvedPurpose["columns"] };
 
@@ -33,14 +34,16 @@ export class SessionLauncher {
     const existing = await this.deps.sessions.findByRequestKey(input.actorId, input.requestKey);
     if (existing && !existing.launchFailedAt) return { session: existing, created: false };
     const { planning, checkout } = await this.preconditions(input);
-    const created = await this.create(this.reviewSessionInput(input, planning, checkout), EMPTY_PLAN);
+    const agentAccountId = await this.resolveAccount(input.taskId, input.choice.agent, input.actorId);
+    const created = await this.create(this.reviewSessionInput(input, planning, checkout, agentAccountId), EMPTY_PLAN);
     if (!created.created) return created;
     await this.prepare({ session: created.session, prompt: input.prompt, plan: EMPTY_PLAN, route: planning.route, taskId: input.taskId });
     return created;
   }
 
   async startManual({ actor, input, planning, checkout, plan, resolved }: ManualLaunch) {
-    const created = await this.create(this.manualSessionInput({ actor, input, planning, checkout, choice: resolved.columns }), plan);
+    const agentAccountId = await this.resolveAccount(input.taskId, resolved.columns.agent ?? "claude", actor.userId);
+    const created = await this.create(this.manualSessionInput({ actor, input, planning, checkout, choice: resolved.columns }, agentAccountId), plan);
     if (!created.created) return openedResult(created.session);
     await this.deps.purposes.confirm({ resolved, actorId: actor.userId, sessionId: created.session.id });
     await this.prepareStep.run(created.session, input.prompt, plan);
@@ -54,23 +57,27 @@ export class SessionLauncher {
     const project = await this.deps.projects.findById(input.projectId);
     if (!project) throw new TaskError("project_unavailable");
     const checkout = await this.deps.guard.requireCheckout({ userId: input.actorId, projectId: input.projectId, repository: repositoryOf(project) });
-    await this.deps.guard.assertTools(input.choice);
+    await this.deps.guard.assertTools(input.choice, input.taskId);
     await this.deps.guard.assertSkills();
     const planning = await this.deps.sessions.approvedPlanning(input.taskId);
     if (!planning) throw new TaskError("planning_not_approved");
-    return { planning, checkout };
+    return { planning, checkout: await this.deps.folders.resolve({ taskId: input.taskId, issueNumber: planning.issue.number, checkout }) };
   }
 
   private async create(input: CreateTerminalSessionInput, plan: AttachmentPlan) {
     return this.deps.sessions.create(input, this.deps.delivery.links(plan));
   }
 
-  private reviewSessionInput(input: LaunchInput, planning: ApprovedPlanning, checkout: VerifiedCheckout): CreateTerminalSessionInput {
-    return { taskId: input.taskId, projectId: input.projectId, userId: input.actorId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty, runtime: "flow_dev", permissionMode: DEFAULT_PERMISSION_MODE, hostId: this.deps.hostId, purpose: input.purpose, agent: input.choice.agent, model: input.choice.model, effort: input.choice.effort, reviewCycleId: input.reviewCycleId };
+  private reviewSessionInput(input: LaunchInput, planning: ApprovedPlanning, checkout: VerifiedCheckout, agentAccountId: string | null): CreateTerminalSessionInput {
+    return { taskId: input.taskId, projectId: input.projectId, userId: input.actorId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty, runtime: "flow_dev", permissionMode: DEFAULT_PERMISSION_MODE, hostId: this.deps.hostId, purpose: input.purpose, agent: input.choice.agent, model: input.choice.model, effort: input.choice.effort, reviewCycleId: input.reviewCycleId, agentAccountId };
   }
 
-  private manualSessionInput({ actor, input, planning, checkout, choice }: ManualSessionInput): CreateTerminalSessionInput {
-    return { taskId: input.taskId, projectId: input.projectId, userId: actor.userId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty, runtime: "flow_dev", permissionMode: input.permissionMode, hostId: this.deps.hostId, ...choice };
+  private manualSessionInput({ actor, input, planning, checkout, choice }: ManualSessionInput, agentAccountId: string | null): CreateTerminalSessionInput {
+    return { taskId: input.taskId, projectId: input.projectId, userId: actor.userId, planningDecisionId: planning.decisionId, route: planning.route, requestKey: input.requestKey, checkoutPath: checkout.path, branch: checkout.branch, dirty: checkout.dirty, runtime: "flow_dev", permissionMode: input.permissionMode, hostId: this.deps.hostId, ...choice, agentAccountId };
+  }
+
+  private resolveAccount(taskId: string, agent: "claude" | "codex", actorId: string) {
+    return this.deps.resolveAccount?.({ taskId, agent, actorId }) ?? Promise.resolve(null);
   }
 
   private async prepare({ session, prompt, plan, route, taskId }: { session: TerminalSessionRecord; prompt: string; plan: AttachmentPlan; route: ApprovedPlanning["route"]; taskId: string }) {

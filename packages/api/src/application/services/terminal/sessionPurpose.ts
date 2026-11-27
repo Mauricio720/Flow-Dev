@@ -26,7 +26,7 @@ export class SessionPurposeResolver {
   constructor(private readonly deps: PurposeDeps) {}
 
   async preview(taskId: string, purpose: PreviewPurpose): Promise<PurposePreview> {
-    const agents = await this.availability();
+    const agents = await this.availability(taskId);
     if (purpose.kind === "route") return { prompt: null, choice: purpose.choice ?? DEFAULT_SESSION_CHOICE, agents };
     if (purpose.kind === "generate_tasks") {
       const spec = await findSpec(this.deps.specs, { taskId, specArtifactId: purpose.specArtifactId });
@@ -40,7 +40,7 @@ export class SessionPurposeResolver {
   async resolve(taskId: string, purpose: OpenPurpose = ROUTE_PURPOSE): Promise<ResolvedPurpose> {
     if (purpose.kind === "route") {
       const choice = purpose.choice ?? DEFAULT_SESSION_CHOICE;
-      if (purpose.choice) await this.validateChoice(choice);
+      if (purpose.choice) await this.validateChoice(taskId, choice);
       return { columns: { purpose: "route", ...choice }, itemStart: null };
     }
     if (purpose.kind === "generate_tasks") return this.generation(taskId, purpose);
@@ -57,27 +57,27 @@ export class SessionPurposeResolver {
 
   private async generation(taskId: string, purpose: Extract<OpenPurpose, { kind: "generate_tasks" }>): Promise<ResolvedPurpose> {
     await findSpec(this.deps.specs, { taskId, specArtifactId: purpose.specArtifactId });
-    await this.validateChoice(purpose.choice);
+    await this.validateChoice(taskId, purpose.choice);
     return { columns: { purpose: "generate_tasks", ...purpose.choice }, itemStart: null };
   }
 
   private async planItem(taskId: string, purpose: Extract<OpenPurpose, { kind: "plan_item" }>): Promise<ResolvedPurpose> {
     const loaded = await loadItem(this.deps, { taskId, planItemId: purpose.planItemId });
     requireStartable(loaded);
-    await this.validateChoice(loaded.item.choice);
+    await this.validateChoice(taskId, loaded.item.choice);
     const blocked = loaded.readiness.blockedBy.length > 0;
     if (blocked && !purpose.force) throw new TaskError("plan_item_blocked");
     return { columns: { purpose: "plan_item", planItemId: loaded.item.id, ...loaded.item.choice }, itemStart: { itemId: loaded.item.id, force: blocked } };
   }
 
-  private async availability() {
+  private async availability(taskId: string) {
     if (!this.deps.catalog) return agentAvailability(this.deps.agents);
-    const [running, status] = await Promise.all([this.deps.catalog.running(), this.deps.catalog.codexStatus()]);
+    const [running, status] = await Promise.all([this.deps.catalog.running(), this.deps.catalog.codexStatus(taskId)]);
     return publishedAgentAvailability(this.deps.agents, status, running);
   }
 
-  private async validateChoice(choice: import("../../terminal/sessionAgentCatalog").AgentChoice) {
-    const catalog = await this.deps.catalog?.codexStatus();
+  private async validateChoice(taskId: string, choice: import("../../terminal/sessionAgentCatalog").AgentChoice) {
+    const catalog = await this.deps.catalog?.codexStatus(taskId);
     if (choice.agent === "codex" && this.deps.catalog && !catalog) throw new TaskError("agent_unavailable", { message: "O catálogo do Codex ainda não foi publicado." });
     const problem = choiceProblem(choice, this.deps.agents, catalog);
     if (!problem) return;

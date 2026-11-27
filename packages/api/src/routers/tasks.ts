@@ -25,9 +25,15 @@ import { createReviewRouter } from "./review";
 import { createProductionSessionControllers, type SessionControllers } from "../infra/sessionInteractionComposition";
 import { createSessionRouter } from "./session";
 import { lazyController } from "./lazyController";
+import type { WorktreeChoiceController } from "../controllers/worktreeChoiceController";
+import { createProductionWorktreeController } from "../infra/worktreeComposition";
+import { createWorktreeRouter } from "./worktree";
 import { taskPreviewInputSchema, taskPublishInputSchema, taskReconcilePublicationInputSchema } from "../schemas/tasks";
+import { createWorkAccountsRouter } from "./workAccounts";
+import type { WorkAccountController } from "../controllers/workAccountController";
+import { createProductionWorkAccountController } from "../infra/agentAccountComposition";
 
-export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController; review?: ReviewCycleController };
+export type TasksRouterExtras = { planning?: TaskPlanningController; terminal?: TerminalSessionController; artifacts?: TaskArtifactController; session?: SessionControllers; taskSet?: TaskSetController; plan?: ExecutionPlanController; review?: ReviewCycleController; worktree?: WorktreeChoiceController; workAccounts?: WorkAccountController };
 
 export function createTasksRouter(controller?: TasksController, publicationController?: TaskPublicationController, extras: TasksRouterExtras = {}) {
   const getController = lazyController(controller, createProductionTasksController);
@@ -39,6 +45,8 @@ export function createTasksRouter(controller?: TasksController, publicationContr
   const getTaskSetController = lazyController(extras.taskSet, createProductionTaskSetController);
   const getPlanController = lazyController(extras.plan, createProductionPlanController);
   const getReviewController = lazyController(extras.review, createProductionReviewController);
+  const getWorktreeController = lazyController(extras.worktree, createProductionWorktreeController);
+  const getWorkAccountController = lazyController(extras.workAccounts, createProductionWorkAccountController);
   const call = <T>(operation: () => Promise<T>) => operation().catch(mapTaskError);
   return router({
     list: protectedProcedure.input(taskListInputSchema).query(({ ctx, input }) => call(() => getController().list(ctx.principal, input))),
@@ -60,6 +68,8 @@ export function createTasksRouter(controller?: TasksController, publicationContr
     plan: createPlanRouter(getPlanController),
     review: createReviewRouter(getReviewController),
     session: createSessionRouter(getSessionController),
+    worktree: createWorktreeRouter(getWorktreeController),
+    workAccounts: createWorkAccountsRouter(getWorkAccountController),
     reconcilePublication: protectedProcedure.input(taskReconcilePublicationInputSchema).mutation(({ ctx, input }) => call(() => getPublicationController().reconcilePublication(ctx.principal, input))),
   });
 }

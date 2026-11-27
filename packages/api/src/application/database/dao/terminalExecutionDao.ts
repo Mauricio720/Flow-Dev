@@ -20,6 +20,10 @@ export type ExecutionSessionRow = {
   purpose: SessionPurposeKind;
   planItemId: string | null;
   agent: SessionAgent;
+  accountId: string | null;
+  accountLabel: string | null;
+  accountOwnerUserId: string | null;
+  accountRemovedAt: Date | null;
   model: string | null;
   effort: string | null;
 };

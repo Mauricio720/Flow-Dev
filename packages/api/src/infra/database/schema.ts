@@ -125,4 +125,5 @@ export { localLinkRequests } from "./schema/localLinkRequests";
 export { issueDeletionOperations } from "./schema/issueDeletion";
 export { projectAgentSettings } from "./schema/projectAgentSettings";
 export { projectLocalCheckouts } from "./schema/projectLocalCheckouts";
+export { agentAccounts, taskAgentAccounts } from "./schema/agentAccounts";
 export * from "./schema/tasks/terminalTables";

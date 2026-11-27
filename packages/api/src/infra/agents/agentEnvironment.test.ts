@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAgentEnvironment } from "./agentEnvironment";
+import { buildAgentEnvironment, credentialEnvironment } from "./agentEnvironment";
 
 describe("agent environment", () => {
   it("V-05b drops every variable outside the allow list", () => {
@@ -11,5 +11,11 @@ describe("agent environment", () => {
 
   it("adds the explicit extra variables and skips unset allowed ones", () => {
     expect(buildAgentEnvironment({ PATH: "/bin" }, { FLOW_CONTEXT_TOKEN: "cap" })).toEqual({ PATH: "/bin", FLOW_CONTEXT_TOKEN: "cap" });
+  });
+
+  it("V-10a preserves default homes and overrides each provider with the account home", () => {
+    expect(buildAgentEnvironment({ PATH: "/bin", CLAUDE_CONFIG_DIR: "/default/claude" })).toEqual({ PATH: "/bin", CLAUDE_CONFIG_DIR: "/default/claude" });
+    expect(buildAgentEnvironment({ PATH: "/bin", CLAUDE_CONFIG_DIR: "/default/claude" }, credentialEnvironment("claude", "/account/claude"))).toEqual({ PATH: "/bin", CLAUDE_CONFIG_DIR: "/account/claude" });
+    expect(buildAgentEnvironment({ PATH: "/bin", CODEX_HOME: "/default/codex" }, credentialEnvironment("codex", "/account/codex"))).toEqual({ PATH: "/bin", CODEX_HOME: "/account/codex" });
   });
 });

@@ -26,7 +26,9 @@ export type TaskErrorReason =
   | "session_control_denied" | "session_not_active" | "request_closed" | "request_answered" | "message_invalid" | "answer_incomplete" | "answer_invalid" | "decision_not_offered" | "secret_delivery_failed"
   | "image_too_large" | "unsupported_image_type" | "artifact_unavailable" | "image_limit" | "image_unavailable" | "image_permission_denied" | "attachment_unavailable"
   | "plan_conflict" | "plan_invalid_order" | "plan_task_unknown" | "plan_task_duplicated" | "plan_item_started" | "plan_limits" | "task_set_unavailable" | "plan_control_denied" | "choice_invalid" | "agent_unavailable" | "model_unavailable" | "plan_item_blocked" | "plan_item_not_ready" | "spec_not_found" | "review_action_invalid" | "review_cycle_active" | "review_cycle_changed" | "review_tasks_incomplete" | "review_sessions_open"
-  | "route_switch_decided" | "route_switch_not_found";
+  | "route_switch_decided" | "route_switch_not_found"
+  | "worktree_choice_required" | "worktree_choice_locked" | "worktree_folder_conflict" | "worktree_branch_busy" | "worktree_failed"
+  | "account_not_owned" | "account_removed";
 
 export class TaskError extends Error {
   constructor(readonly reason: TaskErrorReason, readonly fieldErrors?: Record<string, string>, cause?: unknown, readonly retryAfterSeconds?: number) {

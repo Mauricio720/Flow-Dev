@@ -20,8 +20,8 @@ export function codexLogSink() {
   return { entries, info, logged };
 }
 
-export function scriptedCodexRuntime(scriptPath: string, sink = codexLogSink()) {
-  const env = { ...process.env, NODE_ENV: "test", [CODEX_FAKE_SCRIPT_VARIABLE]: scriptPath };
+export function scriptedCodexRuntime(scriptPath: string, sink = codexLogSink(), extraEnv: NodeJS.ProcessEnv = {}) {
+  const env = { ...process.env, ...extraEnv, NODE_ENV: "test", [CODEX_FAKE_SCRIPT_VARIABLE]: scriptPath };
   const codexProcess = new CodexProcess({ locate: async () => null, has: async () => false }, env);
   return new CodexAppServerRuntime({ process: codexProcess, probe: { read: async () => MODEL_STATUS }, log: { info: sink.info, error: () => undefined } });
 }

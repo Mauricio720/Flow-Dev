@@ -56,12 +56,12 @@ export class TerminalOpenGuard {
     }
   }
 
-  async assertTools(choice: AgentChoice = { agent: "claude", model: "opus", effort: "max" }) {
+  async assertTools(choice: AgentChoice = { agent: "claude", model: "opus", effort: "max" }, taskId?: string) {
     if (choice.agent === "claude") {
       if (!(await this.deps.tools.has(CLAUDE_BINARY))) throw new TaskError("claude_unavailable");
       return;
     }
-    const status = await this.deps.codexProbe?.read();
+    const status = await this.deps.codexProbe?.read({ taskId });
     if (!status?.available) throw new TaskError("agent_unavailable", { message: status?.reason ?? "O catálogo do Codex não está disponível." });
     const model = status.models.find((item) => item.id === choice.model);
     if (!model) throw new TaskError("model_unavailable", { message: modelUnavailableMessage(choice.model) });

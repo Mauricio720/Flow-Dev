@@ -6,6 +6,7 @@ import { taskPlanningDecisions } from "./planning";
 import { tasks } from "./records";
 import { taskReviewCycles } from "./reviewCycles";
 import { taskSessionPlanItems } from "./sessionPlans";
+import { agentAccounts } from "../agentAccounts";
 
 export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -46,6 +47,7 @@ export const taskTerminalSessions = pgTable("task_terminal_sessions", {
   effort: text("effort"),
   agentVersion: text("agent_version"),
   reviewCycleId: uuid("review_cycle_id").references((): AnyPgColumn => taskReviewCycles.id, { onDelete: "set null" }),
+  agentAccountId: uuid("agent_account_id").references(() => agentAccounts.id, { onDelete: "restrict" }),
 }, (table) => [
   check("task_terminal_sessions_route_check", sql`${table.route} in ('direct_execution','tech_spec','prd')`),
   check("task_terminal_sessions_status_check", sql`${table.status} in ('opening','running','waiting','unconfirmed','ended','launch_failed','asking','interrupted')`),

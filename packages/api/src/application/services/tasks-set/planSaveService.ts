@@ -27,7 +27,7 @@ export class PlanSaveService {
     const plan = await this.deps.plans.find(request.taskId);
     this.requireVersion(request, plan);
     const resetItems = plan !== null && planFolderChanged(plan, set);
-    const items = await this.validated(set, resetItems ? null : plan, request.items);
+    const items = await this.validated(set, resetItems ? null : plan, request.items, request.taskId);
     const result = await this.deps.plans.save({ taskId: request.taskId, actorId: request.actorId, version: request.version, tasksFolder: set.folder, manifestVersion: set.manifestVersion, resetItems, items });
     if (result === "conflict") throw this.conflict(request, plan?.version ?? 0);
     this.deps.log.saved({ task: request.taskId, version: result.version, sessions: items.length, tasks: items.flatMap((item) => item.taskIds).length, reset: resetItems });
@@ -44,11 +44,11 @@ export class PlanSaveService {
     return new TaskError("plan_conflict");
   }
 
-  private async validated(set: TaskSet, plan: StoredPlan | null, drafts: PlanItemDraft[]) {
+  private async validated(set: TaskSet, plan: StoredPlan | null, drafts: PlanItemDraft[], taskId: string) {
     const stored = plan ? reconcilePlan(plan, set).items : [];
     const outcome = validatePlan({ set, stored, drafts });
     if ("error" in outcome) throw new TaskError(outcome.error, outcome.message ? { message: outcome.message } : undefined);
-    const catalog = await this.deps.catalog?.codexStatus();
+    const catalog = await this.deps.catalog?.codexStatus(taskId);
     for (const item of outcome.items) this.requireChoice(item, stored, catalog);
     return outcome.items;
   }

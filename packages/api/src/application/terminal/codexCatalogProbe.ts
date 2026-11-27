@@ -1,5 +1,5 @@
 import type { CodexStatus } from "./codexCatalog";
 
 export interface CodexCatalogProbe {
-  read(): Promise<CodexStatus>;
+  read(input?: { codexHome?: string; taskId?: string }): Promise<CodexStatus>;
 }

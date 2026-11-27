@@ -42,7 +42,7 @@ export class ExecutionPlanController {
   async get(actor: SessionPrincipal, input: PlanScope) {
     await this.requireTask(actor, input);
     const [plan, set, canEdit] = await Promise.all([this.deps.plans.find(input.taskId), this.deps.loader.load(input.taskId), this.canEdit(actor, input)]);
-    const status = this.deps.catalog ? await this.deps.catalog.codexStatus() : null;
+    const status = this.deps.catalog ? await this.deps.catalog.codexStatus(input.taskId) : null;
     const running = this.deps.catalog ? await this.deps.catalog.running() : true;
     const agents = this.deps.catalog ? publishedAgentAvailability(this.deps.agents, status, running) : agentAvailability(this.deps.agents);
     return buildPlanView({ plan, set, canEdit, agents });

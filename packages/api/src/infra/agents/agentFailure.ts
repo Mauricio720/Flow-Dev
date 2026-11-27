@@ -7,7 +7,8 @@ const SIGNED_OUT = /not logged in|please run \/login|authentication failed|oauth
 const USAGE_LIMIT = /hit your (usage |session |weekly )?limit|usage limit|limit reached|rate.?limit|too many requests/i;
 const MODEL_UNAVAILABLE = /selected model|model .*(not found|does not exist|unavailable)|unknown model/i;
 const CLAUDE_MODEL_STATUS = 404;
-const CLAUDE_LIMIT_STATUS = 429;
+const MODEL_USAGE_LIMIT = /model usage limit/i;
+export const CLAUDE_LIMIT_STATUS = 429;
 const FAILED_EVENT_TYPES = new Set(["error", "turn.failed"]);
 
 function parseJson(text: string): Record<string, unknown> | null {
@@ -33,7 +34,7 @@ function classify(provider: AgentProvider, result: ProcessResult): AgentRunFailu
   const { texts, status } = provider === "claude" ? claudeSignals(result) : codexSignals(result);
   const text = texts.join("\n");
   if (SIGNED_OUT.test(text)) return "not_signed_in";
-  if (USAGE_LIMIT.test(text) || status === CLAUDE_LIMIT_STATUS) return "usage_limit";
+  if (isUsageLimit(text) || status === CLAUDE_LIMIT_STATUS) return "usage_limit";
   if (MODEL_UNAVAILABLE.test(text) || status === CLAUDE_MODEL_STATUS) return "model_unavailable";
   return "provider_failed";
 }
@@ -52,6 +53,10 @@ export function classifyFailure(provider: AgentProvider, result: ProcessResult) 
 
 export function claudeReportsError(stdout: string) {
   return parseJson(stdout.trim())?.is_error === true;
+}
+
+export function isUsageLimit(text: string) {
+  return USAGE_LIMIT.test(text) && !MODEL_USAGE_LIMIT.test(text);
 }
 
 export function withProviderDetail(provider: AgentProvider, error: unknown) {

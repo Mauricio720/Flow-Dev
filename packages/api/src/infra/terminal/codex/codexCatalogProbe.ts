@@ -12,14 +12,14 @@ export type CodexProbeDeps = { tools: ToolLocator & { locate(binary: string): Pr
 export class LocalCodexCatalogProbe implements CodexCatalogProbe {
   constructor(private readonly deps: CodexProbeDeps) {}
 
-  async read(): Promise<CodexStatus> {
+  async read(input?: { codexHome?: string; taskId?: string }): Promise<CodexStatus> {
     const binary = await this.deps.tools.locate("codex");
     if (!binary) return versionStatus(null, false, this.now())!;
     const version = await (this.deps.readVersion ?? readVersion)(binary);
     const rejected = versionStatus(version, true, this.now());
     if (rejected) return rejected;
     try {
-      const catalog = await this.deps.transport(binary).readCatalog();
+      const catalog = await this.deps.transport(binary, input).readCatalog();
       const status = catalogStatus({ version: version!, loggedIn: catalog.loggedIn, models: catalog.models as ModelModel[], now: this.now() });
       return status;
     } catch {

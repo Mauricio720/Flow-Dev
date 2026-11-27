@@ -29,6 +29,13 @@ describe("buildQueryOptions", () => {
     expect(env).toEqual({ PATH: "/usr/bin", HOME: "/home/ana", CLAUDE_CONFIG_DIR: "/home/ana/.claude" });
   });
 
+  it("uses the account credential directory without changing the caller's environment", () => {
+    const source = inputFor().env;
+    expect(buildQueryOptions(inputFor({ credentialHome: "/accounts/work" })).env).toMatchObject({ CLAUDE_CONFIG_DIR: "/accounts/work" });
+    expect(source.CLAUDE_CONFIG_DIR).toBe("/home/ana/.claude");
+    expect(buildQueryOptions(inputFor()).env).toMatchObject({ CLAUDE_CONFIG_DIR: "/home/ana/.claude" });
+  });
+
   it("V-38a passes the model and effort of the session as options, and none of them when they were not chosen", () => {
     expect(buildQueryOptions(inputFor({ model: "opus", effort: "max" }))).toMatchObject({ model: "opus", effort: "max" });
     expect(buildQueryOptions(inputFor({ model: "sonnet", effort: "high", resumeId: "abc" }))).toMatchObject({ model: "sonnet", effort: "high", resume: "abc" });

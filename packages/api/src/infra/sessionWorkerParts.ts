@@ -46,9 +46,11 @@ import { CodexProcess } from "./terminal/codex/codexProcess";
 import { LocalCodexCatalogProbe } from "./terminal/codex/codexCatalogProbe";
 import { lazyReviewLauncher } from "./lazyReviewLauncher";
 import { createTerminalLauncher } from "./terminalComposition";
+import type { SessionAccountGate } from "../application/services/terminal/sessionAccountGate";
+import { buildAccountWorkerParts } from "./accountWorkerParts";
 
 type Database = ReturnType<typeof requireDatabase>;
-export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; routeSwitches?: Pick<RouteSwitchService, "propose">; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe; tools?: ToolLocator; reviewCycles?: ReviewCycleWorkerDao };
+export type WorkerOverrides = { runtimes?: SessionRuntimes; messages?: SessionMessageDao; routeSwitches?: Pick<RouteSwitchService, "propose">; permissions?: SessionPermissions; env?: NodeJS.ProcessEnv; now?: () => Date; hostId?: string; workerId?: string; log?: SessionLog; secretAnswerSql?: postgres.Sql; codexProbe?: CodexCatalogProbe; tools?: ToolLocator; reviewCycles?: ReviewCycleWorkerDao; accountGate?: SessionAccountGate };
 
 function selectRuntime(env: NodeJS.ProcessEnv, log: SessionLog): AgentSessionRuntime {
   const script = scriptFromEnvironment(env);
@@ -61,9 +63,10 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const now = overrides.now ?? (() => new Date());
   const identity = { hostId: overrides.hostId ?? machineIdentity(), workerId: overrides.workerId ?? randomUUID() };
   const sessions = new DrizzleTerminalSessionDao(database);
+  const account = buildAccountWorkerParts({ database, env, hostId: identity.hostId, gate: overrides.accountGate });
   const tools = overrides.tools ?? new PathToolLocator(env);
   const codexTools = new PathToolLocator(env);
-  const codexProbe = overrides.codexProbe ?? new LocalCodexCatalogProbe({ tools: codexTools, transport: (binary) => new AppServerCodexCatalogTransport({ binary, env }), now });
+  const codexProbe = overrides.codexProbe ?? new LocalCodexCatalogProbe({ tools: codexTools, transport: (binary, input) => new AppServerCodexCatalogTransport({ binary, env, codexHome: input?.codexHome }), now });
   const codexRuntime = new CodexAppServerRuntime({ process: new CodexProcess(codexTools, env), probe: codexProbe, log });
   const runtimes = overrides.runtimes ?? { claude: selectRuntime(env, log), codex: codexRuntime };
   const requests = new DrizzleSessionRequestDao(database);
@@ -73,7 +76,7 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const pending = new PendingRequestRegistry();
   const gate = new SessionRequestGate();
   const cancellation = new RequestCancellation({ requests, registry: pending, gate, now });
-  const exit = new SessionExitHandling({ sessions, status, messages, cancellation, registry, now, log });
+  const exit = new SessionExitHandling({ sessions, status, messages, cancellation, registry, now, log, accounts: account.accounts });
   const tracker = new InflightTracker();
   const broker = new SessionRequestBroker({ requests, status, registry: pending, tracker, gate, log });
   const secretAnswerReceiver = new SecretAnswerReceiver({ requests, status, registry: pending, gate });
@@ -85,11 +88,11 @@ export function buildWorkerParts(database: Database, overrides: WorkerOverrides)
   const reviewCycles = overrides.reviewCycles ?? new DrizzleReviewCycleWorkerDao(database);
   const reviewClaims = new DrizzleIssueClaimDao(database);
   const reviewTaskSets = new TaskSetLoader(new DrizzleTaskSetReadDao(database));
-  const catalog = new CodexCatalogStep(new CodexCatalogPublisher({ hosts, probe: codexProbe, hostId: identity.hostId, now, log }));
+  const catalog = new CodexCatalogStep(new CodexCatalogPublisher({ hosts, probe: codexProbe, hostId: identity.hostId, now, accounts: account.accounts, home: account.home, log }));
   const control = new DrizzleSessionControlDao(database);
   const context = new FileSessionContextBuilder(env);
   const reviewLauncher = lazyReviewLauncher(() => createTerminalLauncher(database, { env, now, hostId: identity.hostId, tools, context, codexProbe }));
-  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context, runtimes, reviewCycles, reviewClaims, reviewTaskSets, reviewLauncher };
+  return { env, log, now, identity, sessions, requests, messages, status, registry, pending, cancellation, exit, handlers, recorder, hosts, control, tracker, secretAnswerListener, catalog, context, runtimes, reviewCycles, reviewClaims, reviewTaskSets, reviewLauncher, accountGate: account.gate };
 }
 
 export type WorkerParts = ReturnType<typeof buildWorkerParts>;

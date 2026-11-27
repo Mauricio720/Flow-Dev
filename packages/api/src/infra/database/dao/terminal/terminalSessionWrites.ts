@@ -21,7 +21,7 @@ export async function findSessionByRequestKey(database: Database, userId: string
 }
 
 function choiceColumns(input: CreateTerminalSessionInput) {
-  return { purpose: input.purpose ?? "route", planItemId: input.planItemId ?? null, agent: input.agent ?? "claude", model: input.model ?? null, effort: input.effort ?? null, agentVersion: input.agentVersion ?? null, reviewCycleId: input.reviewCycleId ?? null };
+  return { purpose: input.purpose ?? "route", planItemId: input.planItemId ?? null, agent: input.agent ?? "claude", model: input.model ?? null, effort: input.effort ?? null, agentVersion: input.agentVersion ?? null, reviewCycleId: input.reviewCycleId ?? null, agentAccountId: input.agentAccountId ?? null };
 }
 
 async function relaunch(database: Database, existing: TerminalSessionRecord, input: CreateTerminalSessionInput): Promise<CreatedTerminalSession> {

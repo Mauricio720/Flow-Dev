@@ -3,6 +3,7 @@ import { codexHookEvents } from "../../../application/services/terminal/codex/co
 import type { RuntimeStartInput } from "../../../application/terminal/agentSessionRuntime";
 import type { ThreadNotification } from "./protocol/codexMethods";
 import type { CodexTurnQueue } from "./codexTurnQueue";
+import { codexUsageLimitOf, type CodexUsageLimitFailure } from "./codexTurnFailure";
 
 export function emitCodexNotification({ input, method, params, threadId, announce }: { input: RuntimeStartInput; method: string; params: ThreadNotification; threadId: string; announce: (id: string) => void }) {
   const id = params.threadId ?? params.thread?.id;
@@ -13,8 +14,10 @@ export function emitCodexNotification({ input, method, params, threadId, announc
   for (const hook of codexHookEvents({ method, params }, threadId)) input.handlers.onHook(hook);
 }
 
-export function handleCodexNotification({ input, method, params, threadId, turns, sendTurn }: { input: RuntimeStartInput; method: string; params: ThreadNotification; threadId: string; turns: CodexTurnQueue; sendTurn: (prompt: string) => void }) {
+export function handleCodexNotification({ input, method, params, threadId, turns, sendTurn, onUsageLimit }: { input: RuntimeStartInput; method: string; params: ThreadNotification; threadId: string; turns: CodexTurnQueue; sendTurn: (prompt: string) => void; onUsageLimit?: (failure: CodexUsageLimitFailure) => void }) {
   if ((params.threadId ?? params.thread?.id) !== threadId) return;
+  const usageLimit = codexUsageLimitOf(method, params);
+  if (usageLimit) { onUsageLimit?.(usageLimit); return; }
   emitCodexNotification({ input, method, params, threadId, announce: () => undefined });
   if (method === "turn/completed") { const next = turns.complete(); if (next) sendTurn(next); }
 }

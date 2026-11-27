@@ -16,7 +16,7 @@ export type CodexStartupContext = { input: RuntimeStartInput; deps: CodexSession
 
 export async function openCodexSession(context: CodexStartupContext) {
   const { input, deps, state } = context;
-  const status = await deps.probe.read();
+  const status = await deps.probe.read({ codexHome: input.credentialHome });
   if (isCodexSessionStopped(state)) return;
   state.version = status.version;
   input.handlers.onAgentInfo?.({ version: status.version });
@@ -33,7 +33,7 @@ function assertAvailable(status: CatalogStatus, input: RuntimeStartInput) {
 
 async function openProcess(context: CodexStartupContext) {
   const { input, deps, state, requests, listeners } = context;
-  const child = await deps.process.start();
+  const child = await deps.process.start({ credentialHome: input.credentialHome });
   state.child = child;
   if (isCodexSessionStopped(state)) {
     await deps.process.terminate(child);

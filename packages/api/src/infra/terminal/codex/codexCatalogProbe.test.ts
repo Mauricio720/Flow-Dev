@@ -27,4 +27,11 @@ describe("LocalCodexCatalogProbe", () => {
     const probe = new LocalCodexCatalogProbe({ tools: { locate: async () => "/fake/codex", has: async () => true }, readVersion: async () => "0.159.3", transport: () => ({ readCatalog: async () => ({ loggedIn: false, models: [] }) }), now });
     expect(await probe.read()).toMatchObject({ available: false, reason: CODEX_LOGIN });
   });
+
+  it("passes the selected account home to the catalog transport", async () => {
+    const transport = vi.fn(() => ({ readCatalog: async () => ({ loggedIn: true, models: [] }) }));
+    const probe = new LocalCodexCatalogProbe({ tools: { locate: async () => "/fake/codex", has: async () => true }, readVersion: async () => "0.159.3", transport, now });
+    await probe.read({ codexHome: "/accounts/codex-c" });
+    expect(transport).toHaveBeenCalledWith("/fake/codex", { codexHome: "/accounts/codex-c" });
+  });
 });

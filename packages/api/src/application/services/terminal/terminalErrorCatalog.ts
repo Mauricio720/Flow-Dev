@@ -1,6 +1,6 @@
 import type { TaskErrorReason } from "../tasks/taskErrors";
 
-export const TERMINAL_REASONS = ["planning_not_approved", "checkout_missing", "checkout_invalid", "skill_missing", "claude_unavailable", "session_service_offline", "terminal_disabled", "session_already_active", "prompt_invalid", "attachment_missing", "attachment_limit"] as const satisfies readonly TaskErrorReason[];
+export const TERMINAL_REASONS = ["planning_not_approved", "checkout_missing", "checkout_invalid", "skill_missing", "claude_unavailable", "session_service_offline", "terminal_disabled", "session_already_active", "prompt_invalid", "attachment_missing", "attachment_limit", "account_not_owned", "account_removed"] as const satisfies readonly TaskErrorReason[];
 
 export type TerminalReason = (typeof TERMINAL_REASONS)[number];
 export type TerminalErrorDetails = Record<string, string> | undefined;
@@ -10,7 +10,7 @@ export const SESSION_SERVICE_OFFLINE_MESSAGE = "O serviço de sessões do Flow D
 export const TOTAL_SIZE_KIND = "total_size";
 export const SESSION_ALREADY_ACTIVE_MESSAGE = "Já existe uma sessão aberta para esta tarefa. Abrir outra?";
 
-const PRECONDITION_REASONS = new Set<string>(["planning_not_approved", "checkout_missing", "checkout_invalid", "skill_missing", "claude_unavailable", "session_service_offline", "terminal_disabled", "attachment_missing"]);
+const PRECONDITION_REASONS = new Set<string>(["planning_not_approved", "checkout_missing", "checkout_invalid", "skill_missing", "claude_unavailable", "session_service_offline", "terminal_disabled", "attachment_missing", "account_not_owned", "account_removed"]);
 
 export function isTerminalReason(reason: string): reason is TerminalReason {
   return (TERMINAL_REASONS as readonly string[]).includes(reason);
@@ -41,5 +41,6 @@ function terminalMessageRest(reason: string, details: TerminalErrorDetails) {
   if (reason === "session_already_active") return SESSION_ALREADY_ACTIVE_MESSAGE;
   if (reason === "prompt_invalid") return "O prompt precisa ter entre 1 e 20.000 caracteres.";
   if (reason === "attachment_missing") return "Um dos anexos não está mais disponível. Anexe de novo e tente outra vez.";
+  if (reason === "account_not_owned" || reason === "account_removed") return details?.message;
   return reason === "attachment_limit" ? attachmentLimit(details) : undefined;
 }

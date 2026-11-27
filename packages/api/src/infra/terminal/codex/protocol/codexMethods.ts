@@ -11,6 +11,8 @@ import type { ThreadStartResponse } from "./generated/v2/ThreadStartResponse";
 import type { ThreadUnsubscribeParams } from "./generated/v2/ThreadUnsubscribeParams";
 import type { TurnStartParams } from "./generated/v2/TurnStartParams";
 import type { TurnStartResponse } from "./generated/v2/TurnStartResponse";
+import type { TurnError } from "./generated/v2/TurnError";
+import type { TurnStatus } from "./generated/v2/TurnStatus";
 
 export type InitializeRequest = InitializeParams;
 export type ThreadStartRequest = ThreadStartParams;
@@ -23,4 +25,4 @@ export type TurnStartResult = TurnStartResponse;
 export type PermissionsRequestApprovalResponse = GeneratedPermissionsResponse;
 export type FileChangeApprovalRequest = FileChangeRequestApprovalParams;
 export type ItemStartedParams = ItemStartedNotification;
-export type ThreadNotification = { threadId?: string; thread?: { id: string }; turnId?: string; item?: CodexCompletedItem & CodexHookItem; turn?: { id?: string } };
+export type ThreadNotification = { threadId?: string; thread?: { id: string }; turnId?: string; item?: CodexCompletedItem & CodexHookItem; turn?: { id?: string; status?: TurnStatus; error?: TurnError | null }; error?: TurnError; willRetry?: boolean };

@@ -22,12 +22,12 @@ type Database = ReturnType<typeof requireDatabase>;
 const SHUTDOWN_GRACE_MS = 5_000;
 
 function buildSteps(parts: WorkerParts) {
-  const { identity, log, now, registry, messages, status, cancellation, control, handlers, context, runtimes, recorder } = parts;
-  const starter = new SessionStarter({ sessions: parts.sessions, context, runtimes, handlers, registry, log });
+  const { identity, log, now, registry, messages, status, cancellation, control, handlers, context, runtimes, recorder, accountGate } = parts;
+  const starter = new SessionStarter({ sessions: parts.sessions, context, runtimes, handlers, registry, log, accountGate });
   return [
     new OrphanRecoveryStep({ control, messages, cancellation, identity, now, log }),
     new OpeningStep({ control, starter, identity, log }),
-    new SessionResumeStep({ status, messages, runtimes, handlers, registry, context, exit: parts.exit, cancellation, identity, now, log }),
+    new SessionResumeStep({ status, messages, runtimes, handlers, registry, context, exit: parts.exit, cancellation, identity, now, log, accountGate }),
     new MessageDeliveryStep({ registry, messages, now, log }),
     buildReviewStep(parts),
     new SessionControlsStep({ registry, hostId: identity.hostId, status, controls: control, messages, cancellation, flush: () => handlers.flush(), captureEnd: (sessionId) => recorder.captureEnd(sessionId), now, log }),

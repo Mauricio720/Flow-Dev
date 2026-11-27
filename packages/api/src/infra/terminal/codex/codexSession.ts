@@ -67,7 +67,13 @@ export class CodexSession implements RuntimeHandle {
     const { threadId } = this.state;
     if (!threadId) return;
     this.requests.track(method, params as ItemStartedParams);
-    handleCodexNotification({ input: this.input, method, params: params as ThreadNotification, threadId, turns: this.turns, sendTurn: (prompt) => void this.sendTurn(prompt) });
+    handleCodexNotification({ input: this.input, method, params: params as ThreadNotification, threadId, turns: this.turns, sendTurn: (prompt) => void this.sendTurn(prompt), onUsageLimit: (failure) => this.stopOnUsageLimit(failure) });
+  }
+
+  private stopOnUsageLimit(failure: Error) {
+    if (this.state.failing) return;
+    this.state.startedTurn = true;
+    void failCodexSession(this.exitContext, failure);
   }
 
   private async sendTurn(prompt: string) {

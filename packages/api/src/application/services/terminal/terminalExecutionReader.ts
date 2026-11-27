@@ -1,6 +1,7 @@
 import type { ExecutionArtifactRow, ExecutionSessionRow, TerminalExecutionDao } from "../../database/dao/terminalExecutionDao";
 import { SESSION_RETENTION_MS } from "./terminalCleanup";
 import { UNCONFIRMED_AFTER_MS, silentSince } from "./terminalSessionTiming";
+import { sessionAccountView } from "./sessionAccountView";
 
 export const MAX_EVENTS_PER_SESSION = 200;
 const FLOW_DEV_RUNTIME = "flow_dev";
@@ -14,9 +15,9 @@ export class TerminalExecutionReader {
     await this.dao.expireUnconfirmed(scope, new Date(now.getTime() - UNCONFIRMED_AFTER_MS));
   }
 
-  async read(taskId: string, now: Date) {
+  async read(taskId: string, viewerUserId: string, now: Date) {
     const rows = await this.load(taskId);
-    return { sessions: rows.sessions.map((session) => sessionView(session, rows, now)), artifacts: rows.artifacts.map(artifactView) };
+    return { sessions: rows.sessions.map((session) => sessionView(session, rows, viewerUserId, now)), artifacts: rows.artifacts.map(artifactView) };
   }
 
   private async load(taskId: string) {
@@ -27,7 +28,7 @@ export class TerminalExecutionReader {
   }
 }
 
-function sessionView(session: ExecutionSessionRow, rows: Rows, now: Date) {
+function sessionView(session: ExecutionSessionRow, rows: Rows, viewerUserId: string, now: Date) {
   const events = rows.events.filter((event) => event.sessionId === session.id);
   const count = rows.counts.find((entry) => entry.sessionId === session.id);
   const silent = session.runtime === FLOW_DEV_RUNTIME ? null : silentSince({ status: session.status, lastSignalAt: session.lastSignalAt, now });
@@ -36,7 +37,7 @@ function sessionView(session: ExecutionSessionRow, rows: Rows, now: Date) {
   const attachments = rows.attachments.filter((item) => item.sessionId === session.id).map(({ name, contentType, byteSize }) => ({ name, contentType, byteSize, availableUntil, removed }));
   return {
     id: session.id, status: session.status, runtime: session.runtime, route: session.route, switchedTo: session.switchedTo, userName: session.userName,
-    purpose: session.purpose, planItemId: session.planItemId, agent: session.agent, model: session.model, effort: session.effort,
+    purpose: session.purpose, planItemId: session.planItemId, agent: session.agent, account: sessionAccountView(session, viewerUserId), model: session.model, effort: session.effort,
     openedAt: session.openedAt.toISOString(), endedAt: session.endedAt?.toISOString() ?? null,
     lastEventAt: count?.lastAt?.toISOString() ?? null, silentSince: silent?.toISOString() ?? null,
     droppedEvents: session.droppedEvents, hiddenEvents: Math.max(0, (count?.total ?? 0) - events.length),

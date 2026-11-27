@@ -25,3 +25,7 @@ export class ConsoleSessionLog implements SessionLog {
 export function errorFields(error: unknown): SessionLogFields {
   return { error: error instanceof Error ? error.message : String(error) };
 }
+
+export function accountLogField(session: { agentAccountId: string | null }): SessionLogFields {
+  return { account: session.agentAccountId ?? "default" };
+}

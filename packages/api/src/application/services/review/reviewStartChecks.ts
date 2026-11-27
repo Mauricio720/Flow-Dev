@@ -5,7 +5,7 @@ import type { SessionCatalogStatus } from "../terminal/sessionServiceStatus";
 import type { TaskSet } from "../tasks-set/taskSetTypes";
 import { TaskError } from "../tasks/taskErrors";
 
-export type ReviewStartChecksDeps = { guard: Pick<TerminalOpenGuard, "assertTools">; agents: ReadonlySet<SessionAgent>; catalog: Pick<SessionCatalogStatus, "codexStatus"> };
+export type ReviewStartChecksDeps = { guard: Pick<TerminalOpenGuard, "assertTools">; agents: ReadonlySet<SessionAgent>; catalog: Pick<SessionCatalogStatus, "codexStatus">; taskId: string };
 
 export function requireReadableTaskSet(set: TaskSet | null): TaskSet {
   if (!set || set.problem !== null) throw new TaskError("task_set_unavailable");
@@ -26,8 +26,8 @@ export function requireNoOpenSessions(count: number, allowOpenSessions: boolean)
 }
 
 export async function requireReviewChoices(input: ReviewStartChecksDeps & { choices: AgentChoice[] }) {
-  for (const choice of input.choices) await input.guard.assertTools(choice);
-  const codex = await input.catalog.codexStatus();
+  for (const choice of input.choices) await input.guard.assertTools(choice, input.taskId);
+  const codex = await input.catalog.codexStatus(input.taskId);
   for (const choice of input.choices) requireValidChoice(choice, input.agents, codex);
 }
 

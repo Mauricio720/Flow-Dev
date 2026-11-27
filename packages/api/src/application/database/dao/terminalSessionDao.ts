@@ -46,6 +46,7 @@ export type TerminalSessionRecord = {
   model: string | null;
   effort: string | null;
   reviewCycleId: string | null;
+  agentAccountId: string | null;
 };
 
 export type ApprovedPlanning = {
@@ -78,6 +79,7 @@ export type CreateTerminalSessionInput = {
   effort?: string | null;
   reviewCycleId?: string | null;
   agentVersion?: string | null;
+  agentAccountId?: string | null;
 };
 
 export type CreatedTerminalSession = { session: TerminalSessionRecord; created: boolean };

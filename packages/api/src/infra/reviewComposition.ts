@@ -27,6 +27,9 @@ import { FileSessionContextBuilder } from "./terminal/fileSessionContextBuilder"
 import { terminalPorts } from "./terminal/terminalPorts";
 import { machineIdentity } from "./terminal/machineIdentity";
 import type { Database } from "./database/client";
+import { DrizzleAgentAccountDao } from "./database/dao/agent-accounts/drizzleAgentAccountDao";
+import { DrizzleTaskAgentAccountDao } from "./database/dao/agent-accounts/drizzleTaskAgentAccountDao";
+import { FileAgentAccountHome } from "./agents/fileAgentAccountHome";
 
 type ReviewOverrides = { repositories?: Pick<RepositoryAccessService, "requireRead">; authorization?: Pick<WorkAuthorization, "requireOperate">; guard?: TerminalOpenGuard; catalog?: SessionCatalogStatus; agents?: ReadonlySet<SessionAgent>; hostId?: string; now?: () => Date; env?: NodeJS.ProcessEnv; context?: SessionContextBuilder; tools?: ToolLocator };
 
@@ -37,7 +40,7 @@ export function createReviewController(database: Database, overrides: ReviewOver
   const taskSets = new DrizzleTaskSetReadDao(database);
   const projects = new DrizzleProjectDao(database);
   const checkouts = new DrizzleLocalCheckoutDao(database);
-  const catalog = overrides.catalog ?? new HeartbeatSessionServiceStatus({ hosts: new DrizzleSessionHostDao(database), hostId, now });
+  const catalog = overrides.catalog ?? new HeartbeatSessionServiceStatus({ hosts: new DrizzleSessionHostDao(database), hostId, now, choices: new DrizzleTaskAgentAccountDao(database), accounts: new DrizzleAgentAccountDao(database), home: new FileAgentAccountHome(env) });
   const guard = overrides.guard ?? createGuard({ database, env, context: overrides.context ?? new FileSessionContextBuilder(env), checkouts, projects, catalog, tools: overrides.tools ?? terminalPorts(env).tools, now });
   const service = new ReviewCycleService({ cycles: new DrizzleReviewCycleDao(database), taskSets: new TaskSetLoader(taskSets), sessions: new DrizzleTerminalExecutionDao(database), projects, guard, agents: overrides.agents ?? REGISTERED_SESSION_AGENTS, catalog, hostId });
   return new ReviewCycleController({ service, repositories: overrides.repositories ?? createRepositoryAccessService(database), tasks: taskSets, authorization: overrides.authorization ?? createWorkAuthorization(database), now });

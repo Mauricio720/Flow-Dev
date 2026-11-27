@@ -2,6 +2,7 @@ import type { CanUseTool, EffortLevel, Options, PermissionMode as SdkPermissionM
 import type { PermissionMode } from "../../application/terminal/sessionInteraction";
 import { SESSION_SYSTEM_PROMPT } from "./agentSdkSystemPrompt";
 import { terminalEnvironment } from "./terminalEnvironment";
+import { credentialEnvironment } from "../agents/agentEnvironment";
 
 export const SDK_PERMISSION_MODES: Record<PermissionMode, SdkPermissionMode> = { bypass: "bypassPermissions", accept_edits: "acceptEdits", ask_all: "default" };
 const SETTING_SOURCES: Options["settingSources"] = ["user", "project", "local"];
@@ -17,6 +18,7 @@ export type QueryOptionsInput = {
   resumeId?: string;
   model?: string;
   effort?: string;
+  credentialHome?: string;
   stderr?: (data: string) => void;
 };
 
@@ -25,7 +27,7 @@ export function buildQueryOptions(input: QueryOptionsInput): Options {
   return {
     cwd: input.cwd,
     pathToClaudeCodeExecutable: input.claudePath,
-    env: terminalEnvironment(input.env),
+    env: { ...terminalEnvironment(input.env), ...(input.credentialHome ? credentialEnvironment("claude", input.credentialHome) : {}) },
     plugins: [{ type: "local", path: input.contextDir }],
     systemPrompt: SESSION_SYSTEM_PROMPT,
     settingSources: SETTING_SOURCES,

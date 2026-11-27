@@ -13,8 +13,9 @@ async function fixture() {
   roots.push(root);
   const script = join(root, "script.json");
   const record = join(root, "requests.jsonl");
-  await writeFile(script, JSON.stringify({ methods: ["initialize", "model/list"], recordPath: record, results: { initialize: {}, "model/list": { data: [{ id: "model-1", displayName: "Model" }] } } }));
-  return { root, script, record };
+  const envRecord = join(root, "environment.json");
+  await writeFile(script, JSON.stringify({ methods: ["initialize", "model/list"], recordPath: record, envRecordPath: envRecord, results: { initialize: {}, "model/list": { data: [{ id: "model-1", displayName: "Model" }] } } }));
+  return { root, script, record, envRecord };
 }
 
 describe("AppServerCodexCatalogTransport", () => {
@@ -54,5 +55,14 @@ describe("AppServerCodexCatalogTransport", () => {
     const transport = new AppServerCodexCatalogTransport({ binary: "/fake/codex", env: { ...process.env, NODE_ENV: "test", [CODEX_FAKE_SCRIPT_VARIABLE]: files.script }, loginStatus: async () => false });
     await expect(transport.readCatalog()).resolves.toEqual({ loggedIn: false, models: [] });
     await expect(readFile(files.record, "utf8")).rejects.toThrow();
+  });
+
+  it("uses the selected account home for login status and app-server", async () => {
+    const files = await fixture();
+    const loginStatus = vi.fn(async (_binary: string, env?: NodeJS.ProcessEnv) => env?.CODEX_HOME === "/accounts/codex-c");
+    const transport = new AppServerCodexCatalogTransport({ binary: "/fake/codex", env: { ...process.env, NODE_ENV: "test", [CODEX_FAKE_SCRIPT_VARIABLE]: files.script }, codexHome: "/accounts/codex-c", loginStatus });
+    await expect(transport.readCatalog()).resolves.toMatchObject({ loggedIn: true });
+    expect(loginStatus).toHaveBeenCalledWith("/fake/codex", expect.objectContaining({ CODEX_HOME: "/accounts/codex-c" }));
+    expect(JSON.parse(await readFile(files.envRecord, "utf8"))).toEqual({ CODEX_HOME: "/accounts/codex-c" });
   });
 });

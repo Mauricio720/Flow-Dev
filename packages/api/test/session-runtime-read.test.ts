@@ -18,7 +18,7 @@ describe("terminal execution read by runtime", () => {
     const world = await executionWorld();
     const flowDev = await seedSession(world, { runtime: "flow_dev", hostId: "m:a", status: "waiting", openedAt: before(SILENT_FOR_MS), lastSignalAt: before(SILENT_FOR_MS) });
     const terminal = await seedSession(world, { runtime: "terminal", status: "waiting", openedAt: before(SILENT_FOR_MS), lastSignalAt: before(SILENT_FOR_MS) });
-    const { sessions } = await world.reader.read(world.setup.taskId, NOW);
+    const { sessions } = await world.reader.read(world.setup.taskId, world.setup.ownerId, NOW);
     const byId = new Map(sessions.map((session) => [session.id, session]));
     expect(byId.get(flowDev.id)).toMatchObject({ runtime: "flow_dev", silentSince: null });
     expect(byId.get(terminal.id)).toMatchObject({ runtime: "terminal", silentSince: before(SILENT_FOR_MS).toISOString() });
@@ -29,7 +29,7 @@ describe("terminal execution read by runtime", () => {
     const late = await seedSession(world, { runtime: "flow_dev", hostId: "m:a", openedAt: before(61 * SECOND_MS) });
     const early = await seedSession(world, { runtime: "flow_dev", hostId: "m:a", openedAt: before(59 * SECOND_MS) });
     await world.reader.expireUnconfirmed({ projectId: world.setup.project.id, taskId: world.setup.taskId }, NOW);
-    const { sessions } = await world.reader.read(world.setup.taskId, NOW);
+    const { sessions } = await world.reader.read(world.setup.taskId, world.setup.ownerId, NOW);
     const statusOf = (id: string) => sessions.find((session) => session.id === id)!.status;
     expect([statusOf(late.id), statusOf(early.id)]).toEqual(["unconfirmed", "opening"]);
   });

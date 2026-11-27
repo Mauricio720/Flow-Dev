@@ -9,7 +9,7 @@ export type RuntimePermissionResult =
   | { behavior: "allow"; decision: "allow_session" }
   | { behavior: "allow"; decision: "allow_always"; scope: "machine"; updatedPermissions?: unknown[] }
   | { behavior: "deny"; message: string };
-export type RuntimeExit = { kind: "ended" | "crashed" | "failed"; detail?: string };
+export type RuntimeExit = { kind: "ended" | "crashed" | "failed"; detail?: string; limit?: true };
 
 export type RuntimeHandlers = {
   onAgentInfo?(info: { version: string | null }): void;
@@ -20,8 +20,8 @@ export type RuntimeHandlers = {
 };
 
 export type RuntimeChoice = { model?: string; effort?: string };
-export type RuntimeStartInput = RuntimeChoice & { sessionId: string; cwd: string; purpose?: SessionPurposeKind; prompt: string; contextDir: string; permissionMode: PermissionMode; handlers: RuntimeHandlers };
-export type RuntimeResumeInput = RuntimeChoice & { sessionId: string; claudeSessionId: string; cwd: string; purpose?: SessionPurposeKind; contextDir: string; permissionMode: PermissionMode; firstMessage: string; handlers: RuntimeHandlers };
+export type RuntimeStartInput = RuntimeChoice & { sessionId: string; cwd: string; purpose?: SessionPurposeKind; prompt: string; contextDir: string; permissionMode: PermissionMode; credentialHome?: string; handlers: RuntimeHandlers };
+export type RuntimeResumeInput = RuntimeChoice & { sessionId: string; claudeSessionId: string; cwd: string; purpose?: SessionPurposeKind; contextDir: string; permissionMode: PermissionMode; credentialHome?: string; firstMessage: string; handlers: RuntimeHandlers };
 
 export interface RuntimeHandle {
   push(text: string): void;

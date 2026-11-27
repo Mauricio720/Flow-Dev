@@ -40,7 +40,7 @@ export class ReviewCycleService {
     const [open, sessions] = await Promise.all([this.deps.cycles.findOpen(input.taskId), this.deps.sessions.sessionsOf(input.taskId)]);
     requireNoActiveCycle(open);
     requireNoOpenSessions(sessions.filter((session) => isActiveSession(session.status)).length, input.allowOpenSessions);
-    await requireReviewChoices({ guard: this.deps.guard, agents: this.deps.agents, catalog: this.deps.catalog, choices: [input.reviewer, input.executor] });
+    await requireReviewChoices({ guard: this.deps.guard, agents: this.deps.agents, catalog: this.deps.catalog, taskId: input.taskId, choices: [input.reviewer, input.executor] });
     await this.deps.guard.assertServiceRunning();
     const project = await this.deps.projects.findById(input.projectId);
     if (!project) throw new TaskError("project_unavailable");

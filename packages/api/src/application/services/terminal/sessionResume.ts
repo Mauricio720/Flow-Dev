@@ -8,9 +8,10 @@ import type { RequestCancellation } from "./requestCancellation";
 import type { SessionExitHandling } from "./sessionExit";
 import type { SessionHandleRegistry } from "./sessionHandleRegistry";
 import type { SessionHandlerFactory } from "./sessionHandlers";
-import { errorFields, type SessionLog } from "./sessionLog";
+import { accountLogField, errorFields, type SessionLog } from "./sessionLog";
 import { RESUME_FAILED_NOTE, RESUME_FAILED_REASON } from "./sessionNotes";
 import type { TickStep } from "./sessionTickStep";
+import type { SessionAccountGate } from "./sessionAccountGate";
 
 export type ResumeDeps = {
   status: Pick<SessionStatusDao, "listInterrupted" | "claimResume" | "markEnded">;
@@ -24,6 +25,7 @@ export type ResumeDeps = {
   identity: ClaimInput;
   now: () => Date;
   log: SessionLog;
+  accountGate?: SessionAccountGate;
 };
 
 export class SessionResumeStep implements TickStep {
@@ -47,13 +49,15 @@ export class SessionResumeStep implements TickStep {
     }
     const claimed = await this.deps.status.claimResume({ sessionId: session.id, workerId: this.deps.identity.workerId });
     if (!claimed) return;
+    const account = await this.deps.accountGate?.check(claimed);
+    if (account && !account.ok) return this.fail(session.id, queued, account.reason, account.reason);
     try {
       const handlers = this.deps.handlers.handlersFor(claimed, (current, outcome) => this.onExit(current, outcome, queued));
       const contextDir = this.deps.context.pathsOf(session.id).contextDir;
       const choice = { model: session.model ?? undefined, effort: session.effort ?? undefined };
-      this.deps.registry.set(session.id, runtime.resume({ sessionId: session.id, claudeSessionId: session.claudeSessionId, cwd: session.checkoutPath, purpose: session.purpose, contextDir, permissionMode: session.permissionMode, firstMessage: queued[0]!.content, handlers, ...choice }));
+      this.deps.registry.set(session.id, runtime.resume({ sessionId: session.id, claudeSessionId: session.claudeSessionId, cwd: session.checkoutPath, purpose: session.purpose, contextDir, permissionMode: session.permissionMode, credentialHome: account?.ok ? account.credentialHome : undefined, firstMessage: queued[0]!.content, handlers, ...choice }));
       await this.deps.messages.markDelivered([queued[0]!.id], this.deps.now());
-      this.deps.log.info("resumed", { sessionId: session.id, agent: session.agent, model: session.model, effort: session.effort });
+      this.deps.log.info("resumed", { sessionId: session.id, agent: session.agent, model: session.model, effort: session.effort, ...accountLogField(session) });
     } catch (error) {
       this.deps.log.error("resume_failed", { sessionId: session.id, ...errorFields(error) });
       await this.fail(session.id, queued);
@@ -66,10 +70,10 @@ export class SessionResumeStep implements TickStep {
     await this.fail(session.id, queued);
   }
 
-  private async fail(sessionId: string, queued: SessionMessageRecord[]) {
+  private async fail(sessionId: string, queued: SessionMessageRecord[], reason = RESUME_FAILED_REASON, note = RESUME_FAILED_NOTE) {
     await this.deps.cancellation.cancelAll(sessionId);
-    await this.deps.status.markEnded({ sessionId, reason: RESUME_FAILED_REASON, at: this.deps.now() });
-    await this.deps.messages.insertSystemMessage({ sessionId, content: RESUME_FAILED_NOTE, occurredAt: this.deps.now() });
+    await this.deps.status.markEnded({ sessionId, reason, at: this.deps.now() });
+    await this.deps.messages.insertSystemMessage({ sessionId, content: note, occurredAt: this.deps.now() });
     await this.deps.messages.markUndelivered(queued.map((message) => message.id));
   }
 }
