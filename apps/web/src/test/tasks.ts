@@ -34,8 +34,11 @@ export function revisionOf(draft: Partial<IssueDraft> = {}, patch: Partial<TaskR
   return { id: R7, taskId: T, revisionNumber: 7, parentRevisionId: null, operationId: O, draft: { ...DRAFT, ...draft }, evidenceBindings: [], manuallyEditedPaths: [], createdAt: NOW, ...patch };
 }
 
+export const ISSUE_41_BRANCH = "flow/issue-41";
+export const CHECKOUT_CHOICE: TaskDetail["worktree"] = { mode: "checkout", locked: false, branch: ISSUE_41_BRANCH, chosenAt: NOW };
+
 export function detailOf(patch: Partial<TaskDetail> = {}): TaskDetail {
-  return { task: summaryOf(), currentRevision: revisionOf(), pendingProposal: null, publication: null, activity: [], planning: planningOf(), terminal: { lastOpened: null }, execution: { sessions: [], artifacts: [] }, permissions: { canEdit: true }, lastError: null, ...patch, viewerCanAuthor: patch.viewerCanAuthor ?? true };
+  return { task: summaryOf(), currentRevision: revisionOf(), pendingProposal: null, publication: null, activity: [], planning: planningOf(), terminal: { lastOpened: null }, execution: { sessions: [], artifacts: [] }, worktree: CHECKOUT_CHOICE, permissions: { canEdit: true }, lastError: null, ...patch, viewerCanAuthor: patch.viewerCanAuthor ?? true };
 }
 
 export function messageOf(sequence: number, role: TaskMessage["role"], content: string): TaskMessage {

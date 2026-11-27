@@ -10,6 +10,7 @@ import { PlanningActions } from "./PlanningActions";
 import { PlanningDecisionView } from "./PlanningDecisionView";
 import { PlanningStatusCapsule } from "./PlanningStatusCapsule";
 import { PlanningTimeline } from "./PlanningTimeline";
+import { WorktreeChoiceSection } from "./WorktreeChoiceSection";
 
 type Props = { detail: TaskDetail; actions: Actions | null; onRefresh: () => void };
 
@@ -50,6 +51,7 @@ function StageBody({ detail, actions, onRefresh }: Props) {
       <AwaitingNote detail={detail} />
       <OperationNote detail={detail} />
       {detail.planning.decision && <PlanningDecisionView decision={detail.planning.decision} lastOpened={detail.terminal.lastOpened ?? undefined} routeSwitch={detail.planning.routeSwitch} />}
+      {lifecycle === "approved" && <WorktreeChoiceSection detail={detail} canChoose={actions !== null} onSaved={actions?.refresh ?? onRefresh} />}
       {actions ? <PlanningActions detail={detail} actions={actions} /> : <p className="text-sm text-ink-3">{READER_NOTE}</p>}
     </>
   );

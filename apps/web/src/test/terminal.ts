@@ -13,7 +13,7 @@ export const AGENTS: TerminalPreflight["agents"] = [
 
 export function preflightOf(patch: Partial<TerminalPreflight> = {}): TerminalPreflight {
   const checkout = { path: CHECKOUT_PATH, branch: "main", detachedSha: null, dirty: false };
-  return { checkout, defaultPrompt: DEFAULT_PROMPT, maxPromptLength: 20_000, issueImages: [], sessionService: { running: true }, prompt: DEFAULT_PROMPT, choice: null, agents: AGENTS, ...patch };
+  return { checkout, worktree: { mode: "checkout" }, defaultPrompt: DEFAULT_PROMPT, maxPromptLength: 20_000, issueImages: [], sessionService: { running: true }, prompt: DEFAULT_PROMPT, choice: null, agents: AGENTS, ...patch };
 }
 
 export function terminalRejection(reason: string, message: string, code = "PRECONDITION_FAILED") {

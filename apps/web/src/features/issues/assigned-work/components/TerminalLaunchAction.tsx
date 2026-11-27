@@ -19,7 +19,7 @@ export function TerminalLaunchAction({ detail, onOpened }: Props) {
   };
   return (
     <>
-      <Button ref={trigger} type="button" size="sm" onClick={() => setOpen(true)}>{TERMINAL_ACTION_LABEL}</Button>
+      <Button ref={trigger} type="button" size="sm" disabled={detail.worktree.mode === null} onClick={() => setOpen(true)}>{TERMINAL_ACTION_LABEL}</Button>
       {open && <TerminalLaunchDialog projectId={detail.task.projectId} taskId={detail.task.id} trigger={trigger} onClose={() => setOpen(false)} onOpened={opened} />}
       {notice && <p role="status" className="text-sm text-ink-2">{notice}</p>}
     </>

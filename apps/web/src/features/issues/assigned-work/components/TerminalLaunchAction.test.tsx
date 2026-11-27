@@ -28,6 +28,13 @@ describe("Iniciar sessão action", () => {
     expect(screen.queryByRole("button", ACTION)).toBeNull();
   });
 
+  it("V-W19 keeps the action disabled until the operator chooses where to work", () => {
+    const pending = { ...approvedDetail(undefined, false), worktree: { mode: null, locked: false, branch: "flow/issue-41", chosenAt: null } };
+    render(<PlanningStage detail={withOperatorPermissions(pending)} actions={actions()} onRefresh={noop} />);
+    expect((screen.getByRole("button", ACTION) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Escolha onde trabalhar antes de iniciar a primeira sessão.")).toBeTruthy();
+  });
+
   it("derives the permission from an approved decision only", () => {
     expect(withOperatorPermissions(approvedDetail(undefined, false)).planning.permissions.canOpenTerminal).toBe(true);
     expect(withOperatorPermissions(reviewDetail()).planning.permissions.canOpenTerminal).toBe(false);

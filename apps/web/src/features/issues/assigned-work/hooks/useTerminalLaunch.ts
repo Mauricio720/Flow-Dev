@@ -5,6 +5,7 @@ import { DEFAULT_CHOICE, ROUTE_PURPOSE, agentProblemOf, defaultSpecId, openPurpo
 import type { AgentChoice, LaunchPurpose, PermissionMode, PromptProblem, TerminalExtra, TerminalScope } from "../terminalContract";
 import { useLaunchPreflight } from "./useLaunchPreflight";
 import { NO_EXTRA, useTerminalSender } from "./useTerminalSender";
+import { folderBlocked } from "../worktreeModel";
 
 export function promptProblemOf(prompt: string, maxLength: number): PromptProblem {
   if (prompt.trim().length === 0) return "empty";
@@ -28,7 +29,8 @@ export function useTerminalLaunch(scope: TerminalScope, purpose: LaunchPurpose =
   const promptProblem = load.preflight ? promptProblemOf(load.prompt, load.preflight.maxPromptLength) : null;
   const agentProblem = agentProblemOf(choice, load.preflight?.agents ?? []);
   const serviceRunning = load.preflight?.sessionService.running ?? true;
-  return { preflight: load.preflight, serviceRunning, permissionMode, setPermissionMode, prompt: load.prompt, setPrompt: load.setPrompt, promptProblem, confirm, confirmAdditional, declineAdditional, needsConfirmation: sender.needsConfirmation, phase: load.phase, failure: sender.failure, opened: sender.opened, purpose, choice, setChoice: setChosen, specId, setSpecId, agentProblem };
+  const folderProblem = folderBlocked(load.preflight?.worktree);
+  return { preflight: load.preflight, serviceRunning, permissionMode, setPermissionMode, prompt: load.prompt, setPrompt: load.setPrompt, promptProblem, confirm, confirmAdditional, declineAdditional, needsConfirmation: sender.needsConfirmation, phase: load.phase, failure: sender.failure, opened: sender.opened, purpose, choice, setChoice: setChosen, specId, setSpecId, agentProblem, folderProblem };
 }
 
 export type TerminalLaunch = ReturnType<typeof useTerminalLaunch>;
